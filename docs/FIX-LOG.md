@@ -77,3 +77,10 @@
 - **Test first:** `deno test ... --filter 'low-frequency Realtime events'` failed with the publisher temporarily disabled (0 sent vs expected 3); passed after restoring the publisher.
 - **Check:** `pnpm test:api` passed 12 Edge and 9 hostile tests; `pnpm verify:payloads` passed 2/2; `pnpm typecheck`/production build passed; `pnpm lint` exited successfully with existing React hook warnings; `git diff --check` passed. These are unit/mocked-transport checks. Real Supabase delivery is not verified because `supabase start` failed with Docker socket permission denied; GitHub integration job remains to be added in Step 9d.
 - **Commit:** `a210075` (`feat(api): publish low-frequency realtime events (F-02)`).
+
+## Step 9c — live team positions (F-02)
+
+- **Changed:** On accepted location uploads, the API reads the current player's authoritative role and server-stored `latest_fix` snapshot, computes age from the returned server time, and publishes a sequenced `team.location_live` event only to that role's private topic. Sync publication excludes teammate coordinate events; only upload writes trigger this path. Location acknowledgements still contain no coordinates, and message transport is REST Broadcast.
+- **Test first:** The location endpoint regression failed before implementation because the accepted fix had no Realtime publication; it now asserts exact Runner topic, event time, server-clamped capture time and sequence.
+- **Check:** `pnpm test:api` passed 12 Edge and 9 hostile tests; `pnpm verify:payloads` passed 2/2; `pnpm typecheck`/production build passed; `git diff --check` passed. Actual socket delivery and persistence remain unverified pending the Step 9d GitHub integration run.
+- **Commit:** `1b4d30e` (`feat(api): broadcast live locations to team only (F-02)`).
