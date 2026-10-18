@@ -291,11 +291,13 @@ class SupabaseGameApi implements GameApi {
       can_claim?: boolean
       claim_expires_at?: string | null
       own_player_id?: string | null
+      own_status?: 'ACTIVE' | 'TAGGED'
       revision: number
       next_ping_at?: string | null
       events: Array<{ type?: unknown; data?: unknown }>
     }>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: revision })
     if (!result.ok) return result
+    const ownStatus: 'ACTIVE' | 'TAGGED' = result.data.own_status === 'TAGGED' ? 'TAGGED' : 'ACTIVE'
     const common = {
       state: result.data.state,
       server_now: result.data.server_now,
@@ -304,6 +306,7 @@ class SupabaseGameApi implements GameApi {
       can_claim: result.data.can_claim === true,
       claim_expires_at: result.data.claim_expires_at ?? null,
       own_player_id: result.data.own_player_id ?? '',
+      own_status: ownStatus,
       revision: result.data.revision,
       next_ping_at: typeof result.data.next_ping_at === 'string' ? result.data.next_ping_at : null,
       own_team_positions: result.data.events.flatMap((event) => {

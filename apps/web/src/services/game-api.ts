@@ -82,6 +82,7 @@ interface MatchViewBase {
   can_claim: boolean
   claim_expires_at: string | null
   own_player_id: string
+  own_status: 'ACTIVE' | 'TAGGED'
   next_ping_at: string | null
   own_team_positions: Array<{ player_id: string; display_name: string; lat: number; lon: number; accuracy_m: number; captured_at: string; age_seconds: number; is_stale: boolean }>
 }

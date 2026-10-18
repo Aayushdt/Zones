@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router-dom'
 import { haversineDistanceMeters } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useLocationStore } from '../stores/location-store'
+import { watchDeviceLocation } from '../services/device-lifecycle'
 
 let lastSequence = 0
 let lastSentAt = 0
@@ -31,7 +32,6 @@ export function LocationSharing() {
       return
     }
     let disposed = false
-    let watchId: number | null = null
     let sending = false
     const syncOnResume = () => {
       if (document.visibilityState === 'visible' && navigator.onLine) void supabaseGameApi.syncMatch(matchId)
@@ -69,9 +69,7 @@ export function LocationSharing() {
         void supabaseGameApi.setReady(matchId, false)
       } else setStatus('Waiting for GPS. Move outdoors or retry after the signal improves.')
     }
-    watchId = navigator.geolocation.watchPosition((fix) => void upload(fix), onError, {
-      enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000,
-    })
+    const stopWatching = watchDeviceLocation(true, navigator.geolocation, (fix) => void upload(fix), onError)
     const onOnline = () => { setStatus('Connection restored; syncing match.'); syncOnResume() }
     const onOffline = () => setStatus('Offline; location uploads paused and match data is not cached.')
     window.addEventListener('online', onOnline)
@@ -79,7 +77,7 @@ export function LocationSharing() {
     document.addEventListener('visibilitychange', syncOnResume)
     return () => {
       disposed = true
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId)
+      stopWatching()
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
       document.removeEventListener('visibilitychange', syncOnResume)

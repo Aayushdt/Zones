@@ -4,6 +4,7 @@ import type { ClockView, RoleSafeMatchView } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
 import { GameMap, type GameMapData } from '../components/GameMap'
 import { useLocationStore } from '../stores/location-store'
+import { maintainScreenWakeLock } from '../services/device-lifecycle'
 
 function timeLeft(clock: ClockView, anchor: number): number {
   const deadline = Date.parse(clock.ends_at)
@@ -24,6 +25,7 @@ export function MatchPage() {
   const anchor = useRef(0)
   const currentFix = useLocationStore((state) => state.ownFix)
   const locationStatus = useLocationStore((state) => state.status)
+  const stopSharing = useLocationStore((state) => state.stopSharing)
 
   const sync = useCallback(async () => {
     setBusy(true)
@@ -36,12 +38,15 @@ export function MatchPage() {
     if (matchResult.data.state === 'HEAD_START') { navigate(`/match/${matchId}/head-start`, { replace: true }); return }
     if (matchResult.data.state === 'ENDED') { navigate(`/match/${matchId}/results`, { replace: true }); return }
     if (matchResult.data.state !== 'ACTIVE') { setError('The server says this match is not active.'); return }
+    if (matchResult.data.own_status === 'TAGGED') {
+      stopSharing(matchId, 'You are tagged. Location sharing and GPS watcher are stopped.')
+    }
     setError('')
     setView(matchResult.data)
     setClock(clockResult.data)
     anchor.current = performance.now()
     setSeconds(timeLeft(clockResult.data, anchor.current))
-  }, [matchId, navigate])
+  }, [matchId, navigate, stopSharing])
 
   useEffect(() => { void sync() }, [sync])
   useEffect(() => {
@@ -67,6 +72,11 @@ export function MatchPage() {
     const polling = window.setInterval(() => { void sync() }, 15_000)
     return () => { window.clearInterval(timer); window.clearInterval(polling) }
   }, [clock, sync])
+  useEffect(() => {
+    if (!view || view.state !== 'ACTIVE') return
+    const wakeLockApi = (navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ released: boolean; release: () => Promise<void> }> } }).wakeLock
+    return maintainScreenWakeLock(true, wakeLockApi, document)
+  }, [view?.state])
 
   const ownPosition = currentFix ? { ...currentFix, player_id: view?.own_player_id ?? currentFix.player_id } : null
   const mapData: GameMapData | null = view ? view.role === 'RUNNER'
@@ -94,7 +104,7 @@ export function MatchPage() {
         <GameMap data={mapData} />
         <div className="match-status-card" role="status" aria-live="polite">
           <div><strong>You are a {roleLabel}</strong><p>{view.role === 'RUNNER'
-            ? 'Stay hidden. Your map displays your own team only.'
+            ? view.own_status === 'TAGGED' ? 'You are tagged. Location sharing has stopped; your map displays active teammates only.' : 'Stay hidden. Your map displays your own team only.'
             : 'Hunter teammate positions and scheduled Runner ping snapshots are shown separately.'}</p></div>
           <div className="match-status-actions">
             {view.role === 'HUNTER' ? <Link className="welcome__secondary" to={`/match/${matchId}/pings`}>Pings</Link> : null}

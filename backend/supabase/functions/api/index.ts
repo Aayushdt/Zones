@@ -295,9 +295,10 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_auth_user_id: user.id, p_match_id: syncMatch[1],
       })
       if (typeof controls.error === 'string') return rpcResponse(controls)
-      const team = await callRpc('xzones_team_positions', {
+      const ownStatus = result.own_status === 'TAGGED' ? 'TAGGED' : 'ACTIVE'
+      const team = ownStatus === 'ACTIVE' ? await callRpc('xzones_team_positions', {
         p_auth_user_id: user.id, p_match_id: syncMatch[1],
-      })
+      }) : { role: result.role, own_player_id: result.own_player_id, positions: [] }
       if (typeof team.error === 'string') return rpcResponse(team)
       if (team.role !== result.role || !Array.isArray(team.positions)) {
         return fail(503, 'INTERNAL', 'The game service could not complete this request.')
@@ -380,6 +381,7 @@ export async function handleRequest(request: Request): Promise<Response> {
         can_claim: controls.can_claim === true,
         claim_expires_at: typeof controls.claim_expires_at === 'string' ? controls.claim_expires_at : null,
         own_player_id: typeof team.own_player_id === 'string' ? team.own_player_id : null,
+        own_status: ownStatus,
         revision,
         events,
         next_ping_at: typeof result.next_ping_at === 'string' ? result.next_ping_at : null,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mergeLatestPings } from '../../packages/game-core/src/index.ts'
 import { createMockApi } from '../../apps/web/src/services/mock-api.ts'
 import { useLocationStore } from '../../apps/web/src/stores/location-store.ts'
+import { maintainScreenWakeLock, watchDeviceLocation } from '../../apps/web/src/services/device-lifecycle.ts'
 
 function timeLeft(clock: { ends_at: string; server_now: string }, anchor: number): number {
   const deadline = Date.parse(clock.ends_at)
@@ -24,6 +25,50 @@ function ageText(seconds: number): string {
 }
 
 describe('AUDIT CHECKLIST I: Client game logic', () => {
+  it('F12: screen wake lock is acquired only while visible and released on hide/unmount', async () => {
+    let visibilityState: DocumentVisibilityState = 'visible'
+    let listener: (() => void) | undefined
+    const released: number[] = []
+    let requests = 0
+    const visibility = {
+      get visibilityState() { return visibilityState },
+      addEventListener: (_type: 'visibilitychange', value: () => void) => { listener = value },
+      removeEventListener: (_type: 'visibilitychange', value: () => void) => { if (listener === value) listener = undefined },
+    }
+    const wakeLock = { request: async (_type: 'screen') => {
+      const id = ++requests
+      return { released: false, release: async () => { released.push(id) } }
+    } }
+    const stop = maintainScreenWakeLock(true, wakeLock, visibility)
+    await Promise.resolve()
+    expect(requests).toBe(1)
+    visibilityState = 'hidden'; listener?.()
+    expect(released).toEqual([1])
+    visibilityState = 'visible'; listener?.()
+    await Promise.resolve()
+    expect(requests).toBe(2)
+    stop()
+    expect(released).toEqual([1, 2])
+    expect(listener).toBeUndefined()
+  })
+
+  it('F13: tagged or disabled players never start GPS and an active watcher is cleared on teardown', () => {
+    let nextId = 1
+    const watched: number[] = []
+    const cleared: number[] = []
+    const geolocation = {
+      watchPosition: () => { const id = nextId++; watched.push(id); return id },
+      clearWatch: (id: number) => { cleared.push(id) },
+    }
+    const taggedStop = watchDeviceLocation(false, geolocation, () => undefined, () => undefined)
+    expect(watched).toEqual([])
+    taggedStop()
+    const stop = watchDeviceLocation(true, geolocation, () => undefined, () => undefined)
+    expect(watched).toEqual([1])
+    stop()
+    expect(cleared).toEqual([1])
+  })
+
   it('I1: countdown timers are bounded at 0 and never display negative values', () => {
     const anchor = performance.now()
     const clock = {
