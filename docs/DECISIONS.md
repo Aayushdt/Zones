@@ -35,6 +35,14 @@
 - Added the core tables, checks, indexes, composite match/player references, hashed-code/capability columns, controller/claim fields, rate limits, and RLS enabled with no browser table grants. Zone storage is consistently `zone_radius_m` (200–1500), the database half of the 400–3000m UI/API diameter.
 - Docker is installed but the Docker socket returned `permission denied` even when checked outside the sandbox. Supabase's full container stack therefore could not start. Instead, applied the migration successfully to a temporary local PostgreSQL 18.6 instance after adding only a minimal `auth.users` schema shim, then ran `tests/schema/core-smoke.sql`; duration/hash/radius/FK violation checks passed. This is a PostgreSQL DDL smoke check, not a Supabase integration test.
 
+## Step 7: lobby APIs
+
+- Added the single `api` Edge Function router for create/join/team/ready routes and server-side Auth user lookup. It validates bearer identity, uses the anon key only for Auth lookup and the service-role key only for server RPCs, and never logs request fields.
+- Added transactional, service-role-only SQL RPCs for lobby creation/join, Random/manual team selection, readiness, and rate-limit counters. Codes use six random characters from a 32-symbol alphabet; only an HMAC-SHA-256 is stored and only the host receives the clear code. Failed joins are HMAC-bucketed (5/10 minutes) and joins are limited per Auth user (10/hour); raw addresses are not stored.
+- The database stores integer `zone_radius_m`; API diameter is 400–3000m and odd integer diameters are rejected to prevent half-meter truncation. The create slider should therefore use even values (prefer 100m steps).
+- Verified Deno 2.9.6 `check` and three handler tests, including no service-role use for Auth lookup and no raw lobby code sent in RPC arguments. Applied migration 2 and ran both schema/RPC smoke SQL files against temporary PostgreSQL 18.6; team balance 1/2 for three players, Ready startability, zone conversion, and 5-per-10-minute invalid-code limiting passed.
+- Full local Supabase function invocation/integration remains unverified because Docker socket access is denied; tests use mocked Auth/RPC HTTP calls and local PostgreSQL, not Supabase containers.
+
 ## Step 5: GameApi and MOCK adapter
 
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.

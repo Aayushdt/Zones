@@ -6,9 +6,17 @@
   "scripts": {
     "build": "corepack pnpm --filter @xzones/web build",
     "lint": "corepack pnpm --filter @xzones/web lint",
-    "typecheck": "corepack pnpm --filter @xzones/game-core typecheck && corepack pnpm --filter @xzones/web build"
+    "typecheck": "corepack pnpm --filter @xzones/game-core typecheck && corepack pnpm --filter @xzones/web build",
+    "test:edge": "corepack pnpm exec deno test --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,JOIN_CODE_HMAC_SECRET,RATE_LIMIT_HASH_SECRET backend/supabase/functions/api"
   },
   "devDependencies": {
     "supabase": "2.121.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "deno",
+      "version": "2.9.6",
+      "onFail": "download"
+    }
   }
 }
