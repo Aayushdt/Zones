@@ -64,3 +64,9 @@
 - **Changed:** Added migration 015 so tagged participants can sync only their own status and clock/control state; the API skips teammate-location reads for tagged players. The client stops GPS and clears its location on tagged status. ACTIVE match screens request a screen wake lock, release it while hidden or unmounted, and reacquire when visible. Added Edge, database, and device-lifecycle regressions.
 - **Check:** `pnpm test:api` passed 11 Edge tests and 9 hostile tests after adding the tagged-sync assertion (including no teammate-location RPC). `pnpm test:audit` passed 23/23, production typecheck/build passed, and the fresh native PostgreSQL harness passed migration/schema/lifecycle checks and 14/14 audit scenarios including tagged Runner status/no notice. `git diff --check` passed.
 - **Commit:** `a61c62a` (`fix: stop tagged runner location sharing`).
+
+## Step 9a — Realtime transport decision (F-02)
+
+- **Changed:** Documented post-commit, role-filtered publishing through Supabase's private Realtime REST broadcast endpoint; failures are best-effort and polling remains fallback. Coordinate-bearing events will not use database Broadcast because it writes rows to `realtime.messages` with three-day retention according to current official docs.
+- **Check:** Read the current official Supabase Broadcast documentation. It distinguishes REST Broadcast (HTTP to WebSocket delivery) from database Broadcast (stored in `realtime.messages`, retained three days). This is design-source verification, not runtime integration verification.
+- **Commit:** pending.

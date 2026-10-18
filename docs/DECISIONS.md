@@ -5,6 +5,11 @@
 - If both teams become empty in the same serialized resolution, Runner elimination takes precedence and Hunters win (`ALL_RUNNERS_TAGGED_OR_LEFT`), matching `game-core`.
 - Active-match expiry uses the shared `TIME_LIMIT` reason. Tagging the final Runner uses the same `ALL_RUNNERS_TAGGED_OR_LEFT` reason as departures, so database and shared outcome results agree.
 
+## Audit Step 9a — ephemeral Realtime broadcast transport
+
+- Publish only after the database RPC has returned successfully, so the state change is committed before any event is sent. Use the Supabase Realtime REST single-message endpoint `/realtime/v1/api/broadcast/{topic}/events/{event}?private=true` with the server-only API key; never expose that key to a browser. Use only role-specific topics (`match:<id>:hunter` or `match:<id>:runner`) and the shared role projection builders plus the Section 25 envelope (`event_id`, `match_id`, `revision`, `server_at`, `type`, `data`). Publishing errors are best-effort and must not turn a successful game action into an API failure; polling remains the recovery path.
+- Coordinate-bearing events use the REST Broadcast transport only. Supabase's official [Broadcast documentation](https://supabase.com/docs/guides/realtime/broadcast) says REST receives an HTTP request and forwards it to connected WebSocket clients, while database Broadcast inserts into `realtime.messages`; database-sent messages are retained for three days. Therefore do not use `realtime.send`, `broadcast_changes`, or a trigger for coordinates. This transport choice is documented from the current official docs; runtime delivery/storage behavior still requires the real Supabase integration suite in Step 9d.
+
 ## Step 18: outcomes, departures, and retention
 
 - Added server resolution for match deadline, empty Hunter team, empty Runner team, and unclaimed host loss. Timer results use the scheduled server deadline as `ended_at`, even when a later request performs the resolution; this keeps displayed duration tied to the match clock.
