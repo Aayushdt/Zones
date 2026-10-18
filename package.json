@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=24.19.0 <25",
+    "pnpm": ">=12.14.0 <13"
+  },
   "scripts": {
     "build": "corepack pnpm --filter @xzones/web build",
     "lint": "corepack pnpm --filter @xzones/web lint",
@@ -10,9 +14,12 @@
     "test:edge": "corepack pnpm exec deno test --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,JOIN_CODE_HMAC_SECRET,RATE_LIMIT_HASH_SECRET backend/supabase/functions/api",
     "verify:payloads": "corepack pnpm exec deno test scripts/verify-payloads.ts",
     "test:unit": "corepack pnpm --filter @xzones/game-core test",
-    "test:sim": "corepack pnpm exec deno test tools/simulator"
+    "test:sim": "corepack pnpm exec deno test tools/simulator",
+    "test:e2e": "corepack pnpm exec playwright test",
+    "test:all": "corepack pnpm test:unit && corepack pnpm test:edge && corepack pnpm verify:payloads && corepack pnpm test:sim && corepack pnpm test:e2e"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "supabase": "2.121.0"
   },
   "devEngines": {

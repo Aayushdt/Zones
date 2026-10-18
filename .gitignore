@@ -3,7 +3,16 @@ node_modules/
 .pnpm-store/
 dist/
 build/
+.vite/
 coverage/
+*.log
+*.tsbuildinfo
+*.pem
+.cache/
+.wrangler/
+test-results/
+playwright-report/
+blob-report/
 
 # Environment and secrets
 .env
@@ -12,6 +21,7 @@ coverage/
 
 # OS/editor
 .DS_Store
+Thumbs.db
 .vscode/
 .idea/
 
@@ -20,12 +30,16 @@ supabase/.temp/
 supabase/.branches/
 **/supabase/.temp/
 **/supabase/.branches/
+**/supabase/volumes/
 
 # Android build outputs and signing material
 android/.gradle/
 android/**/build/
 android/local.properties
+android/**/outputs/
 *.jks
 *.keystore
 *.p12
 *.pfx
+*.apk
+*.aab

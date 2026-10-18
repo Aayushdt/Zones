@@ -20,6 +20,34 @@ export function haversineDistanceMeters(lat1: number, lon1: number, lat2: number
   return 6_371_000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+export type ZoneSample = 'INSIDE' | 'OUTSIDE' | 'UNCERTAIN' | 'NO_FIX'
+export interface ZoneConfirmation { outsideSamples: number; insideSamples: number; revealed: boolean }
+
+/** Accuracy bounds must lie wholly on one side of the fixed boundary. */
+export function classifyZoneSample(
+  distanceMeters: number | null,
+  accuracyMeters: number | null,
+  radiusMeters: number,
+): ZoneSample {
+  if (distanceMeters === null || accuracyMeters === null || !Number.isFinite(distanceMeters)
+    || !Number.isFinite(accuracyMeters) || !Number.isFinite(radiusMeters)
+    || distanceMeters < 0 || accuracyMeters < 0 || radiusMeters <= 0) return 'NO_FIX'
+  if (distanceMeters + accuracyMeters < radiusMeters) return 'INSIDE'
+  if (distanceMeters - accuracyMeters > radiusMeters) return 'OUTSIDE'
+  return 'UNCERTAIN'
+}
+
+/** Two consecutive confident samples are required to enter or clear reveal. */
+export function advanceZoneConfirmation(state: ZoneConfirmation, sample: ZoneSample): ZoneConfirmation {
+  if (sample === 'UNCERTAIN' || sample === 'NO_FIX') return { outsideSamples: 0, insideSamples: 0, revealed: state.revealed }
+  if (sample === 'OUTSIDE') {
+    const outsideSamples = Math.min(2, state.outsideSamples + 1)
+    return { outsideSamples, insideSamples: 0, revealed: state.revealed || outsideSamples >= 2 }
+  }
+  const insideSamples = Math.min(2, state.insideSamples + 1)
+  return { outsideSamples: 0, insideSamples, revealed: state.revealed && insideSamples < 2 }
+}
+
 /** Balanced target from the plan: ceil(N / 10), bounded by floor(N / 2). */
 export function balanceTeams(playerCount: number): TeamBalance | null {
   if (!Number.isInteger(playerCount) || playerCount < MIN_PLAYERS || playerCount > MAX_PLAYERS) return null

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   balanceTeams,
+  advanceZoneConfirmation,
   canStartLobby,
+  classifyZoneSample,
   didTagMeetDeadline,
   latestDuePingIndex,
   haversineDistanceMeters,
@@ -97,5 +99,18 @@ describe('distance helper', () => {
   it('calculates meters without exposing or persisting a route', () => {
     expect(haversineDistanceMeters(0, 0, 0, 1)).toBeCloseTo(111_195, -1)
     expect(haversineDistanceMeters(91, 0, 0, 1)).toBeNull()
+  })
+
+  it('requires two accuracy-confident outside samples and two inside samples to clear', () => {
+    const empty = { outsideSamples: 0, insideSamples: 0, revealed: false }
+    expect(classifyZoneSample(100, 5, 100)).toBe('UNCERTAIN')
+    expect(classifyZoneSample(110, 5, 100)).toBe('OUTSIDE')
+    expect(advanceZoneConfirmation(empty, 'OUTSIDE')).toEqual({ outsideSamples: 1, insideSamples: 0, revealed: false })
+    const revealed = advanceZoneConfirmation(advanceZoneConfirmation(empty, 'OUTSIDE'), 'OUTSIDE')
+    expect(revealed.revealed).toBe(true)
+    expect(advanceZoneConfirmation(revealed, 'UNCERTAIN').revealed).toBe(true)
+    expect(advanceZoneConfirmation(revealed, 'INSIDE').revealed).toBe(true)
+    expect(advanceZoneConfirmation(advanceZoneConfirmation(revealed, 'INSIDE'), 'INSIDE').revealed).toBe(false)
+    expect(classifyZoneSample(null, 5, 100)).toBe('NO_FIX')
   })
 })
