@@ -256,6 +256,10 @@ function isText(value: unknown, max = 24): value is string {
   return typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max
 }
 
+function isDisplayName(value: unknown): value is string {
+  return isText(value) && !/[\u0000-\u001f\u007f]/.test(value)
+}
+
 function numberIn(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max
 }
@@ -290,7 +294,8 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
     if (path === '/lobbies') {
       const pingSeconds = body.ping_seconds === undefined ? null : body.ping_seconds
-      if (!isText(body.display_name) || !isValidMatchConfig({
+      if (!isDisplayName(body.display_name)) return fail(400, 'INVALID_INPUT', 'Choose a name between 1 and 24 characters without control characters.')
+      if (!isValidMatchConfig({
         roundSeconds: body.round_seconds as number,
         headStartSeconds: body.head_start_seconds as number,
         pingSeconds: pingSeconds as number | null,
@@ -341,8 +346,8 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
 
     if (path === '/lobbies/join') {
-      if (!isText(body.display_name) || typeof body.code !== 'string'
-        || !/^[A-HJ-NP-Z2-9]{6}$/i.test(body.code.trim())) {
+      if (!isDisplayName(body.display_name)) return fail(400, 'INVALID_INPUT', 'Choose a name between 1 and 24 characters without control characters.')
+      if (typeof body.code !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/i.test(body.code.trim())) {
         return fail(404, 'INVALID_CODE', 'That private lobby code is invalid or expired.')
       }
       const normalizedCode = body.code.trim().toUpperCase()

@@ -186,6 +186,11 @@ declare
   v_r1_id uuid;
   v_sync jsonb;
   v_snap_count int;
+  v_slot_count int;
+  v_r1_slots int;
+  v_r2_slots int;
+  v_confirm jsonb;
+  i int;
 begin
   insert into auth.users (id) values (v_h_auth), (v_r1_auth), (v_r2_auth);
   v_match_id := (public.xzones_create_lobby(
@@ -228,7 +233,36 @@ begin
   select count(*) into v_snap_count from public.ping_snapshots where match_id = v_match_id and ping_index = 0;
 
   if v_snap_count = 2 and jsonb_array_length(v_sync->'due_pings') = 2 then
-    insert into audit_results values ('Scenario 3: Mixed tags over time and ping snapshots', 'PASS', 'Slot 0 pings generated correctly for both runners');
+    -- Time-shift to each subsequent scheduled slot and verify each snapshot is committed.
+    for i in 1..8 loop
+      update public.matches set
+        head_start_ends_at = clock_timestamp() - make_interval(secs => i * 300 + 1),
+        ends_at = clock_timestamp() + make_interval(secs => 2520 - (i * 300 + 1))
+      where id = v_match_id;
+      v_sync := public.xzones_sync_match(v_h_auth, v_match_id, (select revision from public.matches where id = v_match_id));
+      if (select count(*) from public.ping_snapshots where match_id = v_match_id and ping_index = i) <> 2
+         or jsonb_array_length(v_sync->'due_pings') <> 2
+         or (v_sync->'due_pings'->0->>'ping_index')::integer <> i
+         or (v_sync->'due_pings'->1->>'ping_index')::integer <> i then
+        raise exception 'Expected two Runner snapshots for scheduled slot %', i;
+      end if;
+    end loop;
+    select count(*) into v_snap_count from public.ping_snapshots
+      where match_id = v_match_id and ping_index between 0 and 8;
+    select count(distinct ping_index) into v_slot_count from public.ping_snapshots
+      where match_id = v_match_id and runner_id = v_r1_id and ping_index between 0 and 8;
+    select count(*) into v_r1_slots from public.ping_snapshots
+      where match_id = v_match_id and runner_id = v_r1_id and ping_index between 0 and 8;
+    select count(*) into v_r2_slots from public.ping_snapshots
+      where match_id = v_match_id and runner_id <> v_r1_id and ping_index between 0 and 8;
+    v_confirm := public.xzones_confirm_tag(v_r1_auth, v_match_id);
+    if v_snap_count = 18 and v_slot_count = 9 and v_r1_slots = 9 and v_r2_slots = 9
+       and (v_confirm->>'accepted')::boolean = true
+       and not exists (select 1 from public.latest_fix where match_id = v_match_id and player_id = v_r1_id) then
+      insert into audit_results values ('Scenario 3: Mixed tags over time and ping snapshots', 'PASS', 'Every Runner snapshot slot 0..8 is verified individually; tagging clears that Runner fix');
+    else
+      insert into audit_results values ('Scenario 3: Mixed tags over time and ping snapshots', 'FAIL', 'Rows=' || v_snap_count || ', slots=' || v_slot_count || ', r1=' || v_r1_slots || ', r2=' || v_r2_slots || ', sync=' || coalesce(v_sync::text, 'null') || ', tag=' || coalesce(v_confirm::text, 'null'));
+    end if;
   else
     insert into audit_results values ('Scenario 3: Mixed tags over time and ping snapshots', 'FAIL', 'Snap count: ' || v_snap_count);
   end if;

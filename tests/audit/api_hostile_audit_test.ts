@@ -187,6 +187,69 @@ Deno.test('F-10: Location uploads return 429 and Retry-After when the DB throttl
   }
 })
 
+Deno.test('Step 10: lobby names reject empty, overlong, and control-character input before database lookup', async () => {
+  setupEnv()
+  const originalFetch = globalThis.fetch
+  let rpcCalls = 0
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: 'user-1' })
+    if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({ ok: true })
+    if (url.endsWith('/rest/v1/rpc/xzones_create_lobby') || url.endsWith('/rest/v1/rpc/xzones_join_lobby')) rpcCalls += 1
+    throw new Error(`Unexpected URL: ${url}`)
+  }
+  try {
+    for (const display_name of ['', ' '.repeat(3), 'x'.repeat(25), 'name\nforged']) {
+      const create = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies', {
+        method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+        body: JSON.stringify({ display_name, round_seconds: 2700, head_start_seconds: 180, ping_seconds: null }),
+      }))
+      assert(create.status === 400, `unsafe create name should be rejected: ${JSON.stringify(display_name)}`)
+      const join = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies/join', {
+        method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+        body: JSON.stringify({ display_name, code: 'ABCDEF' }),
+      }))
+      assert(join.status === 400, `unsafe join name should be rejected: ${JSON.stringify(display_name)}`)
+    }
+    assert(rpcCalls === 0, 'invalid names must be rejected before RPCs')
+  } finally { globalThis.fetch = originalFetch }
+})
+
+Deno.test('Step 10: join codes normalize case/whitespace and reject characters outside the code alphabet', async () => {
+  setupEnv()
+  const originalFetch = globalThis.fetch
+  const codeHashes: string[] = []
+  let joinCalls = 0
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: 'user-1' })
+    if (url.endsWith('/rest/v1/rpc/xzones_join_lobby')) {
+      joinCalls += 1
+      codeHashes.push((JSON.parse(String(init?.body)) as Record<string, string>).p_code_hash)
+      return Response.json({ error: 'INVALID_CODE' })
+    }
+    throw new Error(`Unexpected URL: ${url}`)
+  }
+  try {
+    for (const code of ['abc234', ' ABC234 ']) {
+      const result = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies/join', {
+        method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+        body: JSON.stringify({ display_name: 'Guest', code }),
+      }))
+      assert(result.status === 404, 'normalized unknown code must be indistinguishable from missing code')
+    }
+    assert(joinCalls === 2 && codeHashes[0] === codeHashes[1], 'case and surrounding whitespace must normalize before HMAC')
+    for (const code of ['ABC01I', 'IIIIII', 'ABC2345']) {
+      const invalid = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies/join', {
+        method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+        body: JSON.stringify({ display_name: 'Guest', code }),
+      }))
+      assert(invalid.status === 404, 'invalid alphabet or code length should return generic invalid code')
+    }
+    assert(joinCalls === 2, 'malformed codes must not reach the database lookup')
+  } finally { globalThis.fetch = originalFetch }
+})
+
 Deno.test('AUDIT C2: Location endpoint rejects oversized body and invalid coordinates/accuracy', async () => {
   setupEnv()
   const originalFetch = globalThis.fetch

@@ -85,9 +85,9 @@ function unauthenticatedClient() {
   return { client, channels: [] }
 }
 
-const tokens = await Promise.all([guest(), guest(), guest()])
-const [host, hunter, runner] = tokens
-tokenRoles.set(host, 'RUNNER'); tokenRoles.set(hunter, 'HUNTER'); tokenRoles.set(runner, 'RUNNER')
+const tokens = await Promise.all([guest(), guest(), guest(), guest()])
+const [host, hunter, runner, runner2] = tokens
+tokenRoles.set(host, 'RUNNER'); tokenRoles.set(hunter, 'HUNTER'); tokenRoles.set(runner, 'RUNNER'); tokenRoles.set(runner2, 'RUNNER')
 const created = await request('/functions/v1/api/lobbies', host, {
   display_name: 'Integration Host', round_seconds: 600, head_start_seconds: 0, ping_seconds: 60,
 })
@@ -95,19 +95,23 @@ const matchId = created.match_id
 assert.ok(matchId && created.player_id && created.code, 'create response missing lobby identity')
 const second = await request('/functions/v1/api/lobbies/join', hunter, { display_name: 'Integration Hunter', code: created.code })
 const third = await request('/functions/v1/api/lobbies/join', runner, { display_name: 'Integration Runner', code: created.code })
-assert.equal(second.match_id, matchId); assert.equal(third.match_id, matchId)
+const fourth = await request('/functions/v1/api/lobbies/join', runner2, { display_name: 'Runner Leaving', code: created.code })
+assert.equal(second.match_id, matchId); assert.equal(third.match_id, matchId); assert.equal(fourth.match_id, matchId)
 await request(`/functions/v1/api/matches/${matchId}/team`, host, { role: 'RUNNER' })
 await request(`/functions/v1/api/matches/${matchId}/team`, hunter, { role: 'HUNTER' })
 await request(`/functions/v1/api/matches/${matchId}/team`, runner, { role: 'RUNNER' })
+await request(`/functions/v1/api/matches/${matchId}/team`, runner2, { role: 'RUNNER' })
 for (const token of tokens) await request(`/functions/v1/api/matches/${matchId}/ready`, token, { ready: true })
 const lobby = await request(`/functions/v1/api/matches/${matchId}/sync`, host, { last_revision: 0 })
 await request(`/functions/v1/api/matches/${matchId}/start`, host, { expected_revision: lobby.revision })
 
-const hostClient = await startClient(host), hunterClient = await startClient(hunter), runnerClient = await startClient(runner)
+const hostClient = await startClient(host), hunterClient = await startClient(hunter)
+const runnerClient = await startClient(runner), runner2Client = await startClient(runner2)
 await Promise.all([
   hostClient.subscribe(`match:${matchId}:runner`),
   hunterClient.subscribe(`match:${matchId}:hunter`),
   runnerClient.subscribe(`match:${matchId}:runner`),
+  runner2Client.subscribe(`match:${matchId}:runner`),
 ])
 await expectRejectedSubscription(hostClient, `match:${matchId}:hunter`)
 const anonymousRealtime = unauthenticatedClient()
@@ -154,6 +158,7 @@ const qr = await request(`/functions/v1/api/matches/${matchId}/qr`, runner, {})
 await request(`/functions/v1/api/matches/${matchId}/qr/scan`, hunter, { token: qr.token })
 await sleep(300)
 const taggedEventCount = runnerClient.events.filter((event) => event.type === 'team.location_live').length
+const leftEventCount = runner2Client.events.filter((event) => event.type === 'team.location_live').length
 await sleep(2100)
 await request(`/functions/v1/api/matches/${matchId}/location`, host, fix(2, 12.34568))
 await sleep(800)
@@ -161,6 +166,15 @@ assert.equal(runnerClient.events.filter((event) => event.type === 'team.location
   'tagged Runner continued receiving team events')
 assert.ok(hostClient.events.filter((event) => event.type === 'team.location_live').length > taggedEventCount,
   'active Runner teammate did not receive the follow-up location')
+assert.ok(runner2Client.events.filter((event) => event.type === 'team.location_live').length > leftEventCount,
+  'other active Runner teammate did not receive location before leaving')
+await request(`/functions/v1/api/matches/${matchId}/leave`, runner2, {})
+const leftAtCount = runner2Client.events.filter((event) => event.type === 'team.location_live').length
+await sleep(2100)
+await request(`/functions/v1/api/matches/${matchId}/location`, host, fix(3, 12.34569))
+await sleep(800)
+assert.equal(runner2Client.events.filter((event) => event.type === 'team.location_live').length, leftAtCount,
+  'LEFT player continued receiving team events')
 assert.ok(!JSON.stringify(runnerSync).includes(String(hunterLat)), 'Runner HTTP response exposed Hunter coordinates')
 for (const item of captures.filter((entry) => entry.role === 'RUNNER')) {
   assert.ok(!JSON.stringify(item.payload).includes(String(hunterLat)), `Hunter coordinates leaked in Runner HTTP response: ${item.path}`)
@@ -169,5 +183,5 @@ assert.ok(!runnerClient.events.some((event) => event.type === 'hunter.runner_pin
 
 const persisted = execFileSync('psql', [dbUrl, '-Atc', `select exists (select 1 from realtime.messages where payload::text like '%${uniqueLat}%')`], { encoding: 'utf8' }).trim()
 assert.equal(persisted, 'f', 'a coordinate-bearing REST broadcast persisted in realtime.messages')
-await Promise.all([hostClient.close(), hunterClient.close(), runnerClient.close()])
+await Promise.all([hostClient.close(), hunterClient.close(), runnerClient.close(), runner2Client.close()])
 console.log(`PASS: role privacy, scheduled pings, tag revocation, HTTP payloads, ephemeral storage; location delivery ${deliveryMs}ms`)
