@@ -21,17 +21,18 @@ Deno.test('low-frequency Realtime events are role-projected, private, and best-e
     { event_id: 'ping-1', match_id: matchId, revision: 7, server_at: '2026-10-19T00:00:00Z', type: 'hunter.runner_ping',
       data: { runner_id: 'runner-1', status: 'OK', lat: 1, lon: 2, accuracy_m: 5, captured_at: '2026-10-19T00:00:00Z', ping_at: '2026-10-19T00:00:00Z', age_seconds: 0, ping_index: 0 } },
     { event_id: 'live-1', match_id: matchId, revision: 7, server_at: '2026-10-19T00:00:00Z', type: 'team.location_live',
-      data: { player_id: 'runner-1', team_role: 'RUNNER', lat: 1, lon: 2, accuracy_m: 5, captured_at: '2026-10-19T00:00:00Z', age_seconds: 0, is_stale: false } },
+      data: { player_id: 'runner-1', team_role: 'RUNNER', lat: 1, lon: 2, accuracy_m: 5, captured_at: '2026-10-19T00:00:00Z', age_seconds: 0, is_stale: false, sequence: 99 } },
   ]
   try {
     await publishRoleEvents(matchId, events)
-    assert(sent.length === 3, 'should send state to both role topics and ping only to Hunters; live location is reserved for Step 9c')
+    assert(sent.length === 4, 'should send state to both role topics, ping to Hunters, and live position to the Runner team')
     const topicOf = (message: { url: string }) => decodeURIComponent(new URL(message.url).pathname.split('/api/broadcast/')[1].split('/events/')[0])
     assert(sent.filter((message) => topicOf(message).endsWith(':hunter')).length === 2, 'Hunter topic should receive state and its scheduled ping')
-    assert(sent.filter((message) => topicOf(message).endsWith(':runner')).length === 1, 'Runner topic should receive only safe state')
+    assert(sent.filter((message) => topicOf(message).endsWith(':runner')).length === 2, 'Runner topic should receive safe state and its own team location')
     assert(sent.every((message) => message.url.includes('?private=true') && message.url.includes('/events/xzones.event')), 'broadcasts must use the private shared event name')
     assert(sent.every((message) => message.headers.get('apikey') === 'server-test-key'), 'server API key must authenticate REST publishing')
-    assert(sent.filter((message) => topicOf(message).endsWith(':runner')).every((message) => !JSON.stringify(message.payload).includes('runner-1')), 'Runner topic must never receive the Hunter-only ping')
+    assert(!sent.some((message) => topicOf(message).endsWith(':runner') && message.payload.type === 'hunter.runner_ping'), 'Runner topic must never receive the Hunter-only ping')
+    assert((sent.find((message) => message.payload.type === 'team.location_live')?.payload.data as Record<string, unknown>).sequence === 99, 'team location event should preserve the fix sequence')
   } finally { globalThis.fetch = originalFetch }
 
   globalThis.fetch = async () => { throw new Error('Realtime unavailable') }
@@ -431,9 +432,18 @@ Deno.test('location route validates before RPC, stores through the server, and n
   Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
   const originalFetch = globalThis.fetch
   const captured: Record<string, unknown>[] = []
+  const broadcasts: Array<{ topic: string; event: Record<string, unknown> }> = []
   globalThis.fetch = async (input, init) => {
     const url = String(input)
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.includes('/rest/v1/matches?')) return Response.json([{ revision: 12, state: 'ACTIVE', ends_at: '2026-10-18T18:45:00Z', controller_player_id: 'player-1', claim_expires_at: null }])
+    if (url.includes('/rest/v1/players?')) return Response.json([{ id: 'player-1', display_name: 'Runner One', role: 'RUNNER' }])
+    if (url.includes('/rest/v1/latest_fix?')) return Response.json([{ player_id: 'player-1', lat: 25.6, lon: 85.1, accuracy_m: 5, captured_at: '2026-10-18T12:59:55Z', sequence: 7 }])
+    if (url.includes('/realtime/v1/api/broadcast/')) {
+      const topic = decodeURIComponent(new URL(url).pathname.split('/api/broadcast/')[1].split('/events/')[0])
+      broadcasts.push({ topic, event: JSON.parse(String(init?.body)) as Record<string, unknown> })
+      return new Response(null, { status: 202 })
+    }
     if (url.endsWith('/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
     if (url.endsWith('/rpc/xzones_update_location')) {
       captured.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
@@ -452,5 +462,9 @@ Deno.test('location route validates before RPC, stores through the server, and n
     assert(response.status === 200 && ack.accepted === true, 'valid location should be acknowledged')
     assert(captured[0]?.p_sequence === 7, 'location sequence should reach the storage RPC')
     assert(ack.lat === undefined && ack.lon === undefined, 'acknowledgement must never echo coordinates')
+    assert(broadcasts.length === 1 && broadcasts[0].topic.endsWith(':runner'), 'accepted fix should publish only to the verified Runner topic')
+    assert(broadcasts[0].event.type === 'team.location_live' && broadcasts[0].event.server_at === '2026-10-18T13:00:00Z', 'broadcast should use the event type and server acknowledgement time')
+    assert((broadcasts[0].event.data as Record<string, unknown>).captured_at === '2026-10-18T12:59:55Z', 'broadcast must use the server-stored clamped timestamp')
+    assert((broadcasts[0].event.data as Record<string, unknown>).sequence === 7, 'location event should include sequence for dedupe')
   } finally { globalThis.fetch = originalFetch }
 })

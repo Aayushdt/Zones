@@ -132,6 +132,35 @@ async function ownPlayerId(matchId: string, authUserId: string): Promise<string 
   } catch { return null }
 }
 
+async function publishLatestLocation(matchId: string, playerId: string, serverAt: string) {
+  try {
+    const baseUrl = requiredEnv('SUPABASE_URL'), key = requiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+    const playerQuery = new URLSearchParams({ select: 'display_name,role', match_id: `eq.${matchId}`, id: `eq.${playerId}`, status: 'eq.ACTIVE', limit: '1' })
+    const fixQuery = new URLSearchParams({ select: 'lat,lon,accuracy_m,captured_at,sequence', match_id: `eq.${matchId}`, player_id: `eq.${playerId}`, limit: '1' })
+    const [playerResponse, fixResponse, context] = await Promise.all([
+      fetch(`${baseUrl}/rest/v1/players?${playerQuery}`, { headers: { apikey: key, authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(1_500) }),
+      fetch(`${baseUrl}/rest/v1/latest_fix?${fixQuery}`, { headers: { apikey: key, authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(1_500) }),
+      matchContext(matchId),
+    ])
+    if (!playerResponse.ok || !fixResponse.ok || !context || !['HEAD_START', 'ACTIVE'].includes(context.state)) return
+    const players = await playerResponse.json() as Array<{ display_name?: unknown; role?: unknown }>
+    const fixes = await fixResponse.json() as Array<{ lat?: unknown; lon?: unknown; accuracy_m?: unknown; captured_at?: unknown; sequence?: unknown }>
+    const player = players[0], fix = fixes[0]
+    if (!player || !fix || typeof player.display_name !== 'string' || (player.role !== 'HUNTER' && player.role !== 'RUNNER')
+      || typeof fix.lat !== 'number' || typeof fix.lon !== 'number' || typeof fix.accuracy_m !== 'number'
+      || typeof fix.captured_at !== 'string' || typeof fix.sequence !== 'number' || !Number.isSafeInteger(fix.sequence)) return
+    const age = Math.max(0, Math.floor((Date.parse(serverAt) - Date.parse(fix.captured_at)) / 1000))
+    const event = eventEnvelope(matchId, context.revision, serverAt, 'team.location_live', {
+      player_id: playerId, display_name: player.display_name, team_role: player.role,
+      lat: fix.lat, lon: fix.lon, accuracy_m: fix.accuracy_m, captured_at: fix.captured_at,
+      age_seconds: age, is_stale: age > 30, sequence: fix.sequence,
+    }, `location:${playerId}:${fix.sequence}`)
+    await publishRoleEvents(matchId, [event], [player.role])
+  } catch {
+    // Location storage succeeded; a missed ephemeral event is recovered by the next sync.
+  }
+}
+
 function eventEnvelope(matchId: string, revision: number, serverAt: string, type: string, data: JsonObject, suffix: string) {
   return { event_id: `${matchId}:${revision}:${type}:${suffix}`, match_id: matchId, revision, server_at: serverAt, type, data }
 }
@@ -463,7 +492,7 @@ export async function handleRequest(request: Request): Promise<Response> {
         if (notice) events.push(notice)
       }
 
-      await publishRoleEvents(syncMatch[1], events)
+      await publishRoleEvents(syncMatch[1], events.filter((event) => event.type !== 'team.location_live'))
       return ok({
         role,
         state: matchState,
@@ -619,10 +648,14 @@ export async function handleRequest(request: Request): Promise<Response> {
       }
       const outcome = await callRpc('xzones_resolve_match', { p_auth_user_id: user.id, p_match_id: locationMatch[1] })
       if (typeof outcome.error === 'string') return rpcResponse(outcome)
-      return rpcResponse(await callRpc('xzones_update_location', {
+      const result = await callRpc('xzones_update_location', {
         p_auth_user_id: user.id, p_match_id: locationMatch[1], p_lat: body.lat, p_lon: body.lon,
         p_accuracy_m: body.accuracy_m, p_captured_at: body.captured_at, p_sequence: body.sequence,
-      }))
+      })
+      if (!result.error && result.accepted === true && typeof result.player_id === 'string' && typeof result.server_now === 'string') {
+        await publishLatestLocation(locationMatch[1], result.player_id, result.server_now)
+      }
+      return rpcResponse(result)
     }
 
     const startMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/start$/i)

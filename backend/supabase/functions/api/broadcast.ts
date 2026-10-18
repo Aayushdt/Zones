@@ -13,7 +13,7 @@ export async function publishRoleEvents(
     const topic = `match:${matchId}:${role.toLowerCase()}`
     const sends = events.map(async (event) => {
       const projected: EventEnvelope | null = projectEventForRole(role, event)
-      if (!projected || projected.match_id !== matchId || projected.type === 'team.location_live') return
+      if (!projected || projected.match_id !== matchId) return
       try {
         await fetch(`${baseUrl}/realtime/v1/api/broadcast/${encodeURIComponent(topic)}/events/xzones.event?private=true`, {
           method: 'POST',
