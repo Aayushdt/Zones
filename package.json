@@ -1,0 +1,11 @@
+{
+  "name": "xzones",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@12.14.0",
+  "scripts": {
+    "build": "corepack pnpm --filter @xzones/web build",
+    "lint": "corepack pnpm --filter @xzones/web lint",
+    "typecheck": "corepack pnpm --filter @xzones/game-core typecheck && corepack pnpm --filter @xzones/web build"
+  }
+}

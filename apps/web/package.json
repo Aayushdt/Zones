@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@xzones/web",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@12.14.0",
@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@xzones/game-core": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

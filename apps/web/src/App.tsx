@@ -1,6 +1,9 @@
 import './App.css'
+import { balanceTeams } from '@xzones/game-core'
 
 function App() {
+  const minimumGame = balanceTeams(3)
+
   return (
     <main className="welcome">
       <p className="welcome__eyebrow">XZones · Hunter vs Runner</p>
@@ -16,7 +19,8 @@ function App() {
         Read the implementation plan
       </a>
       <p className="welcome__status" role="status">
-        Phase A foundation · setup in progress
+        Phase A foundation · 3-player setup: {minimumGame?.hunters} Hunter,{' '}
+        {minimumGame?.runners} Runners
       </p>
     </main>
   )
