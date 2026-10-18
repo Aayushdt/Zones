@@ -57,4 +57,4 @@
 
 - **Changed:** Join RPC now consumes per-session and HMAC-derived per-IP buckets before lobby-code lookup for every well-formed join attempt. Added pre-start controller-only player removal, a persistent removed marker that blocks rejoin, DELETE routing, and a host-only lobby Remove button. Removal rejects self and post-start requests.
 - **Check:** `pnpm test:api` passed 11/11 Edge tests and 9/9 hostile API tests; `pnpm test:db` passed all schema/lifecycle checks and 14/14 audit SQL scenarios, including 5/10 minute IP bucket behavior and removal/rejoin/authorization cases; `pnpm typecheck` passed.
-- **Commit:** pending.
+- **Commit:** `5645f6a` (`fix: rate limit joins and let hosts remove lobby players`).
