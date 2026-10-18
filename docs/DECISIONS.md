@@ -43,6 +43,12 @@
 - Verified Deno 2.9.6 `check` and three handler tests, including no service-role use for Auth lookup and no raw lobby code sent in RPC arguments. Applied migration 2 and ran both schema/RPC smoke SQL files against temporary PostgreSQL 18.6; team balance 1/2 for three players, Ready startability, zone conversion, and 5-per-10-minute invalid-code limiting passed.
 - Full local Supabase function invocation/integration remains unverified because Docker socket access is denied; tests use mocked Auth/RPC HTTP calls and local PostgreSQL, not Supabase containers.
 
+## Step 8: privacy payload checks
+
+- Added an explicit server-side event projection allow-list covering every event declared in section 25. Events cross roles only where the contract permits; Hunter-team live positions and scheduled Runner snapshots have separate event types and target roles.
+- Added capture tests that project every declared event for both roles and recursively check emitted keys against hidden coordinates, opponent distance/direction, marker metadata, auth IDs, capabilities, code/token fields, and raw-fix fields. Runner `hunter.runner_ping` and Hunter `runner.location_revealed` events are dropped; Hunter never receives live Runner `team.location_live` events. `NO_FIX` and `STALE` snapshots always drop coordinates.
+- `corepack pnpm verify:payloads` passed (2 tests); Deno type checks passed. Realtime topics/RLS are still not integration-tested; those are implemented in Step 15.
+
 ## Step 5: GameApi and MOCK adapter
 
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.

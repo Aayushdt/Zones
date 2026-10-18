@@ -7,7 +7,8 @@
     "build": "corepack pnpm --filter @xzones/web build",
     "lint": "corepack pnpm --filter @xzones/web lint",
     "typecheck": "corepack pnpm --filter @xzones/game-core typecheck && corepack pnpm --filter @xzones/web build",
-    "test:edge": "corepack pnpm exec deno test --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,JOIN_CODE_HMAC_SECRET,RATE_LIMIT_HASH_SECRET backend/supabase/functions/api"
+    "test:edge": "corepack pnpm exec deno test --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,JOIN_CODE_HMAC_SECRET,RATE_LIMIT_HASH_SECRET backend/supabase/functions/api",
+    "verify:payloads": "corepack pnpm exec deno test scripts/verify-payloads.ts"
   },
   "devDependencies": {
     "supabase": "2.121.0"
