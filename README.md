@@ -10,3 +10,5 @@ Install the pinned workspace package manager with Corepack, then start the web s
 corepack pnpm install
 corepack pnpm --filter @xzones/web dev
 ```
+
+To connect private create/join forms, put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `apps/web/.env.local` and restart Vite. Keep server values in the Supabase Function environment; never put a service-role key in the web env file. `.env.example` contains names only.

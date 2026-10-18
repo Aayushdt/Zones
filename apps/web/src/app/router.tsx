@@ -1,14 +1,17 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { AppLayout } from './AppLayout'
 import { RouteShell } from '../pages/RouteShell'
+import { HomePage } from '../pages/HomePage'
+import { CreatePage } from '../pages/CreatePage'
+import { JoinPage } from '../pages/JoinPage'
 
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
     children: [
-      { path: '/', element: <RouteShell kind="home" /> },
-      { path: '/create', element: <RouteShell kind="create" /> },
-      { path: '/join', element: <RouteShell kind="join" /> },
+      { path: '/', element: <HomePage /> },
+      { path: '/create', element: <CreatePage /> },
+      { path: '/join', element: <JoinPage /> },
       { path: '/lobby/:matchId', element: <RouteShell kind="lobby" /> },
       { path: '/match/:matchId/head-start', element: <RouteShell kind="head-start" /> },
       { path: '/match/:matchId', element: <RouteShell kind="match" /> },

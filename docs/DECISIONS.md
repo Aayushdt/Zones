@@ -65,6 +65,14 @@
 - Applied migrations 0001–0003 in order to temporary PostgreSQL 18.6 with an auth schema shim, then ran `tests/schema/match-sync-smoke.sql`: one fresh fix, one stale fix, and one no-fix Runner produced the expected snapshots; missed indexes coalesced to the latest; duplicate retry kept database snapshot count stable; acknowledged revision returned no duplicate; Runner response contained no coordinates or Hunter ping event.
 - Deno handler tests and type checks pass. GPS, Docker-backed Supabase integration, and Realtime transport remain untested; this step uses inserted fake `latest_fix` fixtures and server RPC calls only.
 
+## Step 11: guest home, create, and join
+
+- Replaced the home placeholder with guest-name entry, 18+ confirmation, safe-play acknowledgement, and no-location disclosure. No account/sign-in UI is present.
+- Added create form controls for 30/45/60-minute rounds, head-start, ping interval, zone Off/fixed, diameter, and optional manually entered center coordinates. Diameter uses 100m increments in the required 400–3000m range.
+- Added private six-character join form with normalized code validation and specific server errors. Both forms call a real `GameApi` adapter; they never fall back to MOCK or report success without an API result.
+- Added anonymous Auth session creation/refresh using the public anon key, persisted locally in a dedicated guest-session key; service-role secrets are never included in the web adapter. When web env values are absent, the form explains exactly which public names belong in `apps/web/.env.local`.
+- The Supabase endpoint has not been integration-tested against a project because no project URL/anon key were supplied and Docker access remains unavailable. Production build and Oxlint pass; route/browser interaction awaits the Playwright verification step.
+
 ## Step 5: GameApi and MOCK adapter
 
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.

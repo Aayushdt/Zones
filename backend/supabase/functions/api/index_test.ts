@@ -143,3 +143,42 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     globalThis.fetch = originalFetch
   }
 })
+
+Deno.test('join API maps invalid, full, started, and rate-limited codes to specific safe errors', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  Deno.env.set('JOIN_CODE_HMAC_SECRET', 'join-hmac-test-secret')
+  Deno.env.set('RATE_LIMIT_HASH_SECRET', 'rate-hmac-test-secret')
+  let rpcError = 'INVALID_CODE'
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_join_lobby')) return Response.json({ error: rpcError })
+    throw new Error(`Unexpected test URL: ${url}`)
+  }
+
+  try {
+    const expected = [
+      ['INVALID_CODE', 404],
+      ['LOBBY_FULL', 409],
+      ['MATCH_STARTED', 409],
+      ['RATE_LIMITED', 429],
+    ] as const
+    for (const [code, status] of expected) {
+      rpcError = code
+      const response = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies/join', {
+        method: 'POST',
+        headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+        body: JSON.stringify({ code: 'ABC234', display_name: 'Guest' }),
+      }))
+      const body = await response.json()
+      assert(response.status === status, `${code} should map to HTTP ${status}`)
+      assert(body.error.code === code, `${code} should remain the safe client error code`)
+      assert(!JSON.stringify(body).includes('ABC234'), 'error response must not echo private join code')
+    }
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
