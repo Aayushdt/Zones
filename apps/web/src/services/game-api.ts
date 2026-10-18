@@ -24,6 +24,11 @@ export interface LobbyView {
   you: PlayerView
   players: PlayerView[]
   host_player_id: string
+  controller_player_id: string
+  revision: number
+  active_counts: ActiveCounts
+  can_start: boolean
+  block_reason?: string
 }
 
 export interface SimulationLobbyView extends Omit<LobbyView, 'id' | 'source' | 'code'> {
@@ -48,6 +53,8 @@ export interface JoinInput {
 export interface TeamView {
   role: Role
   active_counts: ActiveCounts
+  can_start: boolean
+  block_reason?: string
 }
 
 export interface ReadyView {
@@ -112,9 +119,10 @@ export type Unsubscribe = () => void
 export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyView> {
   createLobby(input: CreateInput): Promise<Result<Lobby>>
   joinLobby(input: JoinInput): Promise<Result<Lobby>>
+  getLobby(id: string): Promise<Result<Lobby>>
   selectTeam(id: string, role: Role | 'RANDOM'): Promise<Result<TeamView>>
   setReady(id: string, ready: boolean): Promise<Result<ReadyView>>
-  startMatch(id: string): Promise<Result<ClockView>>
+  startMatch(id: string, expectedRevision?: number): Promise<Result<ClockView>>
   syncMatch(id: string, revision?: number): Promise<Result<RoleSafeMatchView>>
   updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>>
   issueQr(id: string): Promise<Result<QrChallenge>>

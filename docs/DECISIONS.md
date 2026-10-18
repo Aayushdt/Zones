@@ -73,6 +73,14 @@
 - Added anonymous Auth session creation/refresh using the public anon key, persisted locally in a dedicated guest-session key; service-role secrets are never included in the web adapter. When web env values are absent, the form explains exactly which public names belong in `apps/web/.env.local`.
 - The Supabase endpoint has not been integration-tested against a project because no project URL/anon key were supplied and Docker access remains unavailable. Production build and Oxlint pass; route/browser interaction awaits the Playwright verification step.
 
+## Step 12: interactive private lobby and validated start
+
+- Added a real lobby view with a safe roster, team counts, Host/Ready chips, Hunter/Runner/Random selection, readiness, creator-only code sharing, manual refresh, and host-only Start. The client refreshes after mutations; Realtime arrives in Step 15.
+- Added migration `202610180004_lobby_view_start.sql` with role-safe lobby sync, shared team/readiness validation, controller-only start, revision conflict checks, and server timestamps. The API validates and projects lobby roster fields instead of returning raw RPC data.
+- Start is disabled until 3–12 active players are assigned within the balance constraints and all are ready. The API passes the last observed revision; the database serializes and verifies it before setting `HEAD_START`.
+- Typecheck, production build, Oxlint (one known React lint warning on initial async load), 5 Edge handler tests, 10 unit tests, simulator and privacy projection tests passed. Applied migrations 0001–0004 to temporary PostgreSQL and all four `tests/schema/*-smoke.sql` scripts passed, including safe lobby roster, controller-only start, stale revision rejection, and server clock values.
+- The warning is from the deliberate initial data-fetch effect in `LobbyPage`; it does not fail the lint command. Supabase Auth/Edge/RLS integration remains untested without a project and the Docker-backed local stack.
+
 ## Step 5: GameApi and MOCK adapter
 
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.

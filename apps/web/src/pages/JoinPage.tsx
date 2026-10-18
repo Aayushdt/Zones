@@ -34,6 +34,7 @@ export function JoinPage() {
       setError(result.error.message)
       return
     }
+    try { sessionStorage.setItem(`xzones.lobby.${result.data.id}.code`, normalizedCode) } catch { /* lobby remains usable without a local share-code copy */ }
     navigate(`/lobby/${result.data.id}`, { state: { lobby: result.data } })
   }
 

@@ -213,6 +213,33 @@ export async function handleRequest(request: Request): Promise<Response> {
       if (!numberIn(lastRevision, 0, Number.MAX_SAFE_INTEGER)) {
         return fail(400, 'INVALID_INPUT', 'last_revision must be a non-negative integer.')
       }
+      const lobby = await callRpc('xzones_sync_lobby', {
+        p_auth_user_id: user.id, p_match_id: syncMatch[1],
+      })
+      if (lobby.state === 'LOBBY') {
+        if (!Array.isArray(lobby.players)) return fail(503, 'INTERNAL', 'The game service could not complete this request.')
+        const players = lobby.players.flatMap((item) => {
+          if (!item || typeof item !== 'object') return []
+          const player = item as JsonObject
+          if (typeof player.id !== 'string' || typeof player.display_name !== 'string'
+            || (player.role !== null && player.role !== 'HUNTER' && player.role !== 'RUNNER')
+            || typeof player.ready !== 'boolean' || player.status !== 'ACTIVE') return []
+          return [{ id: player.id, display_name: player.display_name, role: player.role, ready: player.ready, status: 'ACTIVE' }]
+        })
+        if (typeof lobby.own_player_id !== 'string' || typeof lobby.host_player_id !== 'string'
+          || typeof lobby.controller_player_id !== 'string'
+          || typeof lobby.revision !== 'number' || !lobby.active_counts || typeof lobby.active_counts !== 'object') {
+          return fail(503, 'INTERNAL', 'The game service could not complete this request.')
+        }
+        return ok({
+          state: 'LOBBY', role: lobby.role, own_player_id: lobby.own_player_id,
+          host_player_id: lobby.host_player_id, revision: lobby.revision, players,
+          controller_player_id: lobby.controller_player_id,
+          active_counts: lobby.active_counts, can_start: lobby.can_start === true,
+          block_reason: typeof lobby.block_reason === 'string' ? lobby.block_reason : undefined,
+        })
+      }
+      if (lobby.error !== 'NOT_LOBBY') return rpcResponse(lobby)
       const result = await callRpc('xzones_sync_match', {
         p_auth_user_id: user.id,
         p_match_id: syncMatch[1],
@@ -290,6 +317,20 @@ export async function handleRequest(request: Request): Promise<Response> {
       return rpcResponse(await callRpc('xzones_set_ready', {
         p_auth_user_id: user.id, p_match_id: readyMatch[1], p_ready: body.ready,
       }))
+    }
+
+    const startMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/start$/i)
+    if (startMatch) {
+      if (!numberIn(body.expected_revision, 0, Number.MAX_SAFE_INTEGER)) {
+        return fail(400, 'INVALID_INPUT', 'expected_revision must be a non-negative integer.')
+      }
+      const result = await callRpc('xzones_start_match', {
+        p_auth_user_id: user.id, p_match_id: startMatch[1], p_expected_revision: body.expected_revision,
+      })
+      if (result.error === 'REVISION_CONFLICT') return fail(409, 'REVISION_CONFLICT', 'The lobby changed. Refresh before starting.')
+      if (result.error === 'NOT_READY') return fail(409, 'NOT_READY', 'Every player must choose a team and be ready before starting.')
+      if (result.error === 'NOT_HOST') return fail(403, 'NOT_HOST', 'Only the current host can start this match.')
+      return rpcResponse(result)
     }
 
     return fail(501, 'NOT_IMPLEMENTED', 'This game action is not available yet.')

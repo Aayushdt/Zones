@@ -4,6 +4,7 @@ import { RouteShell } from '../pages/RouteShell'
 import { HomePage } from '../pages/HomePage'
 import { CreatePage } from '../pages/CreatePage'
 import { JoinPage } from '../pages/JoinPage'
+import { LobbyPage } from '../pages/LobbyPage'
 
 export const router = createBrowserRouter([
   {
@@ -12,7 +13,7 @@ export const router = createBrowserRouter([
       { path: '/', element: <HomePage /> },
       { path: '/create', element: <CreatePage /> },
       { path: '/join', element: <JoinPage /> },
-      { path: '/lobby/:matchId', element: <RouteShell kind="lobby" /> },
+      { path: '/lobby/:matchId', element: <LobbyPage /> },
       { path: '/match/:matchId/head-start', element: <RouteShell kind="head-start" /> },
       { path: '/match/:matchId', element: <RouteShell kind="match" /> },
       { path: '/match/:matchId/pings', element: <RouteShell kind="pings" /> },

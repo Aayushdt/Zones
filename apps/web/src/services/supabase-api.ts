@@ -31,6 +31,27 @@ interface ApiLobbyResponse {
   player_id: string
   code?: string
   role?: Role | null
+  revision?: number
+}
+
+interface ApiLobbyPlayer {
+  id: string
+  display_name: string
+  role: Role | null
+  ready: boolean
+  status: 'ACTIVE' | 'TAGGED' | 'LEFT'
+}
+
+interface ApiLobbySyncResponse {
+  state: string
+  own_player_id: string
+  host_player_id: string
+  controller_player_id: string
+  revision: number
+  players: ApiLobbyPlayer[]
+  active_counts: { hunters: number; runners: number }
+  can_start: boolean
+  block_reason?: string
 }
 
 const SESSION_KEY = 'xzones.guest_session'
@@ -95,6 +116,11 @@ function asLobby(data: ApiLobbyResponse, displayName: string, code: string): Lob
     you,
     players: [you],
     host_player_id: data.player_id,
+    controller_player_id: data.player_id,
+    revision: data.revision ?? 0,
+    active_counts: { hunters: 0, runners: 0 },
+    can_start: false,
+    block_reason: 'NEEDS_TEAMS',
   }
 }
 
@@ -195,16 +221,54 @@ class SupabaseGameApi implements GameApi {
     return { ok: true, data: asLobby(result.data, input.display_name, input.code.toUpperCase()) }
   }
 
+  async getLobby(id: string): Promise<Result<LobbyView>> {
+    const result = await this.post<ApiLobbySyncResponse>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: 0 })
+    if (!result.ok) return result
+    if (result.data.state !== 'LOBBY' || !Array.isArray(result.data.players)) {
+      return error('INVALID_STATE', 'This lobby is no longer waiting for players.')
+    }
+    const you = result.data.players.find((player) => player.id === result.data.own_player_id)
+    if (!you) return error('NOT_MEMBER', 'This guest is no longer in the lobby.')
+    let code = ''
+    try { code = sessionStorage.getItem(`xzones.lobby.${id}.code`) ?? '' } catch { /* optional local copy */ }
+    return {
+      ok: true,
+      data: {
+        id,
+        source: 'REAL',
+        code,
+        state: 'LOBBY',
+        you,
+        players: result.data.players,
+        host_player_id: result.data.host_player_id,
+        controller_player_id: result.data.controller_player_id,
+        revision: result.data.revision,
+        active_counts: result.data.active_counts,
+        can_start: result.data.can_start,
+        block_reason: result.data.block_reason,
+      },
+    }
+  }
+
   async selectTeam(id: string, role: Role | 'RANDOM'): Promise<Result<TeamView>> {
-    return this.post<TeamView>(`/matches/${encodeURIComponent(id)}/team`, { role })
+    const result = await this.post<{ role: Role; counts: { hunters: number; runners: number }; can_start: boolean; block_reason?: string }>(
+      `/matches/${encodeURIComponent(id)}/team`, { role },
+    )
+    if (!result.ok) return result
+    return { ok: true, data: {
+      role: result.data.role,
+      active_counts: result.data.counts,
+      can_start: result.data.can_start,
+      block_reason: result.data.block_reason,
+    } }
   }
 
   async setReady(id: string, ready: boolean): Promise<Result<ReadyView>> {
     return this.post<ReadyView>(`/matches/${encodeURIComponent(id)}/ready`, { ready })
   }
 
-  async startMatch(id: string): Promise<Result<ClockView>> {
-    return this.post<ClockView>(`/matches/${encodeURIComponent(id)}/start`, { expected_revision: 0 })
+  async startMatch(id: string, expectedRevision = 0): Promise<Result<ClockView>> {
+    return this.post<ClockView>(`/matches/${encodeURIComponent(id)}/start`, { expected_revision: expectedRevision })
   }
 
   async syncMatch(id: string, revision = 0): Promise<Result<RoleSafeMatchView>> {

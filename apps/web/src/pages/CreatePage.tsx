@@ -55,6 +55,7 @@ export function CreatePage() {
       setError(result.error.message)
       return
     }
+    try { sessionStorage.setItem(`xzones.lobby.${result.data.id}.code`, result.data.code) } catch { /* lobby remains usable without a local share-code copy */ }
     navigate(`/lobby/${result.data.id}`, { state: { lobby: result.data } })
   }
 

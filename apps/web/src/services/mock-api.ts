@@ -1,4 +1,4 @@
-import { nextRandomRole, type Role } from '@xzones/game-core'
+import { canStartLobby, nextRandomRole, type Role } from '@xzones/game-core'
 import {
   apiError,
   type CreateInput,
@@ -35,6 +35,11 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
         you: { ...scenario.players[0] },
         players: scenario.players,
         host_player_id: scenario.host_player_id,
+        controller_player_id: scenario.host_player_id,
+        revision: 0,
+        active_counts: scenario.active_counts,
+        can_start: false,
+        block_reason: 'WAITING_FOR_READY',
       }
       return { ok: true, data: lobby }
     },
@@ -43,6 +48,11 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
         ok: false,
         error: apiError('SIM_CODE_ONLY', 'Simulator join codes are isolated from real matches.', false),
       }
+    },
+    async getLobby(id) {
+      return lobby && lobby.id === id
+        ? { ok: true, data: lobby }
+        : { ok: false, error: apiError('SIMULATION_ONLY', 'Create the fake lobby inside the simulator first.', false) }
     },
     async selectTeam(_id, nextRole) {
       if (!lobby) return notImplemented()
@@ -53,12 +63,18 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
       const players = lobby.players.map((player) => player.id === lobby?.you.id
         ? { ...player, role, ready: false }
         : player)
-      lobby = { ...lobby, you: players.find((player) => player.id === lobby?.you.id)!, players }
+      const check = canStartLobby(players)
+      const activeCounts = {
+        runners: players.filter((player) => player.status === 'ACTIVE' && player.role === 'RUNNER').length,
+        hunters: players.filter((player) => player.status === 'ACTIVE' && player.role === 'HUNTER').length,
+      }
+      lobby = { ...lobby, you: players.find((player) => player.id === lobby?.you.id)!, players,
+        revision: lobby.revision + 1, active_counts: activeCounts, can_start: check.canStart, block_reason: check.blockReason }
       return lobby
         ? { ok: true, data: { role, active_counts: {
             runners: players.filter((player) => player.role === 'RUNNER').length,
             hunters: players.filter((player) => player.role === 'HUNTER').length,
-          } } }
+          }, can_start: check.canStart, block_reason: check.blockReason } }
         : notImplemented()
     },
     async setReady(_id, ready) {
@@ -66,10 +82,10 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
       const players = lobby.players.map((player) => player.id === lobby?.you.id ? { ...player, ready } : player)
       lobby = { ...lobby, you: players.find((player) => player.id === lobby?.you.id)!, players }
       const active = players.filter((player) => player.status === 'ACTIVE')
-      const hunters = active.filter((player) => player.role === 'HUNTER').length
-      const runners = active.filter((player) => player.role === 'RUNNER').length
-      const canStart = active.length >= 3 && active.length <= 12 && hunters > 0 && runners > 0 && active.every((player) => player.ready)
-      return { ok: true, data: { ready, can_start: canStart, block_reason: canStart ? undefined : 'SIMULATION_ONLY' } }
+      const check = canStartLobby(active)
+      lobby = { ...lobby, revision: lobby.revision + 1, can_start: check.canStart,
+        active_counts: check.activeCounts, block_reason: check.blockReason }
+      return { ok: true, data: { ready, can_start: check.canStart, block_reason: check.blockReason } }
     },
     async startMatch() { return notImplemented() },
     async syncMatch() { return notImplemented() },

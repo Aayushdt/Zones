@@ -98,6 +98,7 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
   globalThis.fetch = async (input, init) => {
     const url = String(input)
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_sync_lobby')) return Response.json({ error: 'NOT_LOBBY' })
     if (url.endsWith('/rest/v1/rpc/xzones_sync_match')) {
       const args = JSON.parse(String(init?.body)) as Record<string, unknown>
       assert(args.p_last_revision === 4, 'sync should use the client revision cursor')
@@ -178,6 +179,45 @@ Deno.test('join API maps invalid, full, started, and rate-limited codes to speci
       assert(body.error.code === code, `${code} should remain the safe client error code`)
       assert(!JSON.stringify(body).includes('ABC234'), 'error response must not echo private join code')
     }
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+Deno.test('lobby sync returns only safe roster fields and start enforces revision and controller', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_sync_lobby')) return Response.json({
+      state: 'LOBBY', own_player_id: 'player-1', host_player_id: 'player-1', controller_player_id: 'player-1',
+      revision: 8, role: null, active_counts: { runners: 0, hunters: 0 }, can_start: false,
+      block_reason: 'NEEDS_TEAMS', players: [{ id: 'player-1', display_name: 'Guest', role: null, ready: false, status: 'ACTIVE', auth_user_id: 'must-not-leak' }],
+    })
+    if (url.endsWith('/rest/v1/rpc/xzones_start_match')) return Response.json({
+      state: 'HEAD_START', start_at: '2026-10-18T18:00:00Z', head_start_ends_at: '2026-10-18T18:01:00Z',
+      ends_at: '2026-10-18T18:45:00Z', revision: 9,
+    })
+    throw new Error(`Unexpected test URL: ${url}`)
+  }
+  try {
+    const lobbyResponse = await handleRequest(new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/sync', {
+      method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ last_revision: 0 }),
+    }))
+    const lobby = await lobbyResponse.json()
+    assert(lobbyResponse.status === 200 && lobby.state === 'LOBBY', 'lobby sync should succeed')
+    assert(!JSON.stringify(lobby).includes('auth_user_id'), 'lobby roster must not expose auth identities')
+    assert(lobby.players[0].display_name === 'Guest' && lobby.host_player_id === 'player-1', 'lobby safe roster/host should be present')
+
+    const started = await handleRequest(new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/start', {
+      method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ expected_revision: 8 }),
+    }))
+    assert(started.status === 200 && (await started.json()).state === 'HEAD_START', 'valid host start should return server clock state')
   } finally {
     globalThis.fetch = originalFetch
   }
