@@ -27,4 +27,4 @@
 
 - **Changed:** Added shared match timing validation used by the API; omitted Ping Off normalizes to null. The create form now exposes an Off option. Added migration 010 to constrain active-round length and ping timing at the DB boundary, and updated the create RPC to accept Ping Off. SQL smoke covers valid Ping Off, insufficient active time, and ping-after-round rejection.
 - **Check:** `pnpm test:unit` passed (16). `pnpm test:api` passed existing Edge tests (11) and hostile checks for F-03/F-04; only open F-11 is red (8/9 hostile tests pass). Fresh DB migrations and schema/lifecycle smoke passed; only outstanding F-05/F-06 audit cases are red (11/13 audit SQL scenarios pass).
-- **Commit:** pending.
+- **Commit:** `0b3ef2d` (`fix: validate match timing and support ping off`).
