@@ -52,3 +52,9 @@
 - **Changed:** Server derives an effective capture timestamp clamped between receipt time and 60 seconds earlier. Fixes older than the 60-second window are not allowed to masquerade as fresh. Ping snapshot status/age and teammate position age/staleness now use captured time. Accepted location uploads are throttled if the previous accepted fix was less than two seconds ago.
 - **Check:** `pnpm test:db` passed all migrations, schema/lifecycle tests, and 14/14 audit scenarios. The stale Runner fixture intentionally uses a fresh received_at with a 70-second-old captured_at and verifies STALE status, removed coordinates, and captured-time age. Location smoke verifies timestamp bounds and throttling.
 - **Commit:** `3b11f92` (`fix: derive location age from clamped fix time`).
+
+## Step 7 — join protection and host removal
+
+- **Changed:** Join RPC now consumes per-session and HMAC-derived per-IP buckets before lobby-code lookup for every well-formed join attempt. Added pre-start controller-only player removal, a persistent removed marker that blocks rejoin, DELETE routing, and a host-only lobby Remove button. Removal rejects self and post-start requests.
+- **Check:** `pnpm test:api` passed 11/11 Edge tests and 9/9 hostile API tests; `pnpm test:db` passed all schema/lifecycle checks and 14/14 audit SQL scenarios, including 5/10 minute IP bucket behavior and removal/rejoin/authorization cases; `pnpm typecheck` passed.
+- **Commit:** pending.

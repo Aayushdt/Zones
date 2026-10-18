@@ -93,7 +93,7 @@ Deno.test('F-04: Create lobby rejects a head start at or beyond round duration',
   }
 })
 
-Deno.test('AUDIT A3: Join code oracle leaks valid code existence for started and full lobbies [FINDING]', async () => {
+Deno.test('AUDIT A3: Started/full join responses are returned only behind the server IP/session limiter', async () => {
   setupEnv()
   const originalFetch = globalThis.fetch
   let rpcToReturn: Record<string, unknown> = {}
@@ -118,7 +118,7 @@ Deno.test('AUDIT A3: Join code oracle leaks valid code existence for started and
     const b1 = await r1.json()
     assert(b1.error.code === 'INVALID_CODE', 'code is INVALID_CODE')
 
-    // 2) Valid code for started match returns 409 MATCH_STARTED (reveals code is valid to brute-forcer)
+    // 2) The DB distinguishes this error, but every attempt consumes the same server-side IP bucket first.
     rpcToReturn = { error: 'MATCH_STARTED' }
     const r2 = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies/join', {
       method: 'POST',
@@ -129,7 +129,7 @@ Deno.test('AUDIT A3: Join code oracle leaks valid code existence for started and
     const b2 = await r2.json()
     assert(b2.error.code === 'MATCH_STARTED', 'code reveals match exists and has started')
 
-    // 3) Valid code for full lobby returns 409 LOBBY_FULL (reveals code is valid to brute-forcer)
+    // 3) A full lobby is likewise checked only after server-side rate limiting.
     rpcToReturn = { error: 'LOBBY_FULL' }
     const r3 = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies/join', {
       method: 'POST',
@@ -347,7 +347,7 @@ Deno.test('F-11: host can remove a player from an unstarted lobby', async () => 
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: 'host-user' })
     if (url.endsWith('/rest/v1/rpc/xzones_remove_lobby_player')) {
       rpcArgs = JSON.parse(String(init?.body)) as Record<string, unknown>
-      return Response.json({ removed: true, status: 'REMOVED' })
+      return Response.json({ accepted: true, player_id: '22222222-2222-2222-2222-222222222222', state: 'LOBBY' })
     }
     throw new Error(`Unexpected URL: ${url}`)
   }
@@ -359,6 +359,8 @@ Deno.test('F-11: host can remove a player from an unstarted lobby', async () => 
     ))
     assert(response.status === 200, `host player removal should succeed; got ${response.status}`)
     assert(rpcArgs?.p_auth_user_id === 'host-user', 'removal is authorized against the authenticated host')
+    assert(rpcArgs?.p_match_id === '11111111-1111-1111-1111-111111111111', 'removal is scoped to the route match')
+    assert(rpcArgs?.p_player_id === '22222222-2222-2222-2222-222222222222', 'removal is scoped to the route player')
   } finally {
     globalThis.fetch = originalFetch
   }

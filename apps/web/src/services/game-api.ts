@@ -63,6 +63,8 @@ export interface ReadyView {
   block_reason?: string
 }
 
+export interface RemovePlayerResult { accepted: boolean; player_id: string; state: 'LOBBY' }
+
 export interface ClockView {
   state: 'HEAD_START' | 'ACTIVE' | 'ENDED'
   server_now: string
@@ -127,6 +129,7 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   createLobby(input: CreateInput): Promise<Result<Lobby>>
   joinLobby(input: JoinInput): Promise<Result<Lobby>>
   getLobby(id: string): Promise<Result<Lobby>>
+  removeLobbyPlayer(id: string, playerId: string): Promise<Result<RemovePlayerResult>>
   selectTeam(id: string, role: Role | 'RANDOM'): Promise<Result<TeamView>>
   setReady(id: string, ready: boolean): Promise<Result<ReadyView>>
   startMatch(id: string, expectedRevision?: number): Promise<Result<ClockView>>

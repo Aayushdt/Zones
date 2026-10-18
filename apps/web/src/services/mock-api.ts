@@ -54,6 +54,9 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
         ? { ok: true, data: lobby }
         : { ok: false, error: apiError('SIMULATION_ONLY', 'Create the fake lobby inside the simulator first.', false) }
     },
+    async removeLobbyPlayer() {
+      return { ok: false, error: apiError('SIMULATION_ONLY', 'Player removal is available only in real lobbies.', false) }
+    },
     async selectTeam(_id, nextRole) {
       if (!lobby) return notImplemented()
       if (nextRole === 'RANDOM') {

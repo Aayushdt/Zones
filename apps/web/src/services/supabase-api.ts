@@ -14,6 +14,7 @@ import {
   type QrChallenge,
   type ReadyView,
   type Result,
+  type RemovePlayerResult,
   type RoleSafeMatchView,
   type SafeHandlers,
   type TagResult,
@@ -179,7 +180,7 @@ class SupabaseGameApi implements GameApi {
     }
   }
 
-  private async post<T>(path: string, body: object, retry = true): Promise<Result<T>> {
+  private async post<T>(path: string, body: object, retry = true, method: 'POST' | 'DELETE' = 'POST'): Promise<Result<T>> {
     const config = settings()
     if (!config) {
       return error('CONFIG_REQUIRED', 'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to apps/web/.env.local, then restart Vite.')
@@ -189,7 +190,7 @@ class SupabaseGameApi implements GameApi {
 
     try {
       const response = await fetch(`${config.url}/functions/v1/api${path}`, {
-        method: 'POST',
+        method,
         headers: {
           apikey: config.anonKey,
           authorization: `Bearer ${session.data.access_token}`,
@@ -201,7 +202,7 @@ class SupabaseGameApi implements GameApi {
       if (response.status === 401 && retry) {
         const refreshed = await this.getSession(true)
         if (!refreshed.ok) return refreshed
-        return this.post<T>(path, body, false)
+        return this.post<T>(path, body, false, method)
       }
       if (!response.ok) return { ok: false, error: parseApiError(payload, response.status) }
       return { ok: true, data: payload as T }
@@ -249,6 +250,10 @@ class SupabaseGameApi implements GameApi {
         block_reason: result.data.block_reason,
       },
     }
+  }
+
+  async removeLobbyPlayer(id: string, playerId: string): Promise<Result<RemovePlayerResult>> {
+    return this.post<RemovePlayerResult>(`/matches/${encodeURIComponent(id)}/players/${encodeURIComponent(playerId)}`, {}, true, 'DELETE')
   }
 
   async selectTeam(id: string, role: Role | 'RANDOM'): Promise<Result<TeamView>> {

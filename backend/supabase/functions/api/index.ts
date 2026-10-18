@@ -5,7 +5,7 @@ type JsonObject = Record<string, unknown>
 const corsHeaders = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info',
-  'access-control-allow-methods': 'POST, OPTIONS',
+  'access-control-allow-methods': 'POST, DELETE, OPTIONS',
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',
 }
@@ -112,6 +112,8 @@ function rpcResponse(result: JsonObject): Response {
   if (error === 'LOBBY_FULL') return fail(409, error, 'This lobby already has 12 players.')
   if (error === 'MATCH_STARTED') return fail(409, error, 'This match has already started.')
   if (error === 'ALREADY_MEMBER') return fail(409, error, 'This guest is already in the lobby.')
+  if (error === 'REMOVED_FROM_LOBBY') return fail(403, error, 'The host removed this guest from the lobby.')
+  if (error === 'CANNOT_REMOVE_SELF') return fail(400, error, 'The host cannot remove themself from the lobby.')
   if (error === 'INVALID_STATE') return fail(409, error, 'This action is not available in the current match state.')
   if (error === 'NOT_MEMBER') return fail(403, error, 'Join this private lobby before changing it.')
   if (error === 'TEAM_NOT_SELECTED') return fail(409, error, 'Choose a team before this match can sync.')
@@ -154,7 +156,11 @@ function finiteIn(value: unknown, min: number, max: number): value is number {
 
 export async function handleRequest(request: Request): Promise<Response> {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders })
-  if (request.method !== 'POST') return fail(405, 'METHOD_NOT_ALLOWED', 'Use POST for game actions.')
+  const url = new URL(request.url)
+  const path = url.pathname.replace(/^\/functions\/v1\/api/, '').replace(/^\/api/, '')
+  const removePlayerPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/players\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i)
+  const isRemovePlayer = request.method === 'DELETE' && removePlayerPath !== null
+  if (request.method !== 'POST' && !isRemovePlayer) return fail(405, 'METHOD_NOT_ALLOWED', 'Use a supported game action method.')
 
   let user: { id: string } | null
   try {
@@ -164,11 +170,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   }
   if (!user) return fail(401, 'UNAUTHENTICATED', 'Start a guest session and try again.')
 
-  const body = await parseBody(request)
+  const body = isRemovePlayer ? {} : await parseBody(request)
   if (!body) return fail(400, 'INVALID_JSON', 'Send a JSON object no larger than 16 KB.')
-
-  const url = new URL(request.url)
-  const path = url.pathname.replace(/^\/functions\/v1\/api/, '').replace(/^\/api/, '')
 
   try {
     const syncPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/sync$/i)
@@ -436,6 +439,12 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (leaveMatch) {
       return rpcResponse(await callRpc('xzones_leave_match', {
         p_auth_user_id: user.id, p_match_id: leaveMatch[1],
+      }))
+    }
+
+    if (isRemovePlayer && removePlayerPath) {
+      return rpcResponse(await callRpc('xzones_remove_lobby_player', {
+        p_auth_user_id: user.id, p_match_id: removePlayerPath[1], p_player_id: removePlayerPath[2],
       }))
     }
 
