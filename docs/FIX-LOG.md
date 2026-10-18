@@ -33,4 +33,4 @@
 
 - **Changed:** Added a service-role-only `xzones_advance_match_state` path that delegates to the server-time outcome resolver; QR issuance now invokes it before checking match state. This transitions an expired head start to ACTIVE and resolves expired/empty matches before an action proceeds.
 - **Check:** Fresh migration chain, schema smoke, lifecycle smoke, ping no-sync-gap smoke, and audit SQL ran via `pnpm test:db`. F-01 and F-05 pass; 12/13 audit scenarios pass, with only the pending F-06 retry assertion red. Existing Edge API tests passed 11/11. (The API hostile suite was last run after Step 2 and retains only F-11 as a known red case.)
-- **Commit:** pending.
+- **Commit:** `eb93ab8` (`fix: advance expired head starts before QR issuance`).
