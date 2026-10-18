@@ -1,8 +1,42 @@
 import { handleRequest } from './index.ts'
+import { publishRoleEvents } from './broadcast.ts'
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
 }
+
+Deno.test('low-frequency Realtime events are role-projected, private, and best-effort', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  const sent: Array<{ url: string; headers: Headers; payload: Record<string, unknown> }> = []
+  globalThis.fetch = async (input, init) => {
+    sent.push({ url: String(input), headers: new Headers(init?.headers), payload: JSON.parse(String(init?.body)) })
+    return new Response(null, { status: 202 })
+  }
+  const matchId = '63adbd40-4fc6-4d7c-b7a8-1f18f97496a3'
+  const events = [
+    { event_id: 'state-1', match_id: matchId, revision: 7, server_at: '2026-10-19T00:00:00Z', type: 'match.state',
+      data: { state: 'ACTIVE', server_now: '2026-10-19T00:00:00Z', ends_at: '2026-10-19T00:45:00Z', active_counts: { hunters: 1, runners: 2 } } },
+    { event_id: 'ping-1', match_id: matchId, revision: 7, server_at: '2026-10-19T00:00:00Z', type: 'hunter.runner_ping',
+      data: { runner_id: 'runner-1', status: 'OK', lat: 1, lon: 2, accuracy_m: 5, captured_at: '2026-10-19T00:00:00Z', ping_at: '2026-10-19T00:00:00Z', age_seconds: 0, ping_index: 0 } },
+    { event_id: 'live-1', match_id: matchId, revision: 7, server_at: '2026-10-19T00:00:00Z', type: 'team.location_live',
+      data: { player_id: 'runner-1', team_role: 'RUNNER', lat: 1, lon: 2, accuracy_m: 5, captured_at: '2026-10-19T00:00:00Z', age_seconds: 0, is_stale: false } },
+  ]
+  try {
+    await publishRoleEvents(matchId, events)
+    assert(sent.length === 3, 'should send state to both role topics and ping only to Hunters; live location is reserved for Step 9c')
+    const topicOf = (message: { url: string }) => decodeURIComponent(new URL(message.url).pathname.split('/api/broadcast/')[1].split('/events/')[0])
+    assert(sent.filter((message) => topicOf(message).endsWith(':hunter')).length === 2, 'Hunter topic should receive state and its scheduled ping')
+    assert(sent.filter((message) => topicOf(message).endsWith(':runner')).length === 1, 'Runner topic should receive only safe state')
+    assert(sent.every((message) => message.url.includes('?private=true') && message.url.includes('/events/xzones.event')), 'broadcasts must use the private shared event name')
+    assert(sent.every((message) => message.headers.get('apikey') === 'server-test-key'), 'server API key must authenticate REST publishing')
+    assert(sent.filter((message) => topicOf(message).endsWith(':runner')).every((message) => !JSON.stringify(message.payload).includes('runner-1')), 'Runner topic must never receive the Hunter-only ping')
+  } finally { globalThis.fetch = originalFetch }
+
+  globalThis.fetch = async () => { throw new Error('Realtime unavailable') }
+  try { await publishRoleEvents(matchId, events) } finally { globalThis.fetch = originalFetch }
+})
 
 Deno.test('api router handles CORS, method and guest-auth errors without leaking details', async () => {
   const options = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies', { method: 'OPTIONS' }))
@@ -96,9 +130,16 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
   let requestedRole: 'HUNTER' | 'RUNNER' = 'RUNNER'
   let requestedStatus: 'ACTIVE' | 'TAGGED' = 'ACTIVE'
   let teamPositionsCalled = false
+  const published: Array<{ topic: string; payload: Record<string, unknown> }> = []
   const originalFetch = globalThis.fetch
   globalThis.fetch = async (input, init) => {
     const url = String(input)
+    if (url.includes('/rest/v1/matches?')) return Response.json([{ revision: 9, state: 'ACTIVE', ends_at: '2026-10-18T18:45:00Z' }])
+    if (url.includes('/realtime/v1/api/broadcast/')) {
+      const topic = decodeURIComponent(new URL(url).pathname.split('/api/broadcast/')[1].split('/events/')[0])
+      published.push({ topic, payload: JSON.parse(String(init?.body)) as Record<string, unknown> })
+      return new Response(null, { status: 202 })
+    }
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
     if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({ deleted_matches: 0 })
     if (url.endsWith('/rest/v1/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
@@ -158,7 +199,10 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     assert(runner.events.some((event: { type: string; data: { player_id?: string } }) => event.type === 'team.location_live' && event.data.player_id === 'same-team'), 'Runner should receive live Runner teammate positions')
     assert(!JSON.stringify(runner).includes('opposing-player'), 'Runner response leaked a Hunter teammate position')
     assert(runner.own_status === 'ACTIVE', 'sync should return the caller own active status')
+    assert(published.some((event) => event.topic.endsWith(':runner') && event.payload.type === 'runner.location_revealed'), 'Runner generic ping notice should publish to the Runner topic')
+    assert(!published.some((event) => event.topic.endsWith(':runner') && event.payload.type === 'hunter.runner_ping'), 'Hunter-only snapshots must not publish to the Runner topic')
 
+    published.length = 0
     const hunterResponse = await syncAs('HUNTER')
     const hunter = await hunterResponse.json()
     assert(hunterResponse.status === 200, 'Hunter sync should succeed')
@@ -166,6 +210,8 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     assert(!JSON.stringify(hunter).includes('hunter_coordinates'), 'Hunter response leaked hidden extra metadata')
     assert(hunter.events.some((event: { type: string; data: { player_id?: string } }) => event.type === 'team.location_live' && event.data.player_id === 'same-team'), 'Hunter should receive live Hunter teammate positions')
     assert(!JSON.stringify(hunter).includes('opposing-player'), 'Hunter response leaked a Runner live position')
+    assert(published.some((event) => event.topic.endsWith(':hunter') && event.payload.type === 'hunter.runner_ping'), 'scheduled ping snapshots should publish to Hunters')
+    assert(!published.some((event) => event.topic.endsWith(':runner') && event.payload.type === 'hunter.runner_ping'), 'Hunter snapshots must never publish to the Runner topic')
 
     const taggedResponse = await syncAs('RUNNER', 'TAGGED')
     const tagged = await taggedResponse.json()
@@ -173,6 +219,7 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     assert(tagged.own_status === 'TAGGED', 'sync should expose only the caller tagged status')
     assert(!teamPositionsCalled, 'tagged Runner must not trigger live team-location reads')
     assert(!tagged.events.some((event: { type: string }) => event.type === 'team.location_live'), 'tagged Runner must not receive live locations')
+    assert(!teamPositionsCalled, 'tagged Runner must not trigger live team-location reads')
   } finally {
     globalThis.fetch = originalFetch
   }

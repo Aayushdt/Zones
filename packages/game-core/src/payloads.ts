@@ -80,7 +80,8 @@ function projectData(role: RecipientRole, type: string, data: Data): Data | null
     case 'player.left':
       return { player_id: text(data.player_id), status: data.status === 'LEFT' ? 'LEFT' : null }
     case 'match.host_migrated':
-      return { controller_player_id: text(data.controller_player_id), claim_expires_at: text(data.claim_expires_at) }
+      return { controller_player_id: text(data.controller_player_id),
+        claim_expires_at: data.claim_expires_at === null ? null : text(data.claim_expires_at) }
     case 'match.ended':
       return { state: data.state === 'ENDED' || data.state === 'CANCELLED' ? data.state : null,
         winner: data.winner === 'HUNTER' || data.winner === 'RUNNER' ? data.winner : null,

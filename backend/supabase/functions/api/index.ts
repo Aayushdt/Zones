@@ -1,4 +1,5 @@
 import { projectEventForRole } from './payloads.ts'
+import { publishRoleEvents } from './broadcast.ts'
 import { isValidMatchConfig } from '../../../../packages/game-core/src/config.ts'
 type JsonObject = Record<string, unknown>
 
@@ -99,6 +100,86 @@ async function callRpc(name: string, args: JsonObject): Promise<JsonObject> {
   return result && typeof result === 'object' && !Array.isArray(result)
     ? result as JsonObject
     : { error: 'INTERNAL' }
+}
+
+async function matchContext(matchId: string): Promise<{ revision: number; state: string; ends_at: string | null; controller_player_id: string | null; claim_expires_at: string | null } | null> {
+  try {
+    const baseUrl = requiredEnv('SUPABASE_URL'), key = requiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+    const query = new URLSearchParams({ select: 'revision,state,ends_at,controller_player_id,claim_expires_at', id: `eq.${matchId}`, limit: '1' })
+    const response = await fetch(`${baseUrl}/rest/v1/matches?${query}`, {
+      headers: { apikey: key, authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(1_500),
+    })
+    if (!response.ok) return null
+    const rows = await response.json() as Array<{ revision?: unknown; state?: unknown; ends_at?: unknown; controller_player_id?: unknown; claim_expires_at?: unknown }>
+    const row = rows[0]
+    return row && typeof row.revision === 'number' && typeof row.state === 'string'
+      ? { revision: row.revision, state: row.state, ends_at: typeof row.ends_at === 'string' ? row.ends_at : null,
+        controller_player_id: typeof row.controller_player_id === 'string' ? row.controller_player_id : null,
+        claim_expires_at: typeof row.claim_expires_at === 'string' ? row.claim_expires_at : null } : null
+  } catch { return null }
+}
+
+async function ownPlayerId(matchId: string, authUserId: string): Promise<string | null> {
+  try {
+    const baseUrl = requiredEnv('SUPABASE_URL'), key = requiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+    const query = new URLSearchParams({ select: 'id', match_id: `eq.${matchId}`, auth_user_id: `eq.${authUserId}`, limit: '1' })
+    const response = await fetch(`${baseUrl}/rest/v1/players?${query}`, {
+      headers: { apikey: key, authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(1_500),
+    })
+    if (!response.ok) return null
+    const rows = await response.json() as Array<{ id?: unknown }>
+    return typeof rows[0]?.id === 'string' ? rows[0].id : null
+  } catch { return null }
+}
+
+function eventEnvelope(matchId: string, revision: number, serverAt: string, type: string, data: JsonObject, suffix: string) {
+  return { event_id: `${matchId}:${revision}:${type}:${suffix}`, match_id: matchId, revision, server_at: serverAt, type, data }
+}
+
+async function publishActionEvent(matchId: string, type: string, data: JsonObject, suffix: string, serverAt?: string) {
+  const context = await matchContext(matchId)
+  if (!context) return
+  const at = serverAt ?? new Date().toISOString()
+  const event = eventEnvelope(matchId, context.revision, at, type, data, suffix)
+  await publishRoleEvents(matchId, [event])
+}
+
+async function publishLobbyEvent(authUserId: string, matchId: string, type: string, data: JsonObject, suffix: string) {
+  try {
+    const snapshot = await callRpc('xzones_sync_lobby', { p_auth_user_id: authUserId, p_match_id: matchId })
+    if (snapshot.error || snapshot.state !== 'LOBBY' || typeof snapshot.revision !== 'number') return
+    const eventData = type === 'lobby.readiness' && typeof snapshot.own_player_id === 'string'
+      ? { ...data, player_id: snapshot.own_player_id } : data
+    const envelope = eventEnvelope(matchId, snapshot.revision, new Date().toISOString(), type, eventData, suffix)
+    await publishRoleEvents(matchId, [envelope])
+  } catch {
+    // Read-after-write publication metadata is best-effort; the committed lobby mutation stays successful.
+  }
+}
+
+async function publishTagResult(matchId: string, tagResult: JsonObject) {
+  if (tagResult.accepted !== true || typeof tagResult.tag_id !== 'string') return
+  try {
+    const baseUrl = requiredEnv('SUPABASE_URL'), key = requiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+    const query = new URLSearchParams({ select: 'runner_id,method,accepted_at', id: `eq.${tagResult.tag_id}`, match_id: `eq.${matchId}`, limit: '1' })
+    const response = await fetch(`${baseUrl}/rest/v1/tags?${query}`, {
+      headers: { apikey: key, authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(1_500),
+    })
+    if (!response.ok) return
+    const rows = await response.json() as Array<{ runner_id?: unknown; method?: unknown; accepted_at?: unknown }>
+    const tag = rows[0]
+    if (!tag || typeof tag.runner_id !== 'string' || typeof tag.method !== 'string' || typeof tag.accepted_at !== 'string') return
+    await publishActionEvent(matchId, 'tag.accepted', {
+      runner_id: tag.runner_id, status: 'TAGGED', method: tag.method, accepted_at: tag.accepted_at,
+    }, tagResult.tag_id, tag.accepted_at)
+    if (tagResult.state === 'ENDED') {
+      await publishActionEvent(matchId, 'match.ended', {
+        state: 'ENDED', winner: tagResult.winner, end_reason: 'ALL_RUNNERS_TAGGED_OR_LEFT', ended_at: tag.accepted_at,
+      }, `tag:${tagResult.tag_id}`, tag.accepted_at)
+    }
+  } catch {
+    // A committed tag remains successful even when Realtime or the event lookup is unavailable.
+  }
 }
 
 function rpcResponse(result: JsonObject): Response {
@@ -218,7 +299,14 @@ export async function handleRequest(request: Request): Promise<Response> {
           p_zone_lon: zoneLon ?? null,
           p_zone_diameter_m: body.zone_diameter_m ?? null,
         })
-        if (result.error !== 'CODE_COLLISION') return rpcResponse({ ...result, code })
+        if (result.error !== 'CODE_COLLISION') {
+          if (!result.error && typeof result.match_id === 'string' && typeof result.code_expires_at === 'string') {
+            const context = await matchContext(result.match_id)
+            if (context) await publishRoleEvents(result.match_id, [eventEnvelope(result.match_id, context.revision,
+              new Date().toISOString(), 'lobby.created', { match_id: result.match_id, code_expires_at: result.code_expires_at, revision: context.revision }, 'created')])
+          }
+          return rpcResponse({ ...result, code })
+        }
       }
       return fail(503, 'RETRY_CREATE', 'Could not reserve a lobby code. Please try again.')
     }
@@ -238,14 +326,20 @@ export async function handleRequest(request: Request): Promise<Response> {
       const failedBucket = await hmac(rateSecret, `join-failed:${address}`)
       const codeHash = await hmac(requiredEnv('JOIN_CODE_HMAC_SECRET'), normalizedCode)
       const capHash = await sha256(randomBytes(32))
-      return rpcResponse(await callRpc('xzones_join_lobby', {
+      const joined = await callRpc('xzones_join_lobby', {
         p_auth_user_id: user.id,
         p_user_bucket_key: bytea(userBucket),
         p_failed_bucket_key: bytea(failedBucket),
         p_display_name: body.display_name.trim(),
         p_code_hash: bytea(codeHash),
         p_session_cap_hash: bytea(capHash),
-      }))
+      })
+      if (!joined.error && typeof joined.match_id === 'string' && typeof joined.player_id === 'string') {
+        await publishActionEvent(joined.match_id, 'lobby.player_joined', {
+          player_id: joined.player_id, display_name: body.display_name.trim(), status: 'ACTIVE',
+        }, joined.player_id)
+      }
+      return rpcResponse(joined)
     }
 
     const syncMatch = syncPath
@@ -369,6 +463,7 @@ export async function handleRequest(request: Request): Promise<Response> {
         if (notice) events.push(notice)
       }
 
+      await publishRoleEvents(syncMatch[1], events)
       return ok({
         role,
         state: matchState,
@@ -391,17 +486,32 @@ export async function handleRequest(request: Request): Promise<Response> {
     const teamMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/team$/i)
     if (teamMatch) {
       if (typeof body.role !== 'string') return fail(400, 'INVALID_ROLE', 'Choose Hunter, Runner, or Random.')
-      return rpcResponse(await callRpc('xzones_select_team', {
+      const result = await callRpc('xzones_select_team', {
         p_auth_user_id: user.id, p_match_id: teamMatch[1], p_role: body.role.toUpperCase(),
-      }))
+      })
+      if (!result.error && result.counts && typeof result.counts === 'object') {
+        const counts = result.counts as JsonObject
+        await publishLobbyEvent(user.id, teamMatch[1], 'lobby.teams', {
+          hunter_count: counts.hunters, runner_count: counts.runners,
+          own_role: result.role, can_start: result.can_start === true,
+        }, `teams:${String(result.role)}`)
+      }
+      return rpcResponse(result)
     }
 
     const readyMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/ready$/i)
     if (readyMatch) {
       if (typeof body.ready !== 'boolean') return fail(400, 'INVALID_INPUT', 'Ready must be true or false.')
-      return rpcResponse(await callRpc('xzones_set_ready', {
+      const result = await callRpc('xzones_set_ready', {
         p_auth_user_id: user.id, p_match_id: readyMatch[1], p_ready: body.ready,
-      }))
+      })
+      if (!result.error) {
+        await publishLobbyEvent(user.id, readyMatch[1], 'lobby.readiness', {
+          ready: body.ready,
+          can_start: result.can_start === true, block_reason: result.block_reason,
+        }, `ready:${body.ready}`)
+      }
+      return rpcResponse(result)
     }
 
     const qrMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/qr$/i)
@@ -427,34 +537,52 @@ export async function handleRequest(request: Request): Promise<Response> {
       const result = await callRpc('xzones_scan_qr', {
         p_auth_user_id: user.id, p_match_id: scanMatch[1], p_token_hash: bytea(await sha256(tokenBytes)),
       })
+      if (!result.error) await publishTagResult(scanMatch[1], result)
       return rpcResponse(result)
     }
 
     const confirmTagMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/tag\/confirm$/i)
     if (confirmTagMatch) {
-      return rpcResponse(await callRpc('xzones_confirm_tag', {
+      const result = await callRpc('xzones_confirm_tag', {
         p_auth_user_id: user.id, p_match_id: confirmTagMatch[1],
-      }))
+      })
+      if (!result.error) await publishTagResult(confirmTagMatch[1], result)
+      return rpcResponse(result)
     }
 
     const leaveMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/leave$/i)
     if (leaveMatch) {
-      return rpcResponse(await callRpc('xzones_leave_match', {
+      const playerId = await ownPlayerId(leaveMatch[1], user.id)
+      const result = await callRpc('xzones_leave_match', {
         p_auth_user_id: user.id, p_match_id: leaveMatch[1],
-      }))
+      })
+      if (!result.error && playerId) await publishActionEvent(leaveMatch[1], 'player.left', { player_id: playerId, status: 'LEFT' }, `left:${playerId}`)
+      return rpcResponse(result)
     }
 
     if (isRemovePlayer && removePlayerPath) {
-      return rpcResponse(await callRpc('xzones_remove_lobby_player', {
+      const removed = await callRpc('xzones_remove_lobby_player', {
         p_auth_user_id: user.id, p_match_id: removePlayerPath[1], p_player_id: removePlayerPath[2],
-      }))
+      })
+      if (!removed.error && typeof removed.player_id === 'string') {
+        await publishLobbyEvent(user.id, removePlayerPath[1], 'player.left', { player_id: removed.player_id, status: 'LEFT' }, `left:${removed.player_id}`)
+      }
+      return rpcResponse(removed)
     }
 
     const claimMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/host-claim$/i)
     if (claimMatch) {
-      return rpcResponse(await callRpc('xzones_claim_controller', {
+      const claimed = await callRpc('xzones_claim_controller', {
         p_auth_user_id: user.id, p_match_id: claimMatch[1],
-      }))
+      })
+      if (!claimed.error && typeof claimed.controller_player_id === 'string') {
+        const context = await matchContext(claimMatch[1])
+        if (context) await publishRoleEvents(claimMatch[1], [eventEnvelope(claimMatch[1], context.revision,
+          new Date().toISOString(), 'match.host_migrated', {
+            controller_player_id: claimed.controller_player_id, claim_expires_at: context.claim_expires_at,
+          }, `host:${claimed.controller_player_id}`)])
+      }
+      return rpcResponse(claimed)
     }
 
     const endMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/end$/i)
@@ -466,9 +594,13 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_auth_user_id: user.id, p_match_id: endMatch[1], p_reason: body.reason,
       })
       if (typeof ended.error === 'string') return rpcResponse(ended)
-      return rpcResponse(await callRpc('xzones_match_result', {
+      const result = await callRpc('xzones_match_result', {
         p_auth_user_id: user.id, p_match_id: endMatch[1],
-      }))
+      })
+      if (!result.error) await publishActionEvent(endMatch[1], 'match.ended', {
+        state: ended.state, winner: result.winner, end_reason: result.end_reason, ended_at: result.ended_at,
+      }, `end:${String(result.ended_at)}`, typeof result.ended_at === 'string' ? result.ended_at : undefined)
+      return rpcResponse(result)
     }
 
     const resultMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/result$/i)
@@ -504,6 +636,13 @@ export async function handleRequest(request: Request): Promise<Response> {
       if (result.error === 'REVISION_CONFLICT') return fail(409, 'REVISION_CONFLICT', 'The lobby changed. Refresh before starting.')
       if (result.error === 'NOT_READY') return fail(409, 'NOT_READY', 'Every player must choose a team and be ready before starting.')
       if (result.error === 'NOT_HOST') return fail(403, 'NOT_HOST', 'Only the current host can start this match.')
+      if (!result.error && typeof result.revision === 'number' && typeof result.start_at === 'string') {
+        const envelope = eventEnvelope(startMatch[1], result.revision, result.start_at, 'match.started', {
+          state: result.state, start_at: result.start_at, head_start_ends_at: result.head_start_ends_at,
+          ends_at: result.ends_at, revision: result.revision,
+        }, `started:${result.revision}`)
+        await publishRoleEvents(startMatch[1], [envelope])
+      }
       return rpcResponse(result)
     }
 
