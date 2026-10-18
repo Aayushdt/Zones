@@ -49,6 +49,14 @@
 - Added capture tests that project every declared event for both roles and recursively check emitted keys against hidden coordinates, opponent distance/direction, marker metadata, auth IDs, capabilities, code/token fields, and raw-fix fields. Runner `hunter.runner_ping` and Hunter `runner.location_revealed` events are dropped; Hunter never receives live Runner `team.location_live` events. `NO_FIX` and `STALE` snapshots always drop coordinates.
 - `corepack pnpm verify:payloads` passed (2 tests); Deno type checks passed. Realtime topics/RLS are still not integration-tested; those are implemented in Step 15.
 
+## Step 9: simulator clock and shared rules
+
+- Split pure domain types and rule functions into `packages/game-core/src/types.ts` and `rules.ts`; added Vitest 5.0.5 pinned for Node 24 and a 10-case deterministic suite.
+- Added balance/readiness rules, Random-team assignment, strict server-deadline tag tie (`accepted_at < ends_at` only), ACTIVE outcomes for all Runners tagged/left, all Hunters left, and timer expiry, plus lazy ping scheduling that returns only the newest newly-due slot.
+- Outcome ordering when both teams empty in the same serialized transition is not specified by the plan: Runner elimination is checked first, yielding a Hunter win. This follows the explicit all-Runners-eliminated rule.
+- Added a fixed-seed three-fake-player simulator scenario (1 Hunter / 2 Runners), a fixed epoch clock, and a dev-only clock-advance control. Production build still omits the simulator route.
+- Vitest passed 10/10 cases; deterministic simulator check passed 1/1; game-core typecheck, web production build, and Oxlint passed.
+
 ## Step 5: GameApi and MOCK adapter
 
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.

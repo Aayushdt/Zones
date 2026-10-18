@@ -195,6 +195,16 @@
   font-family: var(--font-mono);
 }
 
+.simulator-clock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
 @media (max-width: 360px) {
   .route-shell {
     width: calc(100% - 2rem);
