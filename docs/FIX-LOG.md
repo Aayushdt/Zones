@@ -58,3 +58,9 @@
 - **Changed:** Join RPC now consumes per-session and HMAC-derived per-IP buckets before lobby-code lookup for every well-formed join attempt. Added pre-start controller-only player removal, a persistent removed marker that blocks rejoin, DELETE routing, and a host-only lobby Remove button. Removal rejects self and post-start requests.
 - **Check:** `pnpm test:api` passed 11/11 Edge tests and 9/9 hostile API tests; `pnpm test:db` passed all schema/lifecycle checks and 14/14 audit SQL scenarios, including 5/10 minute IP bucket behavior and removal/rejoin/authorization cases; `pnpm typecheck` passed.
 - **Commit:** `5645f6a` (`fix: rate limit joins and let hosts remove lobby players`).
+
+## Step 8 — tagged-player and active-screen lifecycle
+
+- **Changed:** Added migration 015 so tagged participants can sync only their own status and clock/control state; the API skips teammate-location reads for tagged players. The client stops GPS and clears its location on tagged status. ACTIVE match screens request a screen wake lock, release it while hidden or unmounted, and reacquire when visible. Added Edge, database, and device-lifecycle regressions.
+- **Check:** `pnpm test:api` passed 11 Edge tests and 9 hostile tests after adding the tagged-sync assertion (including no teammate-location RPC). `pnpm test:audit` passed 23/23, production typecheck/build passed, and the fresh native PostgreSQL harness passed migration/schema/lifecycle checks and 14/14 audit scenarios including tagged Runner status/no notice. `git diff --check` passed.
+- **Commit:** `a61c62a` (`fix: stop tagged runner location sharing`).
