@@ -23,6 +23,7 @@ function App() {
         >
           {theme === 'dusk' ? 'Paper' : 'Dusk'} theme
         </button>
+        <Link className="welcome__theme" to="/settings">Settings</Link>
       </div>
     </header>
   )

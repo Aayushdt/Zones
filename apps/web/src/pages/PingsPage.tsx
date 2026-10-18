@@ -3,6 +3,7 @@ import { mergeLatestPings } from '@xzones/game-core'
 import { Link, useParams } from 'react-router-dom'
 import type { HunterMatchView, RoleSafeMatchView } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
+import { useAppStore } from '../stores/app-store'
 
 type SeenPing = HunterMatchView['runner_snapshots'][number] & { received_at_mono: number }
 
@@ -32,6 +33,7 @@ export function PingsPage() {
   const [nowMono, setNowMono] = useState(0)
   const [clockAnchor, setClockAnchor] = useState(0)
   const revision = useRef(0)
+  const lastNotifiedPing = useRef(-1)
 
   const sync = useCallback(async () => {
     setBusy(true)
@@ -44,6 +46,13 @@ export function PingsPage() {
     setClockAnchor(receivedAt)
     setNowMono(receivedAt)
     setView(result.data)
+    const pingIndex = result.data.role === 'RUNNER'
+      ? result.data.runner_ping_notice?.ping_index ?? -1
+      : result.data.runner_snapshots.reduce((latest, ping) => Math.max(latest, ping.ping_index), -1)
+    if (pingIndex > lastNotifiedPing.current) {
+      lastNotifiedPing.current = pingIndex
+      if (pingIndex >= 0 && useAppStore.getState().hapticsEnabled) navigator.vibrate?.(45)
+    }
     if (result.data.role === 'HUNTER') {
       const receivedPings = result.data.runner_snapshots
       setPings((current) => {

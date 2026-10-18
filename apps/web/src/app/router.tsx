@@ -36,7 +36,10 @@ export const router = createBrowserRouter([
         const { HostClaimPage } = await import('../pages/HostClaimPage')
         return { Component: HostClaimPage }
       } },
-      { path: '/settings', element: <RouteShell kind="settings" /> },
+      { path: '/settings', lazy: async () => {
+        const { SettingsPage } = await import('../pages/SettingsPage')
+        return { Component: SettingsPage }
+      } },
       ...(import.meta.env.DEV
         ? [{
             path: '/dev/sim',

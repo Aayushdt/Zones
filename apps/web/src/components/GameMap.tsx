@@ -46,8 +46,10 @@ function circleGeoJson(zone: GameZone): Feature<Polygon> {
 
 export function GameMap({ data, zone, simulation = false }: { data: GameMapData; zone?: GameZone; simulation?: boolean }) {
   const theme = useAppStore((state) => state.theme)
+  const mapStyle = useAppStore((state) => state.mapStyle)
   const styleOverride = import.meta.env.VITE_MAP_STYLE_URL?.trim()
-  const styleUrl = styleOverride || `https://tiles.openfreemap.org/styles/${theme === 'dusk' ? 'dark' : 'bright'}`
+  const resolvedMapStyle = mapStyle === 'auto' ? theme : mapStyle
+  const styleUrl = styleOverride || `https://tiles.openfreemap.org/styles/${resolvedMapStyle === 'dusk' ? 'dark' : 'bright'}`
   const zoneLat = zone?.lat
   const zoneLon = zone?.lon
   const zoneRadius = zone?.radius_m

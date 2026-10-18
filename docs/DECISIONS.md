@@ -8,6 +8,13 @@
 - Cleanup is invoked as a best-effort fallback on create, join, and match sync. It removes expired QR challenges/rate-limit buckets and snapshots older than seven days, and deletes terminal match metadata after its seven-day result retention. No scheduled `pg_cron` job is configured because availability has not been verified for the eventual project.
 - Checks: lifecycle SQL smoke covers Hunter/Runner departure outcomes, host-claim and end permission flow, timer deadline result duration, no-winner host loss, fix deletion, and seven-day cleanup. Full migration + SQL smoke suite passed on temporary vanilla PostgreSQL 18.6; Edge tests passed 10/10; shared unit tests passed 13/13; typecheck/build and Oxlint passed (pre-existing effect warnings remain). Supabase-hosted Auth/RLS/Realtime integration remains untested.
 
+## Step 19: settings and interaction polish
+
+- Replaced the settings placeholder with editable guest name, persisted Dusk/Paper theme, an Auto/Dusk/Paper map-style selector, vibration preference and test, privacy behavior, safe-play guidance, and current app version. Added a settings link in the shared header. Map style is independent of theme unless Auto is selected.
+- Vibration is opt-in and the Hunter/Runner scheduled-ping notice vibrates once per newly observed ping index when the browser supports `navigator.vibrate`; repeated syncs do not repeat the alert.
+- Browser verification on local Vite: theme toggle switched to Paper and back; map style switched to Dusk and back to the original Paper value; vibration toggle and test status worked and were restored to the original disabled preference. Reload preserved the original theme/map/haptics values. Guest-name persistence, real-device vibration, and real map-style tile repaint were not separately verified.
+- Checks: shared unit tests 13/13; Edge 10/10; simulator 1/1; payload privacy 2/2; typecheck/build and Oxlint passed (pre-existing React effect warnings remain). Production chunks: initial JS 106.64 KB gzip, settings 1.74 KB, map 289.61 KB. MapLibre still emits a >500 KB uncompressed-chunk warning.
+
 ## Step 1: scaffold and runtime
 
 - Scaffolded with create-vite 9.2.1; dependency resolution installed Vite 8.3.4, React/React DOM 19.3.1, TypeScript 6.0.3, and @vitejs/plugin-react 6.1.2. Exact resolutions are in the root pnpm-lock.yaml.
