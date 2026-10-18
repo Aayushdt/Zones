@@ -621,8 +621,10 @@ begin
 
   if v_start1->>'state' = 'HEAD_START' and v_start2->>'error' is not null
      and v_end1->>'state' = 'ENDED' and v_end2->>'state' = 'ENDED'
-     and v_end1->>'end_reason' = v_end2->>'end_reason' then
-    insert into audit_results values ('F-06: End retry returns committed outcome', 'PASS', 'Repeated end returns the same committed ENDED result');
+     and v_end1->>'winner' is not distinct from v_end2->>'winner'
+     and v_end1->>'end_reason' = v_end2->>'end_reason'
+     and v_end1->>'ended_at' = v_end2->>'ended_at' then
+    insert into audit_results values ('F-06: End retry returns committed outcome', 'PASS', 'Repeated end returns the same winner, reason and server timestamp');
   else
     insert into audit_results values ('F-06: End retry returns committed outcome', 'FAIL', 'End1: ' || coalesce(v_end1::text, 'null') || ', End2: ' || coalesce(v_end2::text, 'null'));
   end if;
