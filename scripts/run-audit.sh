@@ -21,7 +21,7 @@ if ! pg_isready -h "$PG_SOCKET" -p "$PG_PORT" >/dev/null 2>&1; then
     mkdir -p "$PG_SOCKET"
     initdb -D "$PG_SOCKET" -A trust -U "$USER" >/dev/null 2>&1
   fi
-  pg_ctl -D "$PG_SOCKET" -l /tmp/xzones_test_pg.log -o "-k ${PG_SOCKET} -p ${PG_PORT}" start
+  pg_ctl -D "$PG_SOCKET" -l /tmp/xzones_test_pg.log -o "-k ${PG_SOCKET} -p ${PG_PORT} -c listen_addresses=''" start
   createdb -h "$PG_SOCKET" -p "$PG_PORT" "$PG_DB" || true
 fi
 

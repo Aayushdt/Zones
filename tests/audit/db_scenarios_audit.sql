@@ -77,13 +77,15 @@ begin
   -- Advance clock past head_start_ends_at
   update public.matches set head_start_ends_at = clock_timestamp() - interval '1 second' where id = v_match_id;
 
-  -- AUDIT FINDING TEST: xzones_issue_qr fails with INACTIVE because it does not advance HEAD_START to ACTIVE
+  -- F-05 regression: QR issuance after the head-start deadline advances lazily.
   declare
     v_premature_qr jsonb;
   begin
     v_premature_qr := public.xzones_issue_qr(v_p2_auth, v_match_id, v_token_hash);
-    if v_premature_qr->>'error' = 'INACTIVE' then
-      insert into audit_results values ('Finding: issue_qr in HEAD_START after deadline fails', 'PASS (DEFECT CONFIRMED)', 'xzones_issue_qr fails with INACTIVE; fails to advance HEAD_START unlike scan/sync');
+    if v_premature_qr->>'error' is null and v_premature_qr->>'expires_at' is not null then
+      insert into audit_results values ('F-05: QR issuance at head-start deadline', 'PASS', 'QR issued after lazy transition to ACTIVE');
+    else
+      insert into audit_results values ('F-05: QR issuance at head-start deadline', 'FAIL', coalesce(v_premature_qr->>'error', 'missing expires_at'));
     end if;
   end;
 
@@ -91,6 +93,7 @@ begin
   perform public.xzones_sync_match(v_p2_auth, v_match_id, 0);
 
   -- P2 issues QR, P1 scans QR -> P2 tagged
+  v_token_hash := pg_temp.rand_bytes();
   perform public.xzones_issue_qr(v_p2_auth, v_match_id, v_token_hash);
   v_scan := public.xzones_scan_qr(v_host_auth, v_match_id, v_token_hash);
   if (v_scan->>'accepted')::boolean <> true then raise exception 'QR scan failed'; end if;
@@ -352,6 +355,42 @@ begin
 end;
 $$;
 
+-- F-01 regression: in a single serialized tick where both teams are empty,
+-- Runner elimination takes precedence and Hunters win (same rule as game-core).
+DO $$
+declare
+  v_h_auth uuid := gen_random_uuid();
+  v_r1_auth uuid := gen_random_uuid();
+  v_r2_auth uuid := gen_random_uuid();
+  v_code_hash bytea := pg_temp.rand_bytes();
+  v_match_id uuid;
+  v_result jsonb;
+begin
+  insert into auth.users (id) values (v_h_auth), (v_r1_auth), (v_r2_auth);
+  v_match_id := (public.xzones_create_lobby(
+    v_h_auth, pg_temp.rand_bytes(), 'TieHunter', v_code_hash, pg_temp.rand_bytes(),
+    2700, 180, 300, null, null, null
+  )->>'match_id')::uuid;
+  perform public.xzones_join_lobby(v_r1_auth, pg_temp.rand_bytes(), pg_temp.rand_bytes(), 'TieR1', v_code_hash, pg_temp.rand_bytes());
+  perform public.xzones_join_lobby(v_r2_auth, pg_temp.rand_bytes(), pg_temp.rand_bytes(), 'TieR2', v_code_hash, pg_temp.rand_bytes());
+  perform public.xzones_select_team(v_h_auth, v_match_id, 'HUNTER');
+  perform public.xzones_select_team(v_r1_auth, v_match_id, 'RUNNER');
+  perform public.xzones_select_team(v_r2_auth, v_match_id, 'RUNNER');
+  perform public.xzones_set_ready(v_h_auth, v_match_id, true);
+  perform public.xzones_set_ready(v_r1_auth, v_match_id, true);
+  perform public.xzones_set_ready(v_r2_auth, v_match_id, true);
+  perform public.xzones_start_match(v_h_auth, v_match_id, (select revision from public.matches where id = v_match_id));
+  update public.matches set head_start_ends_at = clock_timestamp() - interval '1 second' where id = v_match_id;
+  update public.players set status = 'LEFT' where match_id = v_match_id;
+  v_result := public.xzones_resolve_match(v_h_auth, v_match_id);
+  if v_result->>'winner' = 'HUNTER' and v_result->>'end_reason' = 'ALL_RUNNERS_TAGGED_OR_LEFT' then
+    insert into audit_results values ('F-01: simultaneous team emptying parity', 'PASS', 'SQL and game-core both resolve Runner elimination first');
+  else
+    insert into audit_results values ('F-01: simultaneous team emptying parity', 'FAIL', 'SQL result: ' || coalesce(v_result::text, 'null'));
+  end if;
+end;
+$$;
+
 -- ============================================================================
 -- SCENARIO 6: Match cancelled in lobby and mid-match
 -- ============================================================================
@@ -576,15 +615,16 @@ begin
   v_start1 := public.xzones_start_match(v_h_auth, v_match_id, (select revision from public.matches where id = v_match_id));
   v_start2 := public.xzones_start_match(v_h_auth, v_match_id, (select revision from public.matches where id = v_match_id));
 
-  -- Double end: first ends match; second call fails with INVALID_STATE because xzones_end_match rejects ENDED state
+  -- F-06 regression: repeated end returns the existing committed result.
   v_end1 := public.xzones_end_match(v_h_auth, v_match_id, 'HOST_END');
   v_end2 := public.xzones_end_match(v_h_auth, v_match_id, 'HOST_END');
 
   if v_start1->>'state' = 'HEAD_START' and v_start2->>'error' is not null
-     and v_end1->>'state' = 'ENDED' and v_end2->>'error' = 'INVALID_STATE' then
-    insert into audit_results values ('Scenario 10: Concurrency, double actions and serialization', 'PASS (DEFECT CONFIRMED: NON-IDEMPOTENT END)', 'Start rejected on repeat; Host end is NOT idempotent (retry returns INVALID_STATE instead of committed ENDED state)');
+     and v_end1->>'state' = 'ENDED' and v_end2->>'state' = 'ENDED'
+     and v_end1->>'end_reason' = v_end2->>'end_reason' then
+    insert into audit_results values ('F-06: End retry returns committed outcome', 'PASS', 'Repeated end returns the same committed ENDED result');
   else
-    insert into audit_results values ('Scenario 10: Concurrency, double actions and serialization', 'FAIL', 'Start2: ' || coalesce(v_start2::text, 'null') || ', End2: ' || coalesce(v_end2::text, 'null'));
+    insert into audit_results values ('F-06: End retry returns committed outcome', 'FAIL', 'End1: ' || coalesce(v_end1::text, 'null') || ', End2: ' || coalesce(v_end2::text, 'null'));
   end if;
 end;
 $$;
@@ -634,5 +674,13 @@ end;
 $$;
 
 SELECT * FROM audit_results ORDER BY scenario;
+
+DO $$
+begin
+  if exists (select 1 from audit_results where status <> 'PASS') then
+    raise exception 'One or more database audit assertions failed';
+  end if;
+end;
+$$;
 
 ROLLBACK;

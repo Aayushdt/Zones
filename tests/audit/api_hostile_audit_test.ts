@@ -12,7 +12,7 @@ function setupEnv() {
   Deno.env.set('RATE_LIMIT_HASH_SECRET', 'rate-hmac-test-secret')
 }
 
-Deno.test('AUDIT A1: Create lobby rejects ping Off (null/omitted) [FINDING: SPEC VIOLATION]', async () => {
+Deno.test('F-03: Create lobby accepts Ping Off (null or omitted)', async () => {
   setupEnv()
   const originalFetch = globalThis.fetch
   globalThis.fetch = async () => Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
@@ -30,9 +30,7 @@ Deno.test('AUDIT A1: Create lobby rejects ping Off (null/omitted) [FINDING: SPEC
         ping_seconds: null, // Ping Off
       }),
     }))
-    assert(resNull.status === 400, 'API rejects ping_seconds: null with 400 INVALID_CONFIG')
-    const bodyNull = await resNull.json()
-    assert(bodyNull.error.code === 'INVALID_CONFIG', 'Ping Off is rejected as INVALID_CONFIG')
+    assert(resNull.status === 200, `Ping Off null should succeed; got ${resNull.status}`)
 
     // Client omits ping_seconds (Ping Off)
     const resOmitted = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies', {
@@ -44,13 +42,13 @@ Deno.test('AUDIT A1: Create lobby rejects ping Off (null/omitted) [FINDING: SPEC
         head_start_seconds: 180,
       }),
     }))
-    assert(resOmitted.status === 400, 'API rejects omitted ping_seconds with 400 INVALID_CONFIG')
+    assert(resOmitted.status === 200, `Omitted ping Off should succeed; got ${resOmitted.status}`)
   } finally {
     globalThis.fetch = originalFetch
   }
 })
 
-Deno.test('AUDIT A2: Create lobby accepts inconsistent bounds (head start >= round duration) [FINDING]', async () => {
+Deno.test('F-04: Create lobby rejects a head start at or beyond round duration', async () => {
   setupEnv()
   const originalFetch = globalThis.fetch
   let rpcArgs: Record<string, unknown> | undefined
@@ -76,9 +74,8 @@ Deno.test('AUDIT A2: Create lobby accepts inconsistent bounds (head start >= rou
         ping_seconds: 300,
       }),
     }))
-    // DOCUMENTING ACTUAL BEHAVIOR: API accepts this inconsistent configuration!
-    assert(res.status === 200, 'API accepts head_start > round duration without cross-field validation')
-    assert(rpcArgs?.p_head_start_seconds === 900 && rpcArgs?.p_round_seconds === 600, 'RPC receives invalid bounds')
+    assert(res.status === 400, `Inconsistent head start must be rejected; got ${res.status}`)
+    assert(rpcArgs === undefined, 'Invalid configuration must not reach the database RPC')
   } finally {
     globalThis.fetch = originalFetch
   }
@@ -324,6 +321,32 @@ Deno.test('AUDIT G2: Mass assignment attack on start endpoint fails', async () =
     assert(rpcBody?.winner === undefined, 'winner must not be mass-assigned')
     assert(rpcBody?.ends_at === undefined, 'ends_at must not be mass-assigned')
     assert(rpcBody?.role === undefined, 'role must not be mass-assigned')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+Deno.test('F-11: host can remove a player from an unstarted lobby', async () => {
+  setupEnv()
+  const originalFetch = globalThis.fetch
+  let rpcArgs: Record<string, unknown> | undefined
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: 'host-user' })
+    if (url.endsWith('/rest/v1/rpc/xzones_remove_lobby_player')) {
+      rpcArgs = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({ removed: true, status: 'REMOVED' })
+    }
+    throw new Error(`Unexpected URL: ${url}`)
+  }
+
+  try {
+    const response = await handleRequest(new Request(
+      'http://localhost/functions/v1/api/matches/11111111-1111-1111-1111-111111111111/players/22222222-2222-2222-2222-222222222222',
+      { method: 'DELETE', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: '{}' },
+    ))
+    assert(response.status === 200, `host player removal should succeed; got ${response.status}`)
+    assert(rpcArgs?.p_auth_user_id === 'host-user', 'removal is authorized against the authenticated host')
   } finally {
     globalThis.fetch = originalFetch
   }

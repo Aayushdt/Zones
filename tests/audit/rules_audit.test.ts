@@ -57,7 +57,7 @@ describe('AUDIT CHECKLIST A: Team logic and lobby rules (packages/game-core)', (
     expect(nextRandomRole(12, 5)).toBe('RUNNER')
   })
 
-  it('A3: canStartLobby fails to enforce hunter cap / team balance constraint [FINDING]', () => {
+  it('A3 / F-07: canStartLobby rejects a lobby above its target Hunter count', () => {
     // Correct 3-player lobby: 1 hunter, 2 runners, all ready
     const valid3: TeamMember[] = [
       { role: 'HUNTER', status: 'ACTIVE', ready: true },
@@ -66,17 +66,14 @@ describe('AUDIT CHECKLIST A: Team logic and lobby rules (packages/game-core)', (
     ]
     expect(canStartLobby(valid3)).toEqual({ canStart: true, activeCounts: { hunters: 1, runners: 2 } })
 
-    // Defect check: In a 12-player lobby with 11 Hunters and 1 Runner:
-    // Spec says Hunter count must be ceil(n/10) = 2, capped at floor(n/2) = 6.
-    // 11 Hunters violates the team balance constraint!
+    // An 11-Hunter preference/assignment cannot be finalized into a valid team.
     const unbalanced12: TeamMember[] = [
       ...Array.from({ length: 11 }, () => ({ role: 'HUNTER' as const, status: 'ACTIVE' as const, ready: true })),
       { role: 'RUNNER', status: 'ACTIVE', ready: true },
     ]
     const check12 = canStartLobby(unbalanced12)
-    // DOCUMENTING ACTUAL BEHAVIOR: canStartLobby allows 11 hunters and 1 runner because it only checks hunters === 0 || runners === 0!
-    // This is a logic defect in game-core rules.ts.
-    expect(check12.canStart).toBe(true) // FAILS SPEC CONSTRAINT: should be false with NEEDS_TEAMS
+    expect(check12.canStart).toBe(false)
+    expect(check12.blockReason).toBe('NEEDS_TEAMS')
   })
 
   it('A4: canStartLobby rejects unassigned, unready, under 3, over 12', () => {
@@ -252,20 +249,15 @@ describe('AUDIT CHECKLIST E: Win conditions and team emptying (packages/game-cor
     expect(outcome).toEqual({ winner: 'RUNNER', reason: 'TIME_LIMIT' })
   })
 
-  it('E4: both teams empty in same tick -> pure rules award HUNTER, but SQL awards RUNNER [SPEC CONTRADICTION]', () => {
+  it('E4 / F-01: both teams empty in one tick resolves to a Hunter win', () => {
     // In game-core:
     const outcome = resolveActiveOutcome(
       { runnerActive: 0, runnerTotal: 2, hunterActive: 0, hunterTotal: 1 },
       1000,
       2000,
     )
-    // game-core checks runnerActive === 0 first -> HUNTER win
+    // The documented tie-break checks Runner elimination before Hunter elimination.
     expect(outcome?.winner).toBe('HUNTER')
     expect(outcome?.reason).toBe('ALL_RUNNERS_TAGGED_OR_LEFT')
-
-    // Note: In 202610180008_results_leave_cleanup.sql lines 75-78, SQL checks:
-    // if v_hunters = 0 then v_winner := 'RUNNER';
-    // elsif v_runners = 0 then v_winner := 'HUNTER';
-    // This is a direct contradiction documented as a finding!
   })
 })
