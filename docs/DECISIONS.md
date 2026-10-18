@@ -21,3 +21,9 @@
 - Implemented the exact Dusk and Paper palette values from section 20 as CSS variables, plus persisted theme selection, the 4px spacing unit, control/sheet radii, and display/body/monospace font stacks.
 - Added self-hosted variable Fontsource packages at exact registry versions: `@fontsource-variable/bricolage-grotesque`, `@fontsource-variable/manrope`, and `@fontsource-variable/jetbrains-mono` 5.3.0. Their latin font files are emitted into the production assets; no runtime font request is needed.
 - Added an installable web manifest with standalone display and the scaffold icon. Step 3's production build and Oxlint passed. Theme switching is implemented; browser persistence interaction is not yet automated.
+
+## Step 4: route and state shells
+
+- Added the planned route table (home, create, join, lobby, head start, match, Hunter Pings, tag, results, settings, simulator, and not-found) with reusable accessible loading/empty/error/offline/success state panels.
+- Added Zustand persisted preferences for Dusk/Paper theme and guest display name. The app header toggles and persists theme; routes show an explicit not-connected empty state and never fabricate a match.
+- State preview links render all five status variants on the current route. Production build and Oxlint passed. Automated browser navigation and persistence checks are not added until the planned test step.

@@ -1,19 +1,17 @@
-.welcome {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  min-height: 100svh;
-  width: min(100% - 2rem, 48rem);
+.app-header {
+  display: flex;
+  width: min(100% - 2rem, 72rem);
+  min-height: 4rem;
+  align-items: center;
+  justify-content: space-between;
   margin-inline: auto;
-  padding: max(2rem, env(safe-area-inset-top)) 0 max(2rem, env(safe-area-inset-bottom));
+  padding-top: max(0.5rem, env(safe-area-inset-top));
 }
 
 .welcome__header {
   display: flex;
-  width: 100%;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: clamp(3rem, 12vh, 8rem);
 }
 
 .welcome__wordmark {
@@ -23,6 +21,7 @@
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: -0.08em;
+  text-decoration: none;
 }
 
 .welcome__wordmark span {
@@ -51,7 +50,7 @@
   text-transform: uppercase;
 }
 
-.welcome h1 {
+.route-shell h1 {
   max-width: 12ch;
   margin: 0;
   color: var(--color-text);
@@ -93,14 +92,83 @@
   outline-offset: 3px;
 }
 
-.welcome__status {
-  margin: 2rem 0 0;
+.route-shell {
+  display: grid;
+  align-content: center;
+  width: min(100% - 2rem, 48rem);
+  min-height: calc(100svh - 4rem);
+  margin-inline: auto;
+  padding: 2rem 0 max(2rem, env(safe-area-inset-bottom));
+}
+
+.route-shell__heading h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 10vw, 4rem);
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.route-shell__id {
   color: var(--color-muted);
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.state-panel {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sheet);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.state-panel p:not(.welcome__eyebrow) {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.state-panel__actions,
+.route-shell__nav,
+.route-shell__previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.welcome__secondary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text);
+  font: 600 0.9rem var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.route-shell__previews {
+  margin-top: 2rem;
+}
+
+.route-shell__previews a {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.route-shell__previews a[aria-current='page'] {
+  color: var(--color-accent);
 }
 
 @media (max-width: 360px) {
-  .welcome {
+  .route-shell {
     width: calc(100% - 2rem);
   }
 }
