@@ -46,3 +46,9 @@
 - **Changed:** Shared `canStartLobby` and server `xzones_lobby_status` now require the exact target Hunter count for each active lobby size, and `xzones_start_match` uses that status as its gate. Updated the host-loss race fixture from an invalid 2-Hunter/4-player lobby to 2 Hunters in 11 players. Tests cover all team sizes 3–12 and server rejection of 5 Hunters in a 12-player lobby.
 - **Check:** `pnpm test:unit` passed 17/17; `pnpm test:audit` passed 21/21; `pnpm typecheck` passed; `pnpm test:db` passed schema/lifecycle and all 14 audit scenarios.
 - **Commit:** `652eca5` (`fix: enforce exact hunter team balance`).
+
+## Step 6 — trusted location timestamps
+
+- **Changed:** Server derives an effective capture timestamp clamped between receipt time and 60 seconds earlier. Fixes older than the 60-second window are not allowed to masquerade as fresh. Ping snapshot status/age and teammate position age/staleness now use captured time. Accepted location uploads are throttled if the previous accepted fix was less than two seconds ago.
+- **Check:** `pnpm test:db` passed all migrations, schema/lifecycle tests, and 14/14 audit scenarios. The stale Runner fixture intentionally uses a fresh received_at with a 70-second-old captured_at and verifies STALE status, removed coordinates, and captured-time age. Location smoke verifies timestamp bounds and throttling.
+- **Commit:** pending.

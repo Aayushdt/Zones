@@ -572,23 +572,24 @@ begin
   insert into public.latest_fix(match_id, player_id, lat, lon, accuracy_m, captured_at, received_at, sequence)
   values (v_match_id, v_r1_id, 51.5, -0.1, 15, clock_timestamp() - interval '10 seconds', clock_timestamp() - interval '10 seconds', 1);
 
-  -- R2 has stale fix (70s old)
+  -- R2's fix is 70s old even though it was just received: age/status must use captured_at.
   insert into public.latest_fix(match_id, player_id, lat, lon, accuracy_m, captured_at, received_at, sequence)
-  values (v_match_id, v_r2_id, 51.51, -0.11, 20, clock_timestamp() - interval '70 seconds', clock_timestamp() - interval '70 seconds', 1);
+  values (v_match_id, v_r2_id, 51.51, -0.11, 20, clock_timestamp() - interval '70 seconds', clock_timestamp(), 1);
 
   -- R3 has NO fix at all
 
   -- Trigger sync
   v_sync := public.xzones_sync_match(v_h_auth, v_match_id, 0);
 
-  select jsonb_build_object('status', status, 'lat', lat) into v_ok_snap from public.ping_snapshots where match_id = v_match_id and runner_id = v_r1_id;
-  select jsonb_build_object('status', status, 'lat', lat) into v_stale_snap from public.ping_snapshots where match_id = v_match_id and runner_id = v_r2_id;
+  select jsonb_build_object('status', status, 'lat', lat, 'age_seconds', age_seconds) into v_ok_snap from public.ping_snapshots where match_id = v_match_id and runner_id = v_r1_id;
+  select jsonb_build_object('status', status, 'lat', lat, 'age_seconds', age_seconds) into v_stale_snap from public.ping_snapshots where match_id = v_match_id and runner_id = v_r2_id;
   select jsonb_build_object('status', status, 'lat', lat) into v_nofix_snap from public.ping_snapshots where match_id = v_match_id and runner_id = v_r3_id;
 
   if v_ok_snap->>'status' = 'OK' and v_ok_snap->>'lat' is not null
      and v_stale_snap->>'status' = 'STALE' and v_stale_snap->>'lat' is null
+     and (v_stale_snap->>'age_seconds')::integer >= 70
      and v_nofix_snap->>'status' = 'NO_FIX' and v_nofix_snap->>'lat' is null then
-    insert into audit_results values ('Scenario 9: Stale and no-fix Runners at ping time', 'PASS', 'OK has coords; STALE and NO_FIX strip coords');
+    insert into audit_results values ('Scenario 9: Stale and no-fix Runners at ping time', 'PASS', 'Captured-time age marks delayed fix STALE despite fresh receipt; STALE and NO_FIX strip coordinates');
   else
     insert into audit_results values ('Scenario 9: Stale and no-fix Runners at ping time', 'FAIL', 'Snapshots: OK=' || coalesce(v_ok_snap::text, 'null') || ', STALE=' || coalesce(v_stale_snap::text, 'null') || ', NO_FIX=' || coalesce(v_nofix_snap::text, 'null'));
   end if;

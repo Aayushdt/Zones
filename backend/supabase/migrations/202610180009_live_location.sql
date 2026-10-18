@@ -16,11 +16,12 @@ declare
   v_player_id uuid;
   v_now timestamptz := clock_timestamp();
   v_last_sequence bigint;
+  v_last_received_at timestamptz;
+  v_effective_captured_at timestamptz;
 begin
   if p_lat is null or p_lat not between -90 and 90 or p_lon is null or p_lon not between -180 and 180
     or p_accuracy_m is null or p_accuracy_m < 0 or p_accuracy_m > 10000
     or p_captured_at is null or p_captured_at > v_now + interval '30 seconds'
-    or p_captured_at < v_now - interval '2 minutes'
     or p_sequence is null or p_sequence < 0 then
     return jsonb_build_object('error', 'INVALID_FIX');
   end if;
@@ -32,16 +33,21 @@ begin
     where match_id = p_match_id and auth_user_id = p_auth_user_id and status = 'ACTIVE' and role is not null;
   if not found then return jsonb_build_object('error', 'NOT_MEMBER'); end if;
 
-  select sequence into v_last_sequence from public.latest_fix where match_id = p_match_id and player_id = v_player_id;
+  v_effective_captured_at := least(v_now, greatest(v_now - interval '60 seconds', p_captured_at));
+  select sequence, received_at into v_last_sequence, v_last_received_at
+    from public.latest_fix where match_id = p_match_id and player_id = v_player_id for update;
   if v_last_sequence is not null and p_sequence <= v_last_sequence then
     return jsonb_build_object('error', 'OLD_SEQUENCE', 'last_sequence', v_last_sequence);
   end if;
   if p_accuracy_m > 100 then
     return jsonb_build_object('accepted', false, 'stale', true, 'reason', 'POOR_ACCURACY', 'server_now', v_now);
   end if;
+  if v_last_received_at is not null and v_last_received_at > v_now - interval '2 seconds' then
+    return jsonb_build_object('error', 'RATE_LIMITED', 'retry_after_seconds', 2);
+  end if;
 
   insert into public.latest_fix(match_id, player_id, lat, lon, accuracy_m, captured_at, received_at, sequence)
-    values (p_match_id, v_player_id, p_lat, p_lon, p_accuracy_m, p_captured_at, v_now, p_sequence)
+    values (p_match_id, v_player_id, p_lat, p_lon, p_accuracy_m, v_effective_captured_at, v_now, p_sequence)
   on conflict (player_id) do update set
     match_id = excluded.match_id, lat = excluded.lat, lon = excluded.lon, accuracy_m = excluded.accuracy_m,
     captured_at = excluded.captured_at, received_at = excluded.received_at, sequence = excluded.sequence
@@ -75,8 +81,8 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
     'player_id', p.id, 'display_name', p.display_name, 'team_role', p.role, 'lat', f.lat, 'lon', f.lon,
     'accuracy_m', f.accuracy_m, 'captured_at', f.captured_at,
-    'age_seconds', greatest(0, floor(extract(epoch from (v_now - f.received_at))))::integer,
-    'is_stale', f.received_at < v_now - interval '30 seconds'
+    'age_seconds', greatest(0, floor(extract(epoch from (v_now - f.captured_at))))::integer,
+    'is_stale', f.captured_at < v_now - interval '30 seconds'
   ) order by p.id), '[]'::jsonb)
   into v_positions
   from public.players p join public.latest_fix f on f.match_id = p.match_id and f.player_id = p.id

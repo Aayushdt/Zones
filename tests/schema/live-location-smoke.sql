@@ -29,6 +29,10 @@ begin
     raise exception 'valid location should be accepted without echoing the fix: %', v_result;
   end if;
   if v_result ? 'lat' or v_result ? 'lon' then raise exception 'location acknowledgement must not echo coordinates'; end if;
+  if not exists (select 1 from public.latest_fix where player_id = v_runner
+    and captured_at <= received_at and captured_at >= received_at - interval '60 seconds') then
+    raise exception 'stored fix timestamp must be clamped to a server-derived 0-60 second age';
+  end if;
 
   v_result := public.xzones_update_location(v_runner_auth, v_match, 25.6201, 85.1501, 8, v_now, 100);
   if v_result->>'error' <> 'OLD_SEQUENCE' then raise exception 'duplicate sequence must be rejected: %', v_result; end if;
@@ -38,6 +42,11 @@ begin
   end if;
   if (select sequence from public.latest_fix where player_id = v_runner) <> 100 then
     raise exception 'poor fix must not replace the most recent valid fix';
+  end if;
+
+  v_result := public.xzones_update_location(v_runner_auth, v_match, 25.6201, 85.1501, 8, v_now, 101);
+  if v_result->>'error' <> 'RATE_LIMITED' then
+    raise exception 'fix upload within two seconds must be throttled: %', v_result;
   end if;
 
   v_result := public.xzones_team_positions(v_runner_auth, v_match);
@@ -62,7 +71,7 @@ begin
     raise exception 'Hunter position payload included a Runner role';
   end if;
 
-  update public.latest_fix set received_at = v_now - interval '31 seconds' where player_id = v_runner;
+  update public.latest_fix set captured_at = v_now - interval '31 seconds' where player_id = v_runner;
   v_result := public.xzones_team_positions(v_runner_auth, v_match);
   if (v_result->'positions'->0->>'is_stale')::boolean is not true
     or (v_result->'positions'->0->>'age_seconds')::integer < 30 then
