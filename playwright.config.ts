@@ -13,11 +13,10 @@ export default defineConfig({
     ...(process.env.PW_USE_SYSTEM_CHROME === '1' ? { channel: 'chrome' as const } : {}),
     trace: 'retain-on-failure',
   },
-  ...(process.env.CI ? {
-    webServer: {
-      command: 'corepack pnpm --filter @xzones/web dev --host 127.0.0.1 --port 5175 --strictPort',
-      url: 'http://127.0.0.1:5175',
-      timeout: 30_000,
-    },
-  } : {}),
+  webServer: {
+    command: 'corepack pnpm --filter @xzones/web dev --host 127.0.0.1 --port 5175 --strictPort',
+    url: 'http://127.0.0.1:5175',
+    reuseExistingServer: !process.env.CI,
+    timeout: 30_000,
+  },
 })
