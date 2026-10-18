@@ -15,3 +15,9 @@
 - Added a pnpm workspace for `apps/*` and `packages/*`, with `@xzones/game-core` exported from a TypeScript-only module and imported by the web app. The shared package has no browser, network, or runtime dependency imports.
 - Added the root TypeScript base config and root scripts. Root scripts call Corepack explicitly because this environment provides pnpm through Corepack but has no global `pnpm` executable.
 - Verified the shared package typecheck, web production build, and Oxlint pass after workspace linking. The web bundle is 220.33 KB raw / 68.97 KB gzip JS; this includes only the current shell and is below the initial 250 KB compressed budget.
+
+## Step 3: tokens, fonts, and install metadata
+
+- Implemented the exact Dusk and Paper palette values from section 20 as CSS variables, plus persisted theme selection, the 4px spacing unit, control/sheet radii, and display/body/monospace font stacks.
+- Added self-hosted variable Fontsource packages at exact registry versions: `@fontsource-variable/bricolage-grotesque`, `@fontsource-variable/manrope`, and `@fontsource-variable/jetbrains-mono` 5.3.0. Their latin font files are emitted into the production assets; no runtime font request is needed.
+- Added an installable web manifest with standalone display and the scaffold icon. Step 3's production build and Oxlint passed. Theme switching is implemented; browser persistence interaction is not yet automated.
