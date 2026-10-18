@@ -24,7 +24,10 @@ export const router = createBrowserRouter([
         const { PingsPage } = await import('../pages/PingsPage')
         return { Component: PingsPage }
       } },
-      { path: '/match/:matchId/tag', element: <RouteShell kind="tag" /> },
+      { path: '/match/:matchId/tag', lazy: async () => {
+        const { TagPage } = await import('../pages/TagPage')
+        return { Component: TagPage }
+      } },
       { path: '/match/:matchId/results', element: <RouteShell kind="results" /> },
       { path: '/settings', element: <RouteShell kind="settings" /> },
       ...(import.meta.env.DEV

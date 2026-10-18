@@ -115,3 +115,10 @@
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.
 - Added a development-only MOCK implementation and simulator route. It returns visibly prefixed fake IDs and `SIM-*` codes under a persistent `SIMULATION: NOT A REAL MATCH` banner; no network or GPS code is used. Mock types use a separate `source: SIMULATION` discriminator and cannot satisfy the real LobbyView type.
 - Verified the production build and Oxlint pass, and searched built assets to confirm the simulator banner is excluded from production. Full simulator team/clock behavior is deferred to Step 9.
+# Step 17 — QR tags and Runner confirmation
+
+- Added QR generation with `qrcode@1.5.4` and lazy-loaded camera decoding with `jsqr@1.4.0`; both versions and lockfile integrity are pinned. The package metadata identifies MIT for `qrcode` and Apache-2.0 for `jsqr`; `jsqr` ships its own TypeScript declarations.
+- QR challenges use 32 cryptographically random bytes, shown only to the issuing Runner and held in component memory. The `api` Edge Function hashes the bytes with SHA-256 before calling SQL; only the hash is persisted. Challenges expire after 60 server seconds and SQL serializes one-time consumption.
+- Runner self-confirmation uses the same server-side tag transaction, invalidates that Runner's outstanding QR, deletes their latest fix, and ends the match for Hunters when no active Runners remain. GPS proximity is not consulted.
+- Camera access starts only after a Hunter presses the scan button and the scanner stops on exit or successful decode. Real-device camera validation remains untested; browsers require HTTPS or localhost for camera access.
+- Verified the database migration and all schema smoke files on temporary vanilla PostgreSQL 18.6 using the test-only Supabase shim. This does not verify Supabase Auth, RLS, or Realtime integration.

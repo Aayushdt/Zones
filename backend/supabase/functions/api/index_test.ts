@@ -227,3 +227,87 @@ Deno.test('lobby sync returns only safe roster fields and start enforces revisio
     globalThis.fetch = originalFetch
   }
 })
+
+Deno.test('QR issue returns one-time opaque token while RPC receives only its SHA-256 hash', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  const captured: { rpcArgs?: Record<string, unknown> } = {}
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_issue_qr')) {
+      captured.rpcArgs = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({ expires_at: '2026-10-18T13:01:00Z', server_now: '2026-10-18T13:00:00Z' })
+    }
+    throw new Error(`Unexpected test URL: ${url}`)
+  }
+  try {
+    const response = await handleRequest(new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/qr', {
+      method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: '{}',
+    }))
+    const body = await response.json()
+    assert(response.status === 200, 'QR issue should succeed')
+    assert(typeof body.token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(body.token), 'token should be 256-bit base64url')
+    assert(!JSON.stringify(captured.rpcArgs).includes(body.token), 'database must never receive the raw QR token')
+    assert(typeof captured.rpcArgs?.p_token_hash === 'string' && String(captured.rpcArgs.p_token_hash).length === 66, 'database should receive a 32-byte hash')
+    const tokenBytes = Uint8Array.from(atob(body.token.replace(/-/g, '+').replace(/_/g, '/') + '='), (character) => character.charCodeAt(0))
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', tokenBytes))
+    const expectedHash = `\\x${Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('')}`
+    assert(captured.rpcArgs?.p_token_hash === expectedHash, 'RPC hash must be SHA-256 of the returned token')
+  } finally { globalThis.fetch = originalFetch }
+})
+
+Deno.test('QR scan hashes the presented token and rejects malformed tokens before database access', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  const captured: { rpcArgs?: Record<string, unknown> } = {}
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_scan_qr')) {
+      captured.rpcArgs = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({ accepted: true, state: 'ACTIVE' })
+    }
+    throw new Error(`Unexpected test URL: ${url}`)
+  }
+  const request = (token: string) => new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/qr/scan', {
+    method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: JSON.stringify({ token }),
+  })
+  try {
+    const invalid = await handleRequest(request('not-a-token'))
+    assert(invalid.status === 404, 'malformed token should be rejected')
+    assert(captured.rpcArgs === undefined, 'malformed token must not reach database')
+    const token = 'A'.repeat(43)
+    const result = await handleRequest(request(token))
+    assert(result.status === 200, 'well-formed token should reach scanner RPC')
+    const args = captured.rpcArgs as Record<string, unknown> | undefined
+    assert(args?.token === undefined, 'database args must not include raw token')
+    assert(typeof args?.p_token_hash === 'string', 'database args must contain token hash')
+    assert(!JSON.stringify(await result.json()).includes(token), 'response must not echo token')
+  } finally { globalThis.fetch = originalFetch }
+})
+
+Deno.test('Runner fallback calls the tag-confirm RPC and exposes only its result', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  let rpcCalled = false
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_confirm_tag')) { rpcCalled = true; return Response.json({ accepted: true, state: 'ACTIVE' }) }
+    throw new Error(`Unexpected test URL: ${url}`)
+  }
+  try {
+    const response = await handleRequest(new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/tag/confirm', {
+      method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: '{}',
+    }))
+    assert(response.status === 200 && rpcCalled, 'fallback should call tag RPC')
+    assert((await response.json()).accepted === true, 'fallback response should contain safe acceptance state')
+  } finally { globalThis.fetch = originalFetch }
+})

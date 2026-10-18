@@ -110,7 +110,7 @@ export interface LocationInput {
 }
 
 export interface LocationAck { accepted: boolean; server_now: string }
-export interface QrChallenge { token: string; expires_at: string }
+export interface QrChallenge { token: string; expires_at: string; server_now: string }
 export interface TagResult { accepted: boolean; state: MatchState; winner?: Role }
 export interface MatchResult { winner: Role | null; end_reason: string; ended_at: string }
 export type SafeHandlers = {

@@ -46,6 +46,21 @@ function randomBytes(length: number): Uint8Array {
   return crypto.getRandomValues(new Uint8Array(length))
 }
 
+function encodeBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+function decodeBase64UrlToken(token: string): Uint8Array | null {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null
+  try {
+    const binary = atob(token.replace(/-/g, '+').replace(/_/g, '/') + '=')
+    if (binary.length !== 32) return null
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0))
+  } catch { return null }
+}
+
 const codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
 function makeJoinCode(): string {
@@ -100,6 +115,11 @@ function rpcResponse(result: JsonObject): Response {
   if (error === 'NOT_MEMBER') return fail(403, error, 'Join this private lobby before changing it.')
   if (error === 'TEAM_NOT_SELECTED') return fail(409, error, 'Choose a team before this match can sync.')
   if (error === 'NOT_FOUND') return fail(404, error, 'The lobby could not be found.')
+  if (error === 'WRONG_ROLE') return fail(403, error, 'This tag action is not available for your role.')
+  if (error === 'INVALID_QR' || error === 'WRONG_MATCH') return fail(404, error, 'That QR is invalid for this match.')
+  if (error === 'QR_USED' || error === 'QR_EXPIRED' || error === 'ALREADY_TAGGED') return fail(409, error, 'That tag code is expired, already used, or no longer valid.')
+  if (error === 'DEADLINE_PASSED') return fail(409, error, 'The server deadline has passed.')
+  if (error === 'INACTIVE') return fail(409, error, 'Tagging is available only during the active match.')
   return fail(503, 'INTERNAL', 'The game service could not complete this request.')
 }
 
@@ -323,6 +343,39 @@ export async function handleRequest(request: Request): Promise<Response> {
       if (typeof body.ready !== 'boolean') return fail(400, 'INVALID_INPUT', 'Ready must be true or false.')
       return rpcResponse(await callRpc('xzones_set_ready', {
         p_auth_user_id: user.id, p_match_id: readyMatch[1], p_ready: body.ready,
+      }))
+    }
+
+    const qrMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/qr$/i)
+    if (qrMatch) {
+      const bytes = randomBytes(32)
+      const token = encodeBase64Url(bytes)
+      const tokenHash = await sha256(bytes)
+      const result = await callRpc('xzones_issue_qr', {
+        p_auth_user_id: user.id, p_match_id: qrMatch[1], p_token_hash: bytea(tokenHash),
+      })
+      if (typeof result.error === 'string') return rpcResponse(result)
+      if (typeof result.expires_at !== 'string' || typeof result.server_now !== 'string') {
+        return fail(503, 'INTERNAL', 'The game service could not complete this request.')
+      }
+      return ok({ token, expires_at: result.expires_at, server_now: result.server_now })
+    }
+
+    const scanMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/qr\/scan$/i)
+    if (scanMatch) {
+      if (typeof body.token !== 'string') return fail(404, 'INVALID_QR', 'That QR is invalid for this match.')
+      const tokenBytes = decodeBase64UrlToken(body.token)
+      if (!tokenBytes) return fail(404, 'INVALID_QR', 'That QR is invalid for this match.')
+      const result = await callRpc('xzones_scan_qr', {
+        p_auth_user_id: user.id, p_match_id: scanMatch[1], p_token_hash: bytea(await sha256(tokenBytes)),
+      })
+      return rpcResponse(result)
+    }
+
+    const confirmTagMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/tag\/confirm$/i)
+    if (confirmTagMatch) {
+      return rpcResponse(await callRpc('xzones_confirm_tag', {
+        p_auth_user_id: user.id, p_match_id: confirmTagMatch[1],
       }))
     }
 
