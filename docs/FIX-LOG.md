@@ -28,3 +28,9 @@
 - **Changed:** Added shared match timing validation used by the API; omitted Ping Off normalizes to null. The create form now exposes an Off option. Added migration 010 to constrain active-round length and ping timing at the DB boundary, and updated the create RPC to accept Ping Off. SQL smoke covers valid Ping Off, insufficient active time, and ping-after-round rejection.
 - **Check:** `pnpm test:unit` passed (16). `pnpm test:api` passed existing Edge tests (11) and hostile checks for F-03/F-04; only open F-11 is red (8/9 hostile tests pass). Fresh DB migrations and schema/lifecycle smoke passed; only outstanding F-05/F-06 audit cases are red (11/13 audit SQL scenarios pass).
 - **Commit:** `0b3ef2d` (`fix: validate match timing and support ping off`).
+
+## Step 3 — lazy state advancement and ping slots
+
+- **Changed:** Added a service-role-only `xzones_advance_match_state` path that delegates to the server-time outcome resolver; QR issuance now invokes it before checking match state. This transitions an expired head start to ACTIVE and resolves expired/empty matches before an action proceeds.
+- **Check:** Fresh migration chain, schema smoke, lifecycle smoke, ping no-sync-gap smoke, and audit SQL ran via `pnpm test:db`. F-01 and F-05 pass; 12/13 audit scenarios pass, with only the pending F-06 retry assertion red. Existing Edge API tests passed 11/11. (The API hostile suite was last run after Step 2 and retains only F-11 as a known red case.)
+- **Commit:** pending.
