@@ -1,0 +1,126 @@
+.game-map-shell {
+  position: relative;
+  min-height: 22rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sheet);
+  background: var(--color-surface-raised);
+}
+
+.game-map-canvas {
+  position: absolute;
+  inset: 0;
+  min-height: 22rem;
+}
+
+.map-empty {
+  display: grid;
+  min-height: 22rem;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.map-controls {
+  position: absolute;
+  z-index: 2;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.map-control {
+  display: grid;
+  width: 48px;
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 700 1.35rem var(--font-body);
+  cursor: pointer;
+}
+
+.map-control:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+
+.game-marker {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 2px solid #07131c;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px currentColor, 0 0 1rem currentColor;
+  font: 800 1.05rem var(--font-mono);
+}
+
+.game-marker--you { background: var(--color-runner); color: #62ffe4; }
+.game-marker--teammate { background: #66decd; color: #1ffff0; }
+.game-marker--snapshot { background: #ff743d; color: #ff9a66; border-style: dashed; }
+.game-marker--you::before {
+  position: absolute;
+  z-index: -1;
+  width: calc(var(--accuracy-px, 12px) * 2);
+  height: calc(var(--accuracy-px, 12px) * 2);
+  border: 1px solid color-mix(in srgb, var(--color-runner) 75%, white);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-runner) 23%, transparent);
+  content: '';
+}
+
+.map-key {
+  position: absolute;
+  z-index: 2;
+  right: 0.75rem;
+  bottom: 2.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.8rem;
+  max-width: calc(100% - 1.5rem);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  color: var(--color-text);
+  font-size: 0.72rem;
+}
+
+.map-key span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.legend-dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; }
+.legend-dot--you { background: var(--color-runner); }
+.legend-dot--team { background: #66decd; }
+.legend-dot--ping { background: var(--color-hunter); }
+.legend-ring { width: 0.8rem; height: 0.55rem; border: 1px dashed #a581ff; border-radius: 50%; }
+
+.map-status {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: 0;
+  padding: 0.4rem 0.65rem;
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  color: var(--color-muted);
+  font-size: 0.68rem;
+}
+
+.map-simulation-stamp {
+  position: absolute;
+  z-index: 3;
+  top: 0.75rem;
+  left: 0.75rem;
+  max-width: calc(100% - 5rem);
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-control);
+  background: var(--color-background);
+  color: var(--color-warning);
+  font-size: 0.65rem;
+  font-weight: 800;
+}

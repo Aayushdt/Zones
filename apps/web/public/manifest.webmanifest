@@ -1,0 +1,18 @@
+{
+  "name": "XZones — Hunter vs Runner",
+  "short_name": "XZones",
+  "description": "Private outdoor Hunter vs Runner games for friends.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#100e1b",
+  "theme_color": "#100e1b",
+  "icons": [
+    {
+      "src": "/icons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
