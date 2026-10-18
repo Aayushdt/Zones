@@ -1,0 +1,85 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import type { ClockView, RoleSafeMatchView } from '../services/game-api'
+import { supabaseGameApi } from '../services/supabase-api'
+import { GameMap, type GameMapData } from '../components/GameMap'
+
+function timeLeft(clock: ClockView, anchor: number): number {
+  const deadline = Date.parse(clock.ends_at)
+  const serverAt = Date.parse(clock.server_now)
+  return Number.isFinite(deadline) && Number.isFinite(serverAt)
+    ? Math.max(0, Math.ceil((deadline - serverAt - (performance.now() - anchor)) / 1000)) : 0
+}
+
+export function MatchPage() {
+  const { matchId = '' } = useParams()
+  const navigate = useNavigate()
+  const [view, setView] = useState<RoleSafeMatchView | null>(null)
+  const [clock, setClock] = useState<ClockView | null>(null)
+  const [seconds, setSeconds] = useState<number | null>(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const anchor = useRef(0)
+
+  const sync = useCallback(async () => {
+    setBusy(true)
+    const [matchResult, clockResult] = await Promise.all([
+      supabaseGameApi.syncMatch(matchId), supabaseGameApi.syncClock(matchId),
+    ])
+    setBusy(false)
+    if (!matchResult.ok) { setError(matchResult.error.message); return }
+    if (!clockResult.ok) { setError(clockResult.error.message); return }
+    if (matchResult.data.state === 'HEAD_START') { navigate(`/match/${matchId}/head-start`, { replace: true }); return }
+    if (matchResult.data.state === 'ENDED') { navigate(`/match/${matchId}/results`, { replace: true }); return }
+    if (matchResult.data.state !== 'ACTIVE') { setError('The server says this match is not active.'); return }
+    setError('')
+    setView(matchResult.data)
+    setClock(clockResult.data)
+    anchor.current = performance.now()
+    setSeconds(timeLeft(clockResult.data, anchor.current))
+  }, [matchId, navigate])
+
+  useEffect(() => { void sync() }, [sync])
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (clock) setSeconds(timeLeft(clock, anchor.current))
+    }, 250)
+    const polling = window.setInterval(() => { void sync() }, 15_000)
+    return () => { window.clearInterval(timer); window.clearInterval(polling) }
+  }, [clock, sync])
+
+  const mapData: GameMapData | null = view ? view.role === 'RUNNER'
+    ? { role: 'RUNNER', own_position: null, own_team_positions: view.own_team_positions }
+    : { role: 'HUNTER', own_position: null, own_team_positions: view.own_team_positions, runner_snapshots: view.runner_snapshots }
+    : null
+
+  if (!view || !mapData) return (
+    <main className="route-shell"><div className="route-shell__heading"><p className="welcome__eyebrow">XZones match</p><h1>Loading map</h1></div>
+      <section className="state-panel" aria-live="polite"><p>{error || (busy ? 'Syncing your role-safe match view…' : 'Waiting for match data.')}</p>
+        <button className="welcome__secondary" disabled={busy} onClick={() => void sync()} type="button">Retry sync</button></section>
+    </main>
+  )
+
+  const roleLabel = view.role === 'RUNNER' ? 'Runner' : 'Hunter'
+  return (
+    <main className="match-page">
+      <header className="match-hud">
+        <Link className="match-menu" aria-label="Back to lobby" to={`/lobby/${matchId}`}>☰</Link>
+        <div><strong>Hide and Seek</strong><span>{roleLabel} · ACTIVE</span></div>
+        <div className="match-timer"><strong>{seconds === null ? '—:—' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`}</strong><span>Time left</span></div>
+        <div className="match-counts"><span className="runner-count">{view.active_counts.runners} Runners</span><span className="hunter-count">{view.active_counts.hunters} Hunters</span></div>
+      </header>
+      <section className="match-map-area">
+        <GameMap data={mapData} />
+        <div className="match-status-card" role="status" aria-live="polite">
+          <div><strong>You are a {roleLabel}</strong><p>{view.role === 'RUNNER'
+            ? 'Stay hidden. Your map displays your own team only.'
+            : 'Hunter teammate positions and scheduled Runner ping snapshots are shown separately.'}</p></div>
+          <button className="welcome__secondary" disabled={busy} onClick={() => void sync()} type="button">{busy ? 'Syncing…' : 'Sync now'}</button>
+        </div>
+      </section>
+      {error ? <p className="form-error match-error" role="alert">{error}</p> : null}
+      <p className="match-text-status">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. The map never displays opponent distances or directions.</p>
+    </main>
+  )
+}

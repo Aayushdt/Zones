@@ -276,7 +276,36 @@ class SupabaseGameApi implements GameApi {
   }
 
   async syncMatch(id: string, revision = 0): Promise<Result<RoleSafeMatchView>> {
-    return this.post<RoleSafeMatchView>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: revision })
+    const result = await this.post<{
+      role: Role
+      state: RoleSafeMatchView['state']
+      server_now: string
+      active_counts: { hunters: number; runners: number }
+      revision: number
+      events: Array<{ type?: unknown; data?: unknown }>
+    }>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: revision })
+    if (!result.ok) return result
+    const common = {
+      state: result.data.state,
+      server_now: result.data.server_now,
+      active_counts: result.data.active_counts,
+      revision: result.data.revision,
+      own_team_positions: [] as RoleSafeMatchView['own_team_positions'],
+    }
+    if (result.data.role === 'RUNNER') return { ok: true, data: { ...common, role: 'RUNNER', own_team_positions: [] } }
+    if (result.data.role !== 'HUNTER') return error('INVALID_ROLE', 'The server did not confirm a match role.')
+    const snapshots = result.data.events.flatMap((event) => {
+      if (event.type !== 'hunter.runner_ping' || !event.data || typeof event.data !== 'object') return []
+      const data = event.data as Record<string, unknown>
+      if (typeof data.runner_id !== 'string' || !['OK', 'NO_FIX', 'STALE'].includes(String(data.status))
+        || typeof data.age_seconds !== 'number' || typeof data.ping_index !== 'number') return []
+      const base = { runner_id: data.runner_id, status: data.status as 'OK' | 'NO_FIX' | 'STALE', age_seconds: data.age_seconds, ping_index: data.ping_index,
+        ...(typeof data.ping_at === 'string' ? { ping_at: data.ping_at } : {}) }
+      if (base.status !== 'OK' || typeof data.lat !== 'number' || typeof data.lon !== 'number') return [base]
+      return [{ ...base, lat: data.lat, lon: data.lon,
+        ...(typeof data.captured_at === 'string' ? { captured_at: data.captured_at } : {}) }]
+    })
+    return { ok: true, data: { ...common, role: 'HUNTER', runner_snapshots: snapshots } }
   }
 
   async updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>> {

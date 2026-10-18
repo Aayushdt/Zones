@@ -76,12 +76,11 @@ interface MatchViewBase {
   revision: number
   server_now: string
   active_counts: ActiveCounts
-  teammates: Array<{ player_id: string; display_name: string }>
+  own_team_positions: Array<{ player_id: string; display_name: string; lat: number; lon: number; accuracy_m: number; captured_at: string }>
 }
 
 export interface RunnerMatchView extends MatchViewBase {
   role: 'RUNNER'
-  own_team_positions: Array<{ player_id: string; lat: number; lon: number; accuracy_m: number; captured_at: string }>
 }
 
 export interface HunterMatchView extends MatchViewBase {
@@ -92,6 +91,7 @@ export interface HunterMatchView extends MatchViewBase {
     lat?: number
     lon?: number
     captured_at?: string
+    ping_at?: string
     age_seconds: number
     ping_index: number
   }>
