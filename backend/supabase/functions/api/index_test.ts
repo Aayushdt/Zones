@@ -99,6 +99,10 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     const url = String(input)
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
     if (url.endsWith('/rest/v1/rpc/xzones_sync_lobby')) return Response.json({ error: 'NOT_LOBBY' })
+    if (url.endsWith('/rest/v1/rpc/xzones_match_clock')) return Response.json({
+      state: 'ACTIVE', server_now: '2026-10-18T18:08:00.000Z', start_at: '2026-10-18T18:00:00.000Z',
+      head_start_ends_at: '2026-10-18T18:03:00.000Z', ends_at: '2026-10-18T18:45:00.000Z', revision: 9,
+    })
     if (url.endsWith('/rest/v1/rpc/xzones_sync_match')) {
       const args = JSON.parse(String(init?.body)) as Record<string, unknown>
       assert(args.p_last_revision === 4, 'sync should use the client revision cursor')
@@ -132,6 +136,7 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     assert(runnerResponse.status === 200, 'Runner sync should succeed')
     assert(runner.events.every((event: { type: string }) => event.type !== 'hunter.runner_ping'), 'Runner must not get Hunter ping payloads')
     assert(runner.events.some((event: { type: string }) => event.type === 'runner.location_revealed'), 'Runner should get a generic ping notice')
+    assert(runner.start_at && runner.head_start_ends_at, 'sync should include authoritative clock timestamps')
     assert(!JSON.stringify(runner).includes('hunter_positions'), 'Runner response leaked Hunter metadata')
     assert(!JSON.stringify(runner).includes('fake-runner-1'), 'Runner response leaked Hunter-only snapshot ID')
 

@@ -246,6 +246,10 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_last_revision: lastRevision,
       })
       if (typeof result.error === 'string') return rpcResponse(result)
+      const clock = await callRpc('xzones_match_clock', {
+        p_auth_user_id: user.id, p_match_id: syncMatch[1],
+      })
+      if (typeof clock.error === 'string') return rpcResponse(clock)
       if (result.role !== 'HUNTER' && result.role !== 'RUNNER') {
         return fail(409, 'TEAM_NOT_SELECTED', 'Choose a team before this match can sync.')
       }
@@ -296,6 +300,9 @@ export async function handleRequest(request: Request): Promise<Response> {
         role,
         state: matchState,
         server_now: serverNow,
+        start_at: clock.start_at,
+        head_start_ends_at: clock.head_start_ends_at,
+        ends_at: clock.ends_at,
         active_counts: matchEvent.data.active_counts,
         revision,
         events,

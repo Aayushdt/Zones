@@ -88,6 +88,7 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
       return { ok: true, data: { ready, can_start: check.canStart, block_reason: check.blockReason } }
     },
     async startMatch() { return notImplemented() },
+    async syncClock() { return notImplemented() },
     async syncMatch() { return notImplemented() },
     async updateLocation() { return notImplemented() },
     async issueQr() { return notImplemented() },

@@ -271,6 +271,10 @@ class SupabaseGameApi implements GameApi {
     return this.post<ClockView>(`/matches/${encodeURIComponent(id)}/start`, { expected_revision: expectedRevision })
   }
 
+  async syncClock(id: string): Promise<Result<ClockView>> {
+    return this.post<ClockView>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: 0 })
+  }
+
   async syncMatch(id: string, revision = 0): Promise<Result<RoleSafeMatchView>> {
     return this.post<RoleSafeMatchView>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: revision })
   }

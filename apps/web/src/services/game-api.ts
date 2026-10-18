@@ -64,7 +64,7 @@ export interface ReadyView {
 }
 
 export interface ClockView {
-  state: 'HEAD_START'
+  state: 'HEAD_START' | 'ACTIVE' | 'ENDED'
   server_now: string
   start_at: string
   head_start_ends_at: string
@@ -123,6 +123,7 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   selectTeam(id: string, role: Role | 'RANDOM'): Promise<Result<TeamView>>
   setReady(id: string, ready: boolean): Promise<Result<ReadyView>>
   startMatch(id: string, expectedRevision?: number): Promise<Result<ClockView>>
+  syncClock(id: string): Promise<Result<ClockView>>
   syncMatch(id: string, revision?: number): Promise<Result<RoleSafeMatchView>>
   updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>>
   issueQr(id: string): Promise<Result<QrChallenge>>

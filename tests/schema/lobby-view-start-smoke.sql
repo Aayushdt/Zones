@@ -43,6 +43,12 @@ begin
   if v_result->>'state' <> 'HEAD_START' or v_result->>'start_at' is null or v_result->>'ends_at' is null then
     raise exception 'controller start should return server clock: %', v_result;
   end if;
+  v_result := public.xzones_match_clock(v_host, v_match);
+  if v_result->>'state' <> 'HEAD_START' or v_result->>'head_start_ends_at' is null then
+    raise exception 'member clock sync should contain the head-start deadline: %', v_result;
+  end if;
+  v_result := public.xzones_match_clock(gen_random_uuid(), v_match);
+  if v_result->>'error' <> 'NOT_MEMBER' then raise exception 'non-member clock request must reject: %', v_result; end if;
 end;
 $$;
 rollback;

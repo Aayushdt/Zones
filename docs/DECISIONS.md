@@ -81,6 +81,12 @@
 - Typecheck, production build, Oxlint (one known React lint warning on initial async load), 5 Edge handler tests, 10 unit tests, simulator and privacy projection tests passed. Applied migrations 0001–0004 to temporary PostgreSQL and all four `tests/schema/*-smoke.sql` scripts passed, including safe lobby roster, controller-only start, stale revision rejection, and server clock values.
 - The warning is from the deliberate initial data-fetch effect in `LobbyPage`; it does not fail the lint command. Supabase Auth/Edge/RLS integration remains untested without a project and the Docker-backed local stack.
 
+## Step 13: server-authoritative head-start clock
+
+- Added the live head-start page. It anchors display countdowns to `server_now` and a monotonic browser clock, resynchronizes every 10 seconds, and reloads by requesting the match clock from the server. It navigates to gameplay only after sync reports `ACTIVE`.
+- Added `xzones_match_clock`, a membership-checked clock projection, and included `start_at`, `head_start_ends_at`, and `ends_at` in sync responses. A client never decides that the head start has finished.
+- Edge handler tests passed (6/6), typecheck and production build passed (initial JS gzip 106.97 KB), and Oxlint passed with only the two documented initial-load effect warnings in Lobby and HeadStart pages. The clock RPC and SQL migrations were parsed/applied on the temporary PostgreSQL harness; live Supabase/Auth timing and browser reload behavior remain untested pending project credentials and Playwright setup.
+
 ## Step 5: GameApi and MOCK adapter
 
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.
