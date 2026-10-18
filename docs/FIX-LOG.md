@@ -16,3 +16,9 @@
 - Baseline result: all pre-existing project checks passed. New red tests reproduce F-01/F-05/F-06 in PostgreSQL; the other ten SQL scenarios pass. API tests reproduce F-03/F-04/F-11; the existing edge API suite passes 11/11. The F-07 expected-correctness regression is also red in `test:audit` (15 rule tests + 6 client tests, one targeted failure).
 - The remaining audit tests for F-02, F-08–F-10, and F-12–F-13 will be added with their focused implementation steps where the required behavior and test harness can be exercised together. F-09/F-10 remain defect-observation checks at baseline, not claimed fixes.
 - Step 0 regression baseline is ready to commit; its known red assertions are intentional and scoped to unresolved findings.
+
+## Step 1 — outcome parity
+
+- **Changed:** SQL resolution now checks Runner count first both during lazy resolution and player leave; simultaneous team emptying awards Hunters the match. Final-Runner tagging and timer expiry use the shared `ALL_RUNNERS_TAGGED_OR_LEFT` and `TIME_LIMIT` reasons. Recorded the simultaneous-resolution precedence in `docs/DECISIONS.md`.
+- **Check:** `corepack pnpm test:db` confirms F-01 PASS and the other 10 scenarios PASS; only the still-open F-05/F-06 regression scenarios fail. The same run also passes migration and lifecycle smoke checks, including canonical timer reason. `corepack pnpm test:audit` still fails only the unrelated, intentionally pending F-07 check (20/21 pass). `corepack pnpm test:api` passes the existing Edge suite (11/11) and fails only expected open F-03/F-04/F-11 cases (6/9 hostile audit checks pass).
+- **Commit:** pending.

@@ -91,7 +91,7 @@ begin
     into v_hunters, v_runners from public.players where match_id = p_match_id and status = 'ACTIVE';
   if v_runners = 0 then
     v_winner := 'HUNTER';
-    v_reason := 'ALL_RUNNERS_TAGGED';
+    v_reason := 'ALL_RUNNERS_TAGGED_OR_LEFT';
     update public.matches set state = 'ENDED', revision = revision + 1 where id = p_match_id;
     delete from public.latest_fix where match_id = p_match_id;
     insert into public.match_results(match_id, winner, end_reason, ended_at, cleanup_after)
@@ -153,7 +153,7 @@ begin
     into v_hunters, v_runners from public.players where match_id = p_match_id and status = 'ACTIVE';
   if v_runners = 0 then
     v_winner := 'HUNTER';
-    v_reason := 'ALL_RUNNERS_TAGGED';
+    v_reason := 'ALL_RUNNERS_TAGGED_OR_LEFT';
     update public.matches set state = 'ENDED', revision = revision + 1 where id = p_match_id;
     delete from public.latest_fix where match_id = p_match_id;
     insert into public.match_results(match_id, winner, end_reason, ended_at, cleanup_after)

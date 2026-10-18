@@ -72,18 +72,18 @@ begin
     end if;
     select count(*) filter (where role = 'HUNTER'), count(*) filter (where role = 'RUNNER')
       into v_hunters, v_runners from public.players where match_id = p_match_id and status = 'ACTIVE';
-    if v_hunters = 0 then
-      v_winner := 'RUNNER'; v_reason := 'ALL_HUNTERS_LEFT';
-    elsif v_runners = 0 then
+    if v_runners = 0 then
       v_winner := 'HUNTER'; v_reason := 'ALL_RUNNERS_TAGGED_OR_LEFT';
+    elsif v_hunters = 0 then
+      v_winner := 'RUNNER'; v_reason := 'ALL_HUNTERS_LEFT';
     elsif v_match.ends_at is not null and v_now >= v_match.ends_at then
-      v_winner := 'RUNNER'; v_reason := 'TIME_EXPIRED';
+      v_winner := 'RUNNER'; v_reason := 'TIME_LIMIT';
     elsif v_match.controller_player_id is null and v_match.claim_expires_at is not null
       and v_now >= v_match.claim_expires_at then
       v_winner := null; v_reason := 'HOST_LOST';
     end if;
     if v_reason is not null then
-      v_ended_at := case when v_reason = 'TIME_EXPIRED' then v_match.ends_at
+      v_ended_at := case when v_reason = 'TIME_LIMIT' then v_match.ends_at
         when v_reason = 'HOST_LOST' then v_match.claim_expires_at else v_now end;
       perform public.xzones_finish_match(p_match_id, v_winner, v_reason, v_ended_at);
     end if;
@@ -146,12 +146,12 @@ begin
   if v_match.state in ('HEAD_START', 'ACTIVE') then
     select count(*) filter (where role = 'HUNTER'), count(*) filter (where role = 'RUNNER')
       into v_hunters, v_runners from public.players where match_id = p_match_id and status = 'ACTIVE';
-    if v_hunters = 0 then v_winner := 'RUNNER'; v_reason := 'ALL_HUNTERS_LEFT';
-    elsif v_runners = 0 then v_winner := 'HUNTER'; v_reason := 'ALL_RUNNERS_TAGGED_OR_LEFT';
-    elsif v_match.ends_at is not null and v_now >= v_match.ends_at then v_winner := 'RUNNER'; v_reason := 'TIME_EXPIRED';
+    if v_runners = 0 then v_winner := 'HUNTER'; v_reason := 'ALL_RUNNERS_TAGGED_OR_LEFT';
+    elsif v_hunters = 0 then v_winner := 'RUNNER'; v_reason := 'ALL_HUNTERS_LEFT';
+    elsif v_match.ends_at is not null and v_now >= v_match.ends_at then v_winner := 'RUNNER'; v_reason := 'TIME_LIMIT';
     end if;
     if v_reason is not null then
-      v_ended_at := case when v_reason = 'TIME_EXPIRED' then v_match.ends_at else v_now end;
+      v_ended_at := case when v_reason = 'TIME_LIMIT' then v_match.ends_at else v_now end;
       perform public.xzones_finish_match(p_match_id, v_winner, v_reason, v_ended_at);
     end if;
   end if;

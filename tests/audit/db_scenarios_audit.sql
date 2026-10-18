@@ -106,7 +106,7 @@ begin
   v_res := public.xzones_match_result(v_host_auth, v_match_id);
   select count(*) into v_fixes_count from public.latest_fix where match_id = v_match_id;
 
-  if v_res->>'winner' = 'HUNTER' and v_res->>'end_reason' = 'ALL_RUNNERS_TAGGED' and v_fixes_count = 0 then
+  if v_res->>'winner' = 'HUNTER' and v_res->>'end_reason' = 'ALL_RUNNERS_TAGGED_OR_LEFT' and v_fixes_count = 0 then
     insert into audit_results values ('Scenario 1: 3-player min match to Hunter win', 'PASS', 'Hunters win, all runners tagged, latest_fix deleted');
   else
     insert into audit_results values ('Scenario 1: 3-player min match to Hunter win', 'FAIL', 'Unexpected result: ' || coalesce(v_res::text, 'null'));
@@ -165,8 +165,8 @@ begin
   perform public.xzones_resolve_match(v_host_auth, v_match_id);
 
   v_res := public.xzones_match_result(v_host_auth, v_match_id);
-  if v_res->>'winner' = 'RUNNER' and v_res->>'end_reason' = 'TIME_EXPIRED' and (select count(*) from public.latest_fix where match_id = v_match_id) = 0 then
-    insert into audit_results values ('Scenario 2: 12-player match to Runner win by timer', 'PASS', 'Runners win, reason TIME_EXPIRED, all fixes deleted');
+  if v_res->>'winner' = 'RUNNER' and v_res->>'end_reason' = 'TIME_LIMIT' and (select count(*) from public.latest_fix where match_id = v_match_id) = 0 then
+    insert into audit_results values ('Scenario 2: 12-player match to Runner win by timer', 'PASS', 'Runners win, reason TIME_LIMIT, all fixes deleted');
   else
     insert into audit_results values ('Scenario 2: 12-player match to Runner win by timer', 'FAIL', 'Unexpected result: ' || coalesce(v_res::text, 'null'));
   end if;

@@ -1,5 +1,10 @@
 # Implementation Decisions and Verification Log
 
+## Audit decision — canonical active-match outcomes
+
+- If both teams become empty in the same serialized resolution, Runner elimination takes precedence and Hunters win (`ALL_RUNNERS_TAGGED_OR_LEFT`), matching `game-core`.
+- Active-match expiry uses the shared `TIME_LIMIT` reason. Tagging the final Runner uses the same `ALL_RUNNERS_TAGGED_OR_LEFT` reason as departures, so database and shared outcome results agree.
+
 ## Step 18: outcomes, departures, and retention
 
 - Added server resolution for match deadline, empty Hunter team, empty Runner team, and unclaimed host loss. Timer results use the scheduled server deadline as `ended_at`, even when a later request performs the resolution; this keeps displayed duration tied to the match clock.
