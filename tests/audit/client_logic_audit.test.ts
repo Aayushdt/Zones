@@ -3,6 +3,7 @@ import { mergeLatestPings } from '../../packages/game-core/src/index.ts'
 import { createMockApi } from '../../apps/web/src/services/mock-api.ts'
 import { useLocationStore } from '../../apps/web/src/stores/location-store.ts'
 import { maintainScreenWakeLock, watchDeviceLocation } from '../../apps/web/src/services/device-lifecycle.ts'
+import { createRealtimeEventGate, applyMatchRealtimeEvent } from '../../apps/web/src/services/realtime-events.ts'
 
 function timeLeft(clock: { ends_at: string; server_now: string }, anchor: number): number {
   const deadline = Date.parse(clock.ends_at)
@@ -25,6 +26,26 @@ function ageText(seconds: number): string {
 }
 
 describe('AUDIT CHECKLIST I: Client game logic', () => {
+  it('F02: Realtime events dedupe IDs, ignore stale location sequences, and update the role-safe view', () => {
+    const gate = createRealtimeEventGate('RUNNER')
+    const initial = {
+      state: 'ACTIVE' as const, revision: 2, server_now: '2026-10-19T00:00:00Z', active_counts: { hunters: 1, runners: 2 },
+      can_end: false, can_claim: false, claim_expires_at: null, own_player_id: 'runner-self', own_status: 'ACTIVE' as const,
+      next_ping_at: null, own_team_positions: [], role: 'RUNNER' as const, runner_ping_notice: null,
+    }
+    const newer = { event_id: 'loc-2', match_id: 'match-1', revision: 2, server_at: 't', type: 'team.location_live', data: {
+      player_id: 'runner-peer', display_name: 'Peer', lat: 25, lon: 85, accuracy_m: 5, captured_at: 't', age_seconds: 0, is_stale: false, sequence: 2,
+    } }
+    const stale = { ...newer, event_id: 'loc-1', data: { ...newer.data, lat: 24, sequence: 1 } }
+    expect(gate.accept(newer)).toBe(true)
+    const withNewer = applyMatchRealtimeEvent(initial, newer)
+    expect(withNewer?.own_team_positions[0]?.lat).toBe(25)
+    expect(gate.accept(newer)).toBe(false)
+    expect(gate.accept(stale)).toBe(false)
+    const tagged = applyMatchRealtimeEvent(withNewer, { event_id: 'tag-3', match_id: 'match-1', revision: 3, server_at: 't', type: 'tag.accepted', data: { runner_id: 'runner-self', status: 'TAGGED', method: 'QR', accepted_at: 't' } })
+    expect(tagged?.own_status).toBe('TAGGED')
+  })
+
   it('F12: screen wake lock is acquired only while visible and released on hide/unmount', async () => {
     let visibilityState: DocumentVisibilityState = 'visible'
     let listener: (() => void) | undefined

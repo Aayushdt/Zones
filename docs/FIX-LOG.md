@@ -84,3 +84,9 @@
 - **Test first:** The location endpoint regression failed before implementation because the accepted fix had no Realtime publication; it now asserts exact Runner topic, event time, server-clamped capture time and sequence.
 - **Check:** `pnpm test:api` passed 12 Edge and 9 hostile tests; `pnpm verify:payloads` passed 2/2; `pnpm typecheck`/production build passed; `git diff --check` passed. Actual socket delivery and persistence remain unverified pending the Step 9d GitHub integration run.
 - **Commit:** `1b4d30e` (`feat(api): broadcast live locations to team only (F-02)`).
+
+## Step 9d — client Realtime events (F-02)
+
+- **Changed:** The match screen now applies only role-projected private-channel events to the same role-safe view used by sync. It deduplicates event IDs, ignores older per-player location sequences, merges scheduled Hunter snapshots, stops Runner GPS immediately on its tag event, and navigates on terminal match state. The 15-second sync remains the reconnect and missed-event fallback; tagged players unsubscribe.
+- **Check:** `pnpm test:audit` passed (24/24), including duplicate/stale event and own-tag behavior. `pnpm typecheck` passed including the production build; `git diff --check` passed. This checks client event handling, not real socket delivery; that remains unverified until the CI Supabase integration job runs.
+- **Commit:** pending.

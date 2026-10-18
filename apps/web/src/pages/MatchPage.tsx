@@ -5,6 +5,7 @@ import { supabaseGameApi } from '../services/supabase-api'
 import { GameMap, type GameMapData } from '../components/GameMap'
 import { useLocationStore } from '../stores/location-store'
 import { maintainScreenWakeLock } from '../services/device-lifecycle'
+import { applyMatchRealtimeEvent, createRealtimeEventGate } from '../services/realtime-events'
 
 function timeLeft(clock: ClockView, anchor: number): number {
   const deadline = Date.parse(clock.ends_at)
@@ -50,11 +51,22 @@ export function MatchPage() {
 
   useEffect(() => { void sync() }, [sync])
   useEffect(() => {
-    if (!view) return
+    if (!view || view.own_status === 'TAGGED') return
     let active = true
     let unsubscribe: (() => void) | undefined
+    const gate = createRealtimeEventGate(view.role)
     setLiveStatus('Connecting to your private team channel…')
-    void supabaseGameApi.subscribe(matchId, view.role, { onEvent: () => { void sync() } })
+    void supabaseGameApi.subscribe(matchId, view.role, { onEvent: (received) => {
+      if (!gate.accept(received.payload)) return
+      setView((current) => {
+        if (!current) return current
+        const updated = applyMatchRealtimeEvent(current, received.payload)
+        if (!updated) return current
+        if (updated.own_status === 'TAGGED') stopSharing(matchId, 'You are tagged. Location sharing and GPS watcher are stopped.')
+        if (updated.state === 'ENDED' || updated.state === 'CANCELLED') navigate(`/match/${matchId}/results`, { replace: true })
+        return updated
+      })
+    } })
       .then((stop) => {
         if (!active) { stop(); return }
         unsubscribe = stop
@@ -64,7 +76,7 @@ export function MatchPage() {
         if (active) setLiveStatus('Private channel unavailable; role-safe sync will retry every 15 seconds.')
       })
     return () => { active = false; unsubscribe?.() }
-  }, [matchId, sync, view?.role])
+  }, [matchId, navigate, stopSharing, view?.role, view?.own_status])
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (clock) setSeconds(timeLeft(clock, anchor.current))
