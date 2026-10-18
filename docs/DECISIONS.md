@@ -1,5 +1,13 @@
 # Implementation Decisions and Verification Log
 
+## Step 18: outcomes, departures, and retention
+
+- Added server resolution for match deadline, empty Hunter team, empty Runner team, and unclaimed host loss. Timer results use the scheduled server deadline as `ended_at`, even when a later request performs the resolution; this keeps displayed duration tied to the match clock.
+- Added explicit leave, current-controller end, host claim, minimal result lookup, and cleanup RPCs behind the single `api` Edge Function. Leaving deletes the player's mutable fix immediately; final outcomes delete all fixes and persist a no-route result. Explicit controller leave opens the five-minute claim window immediately; an active controller with no heartbeat for 60 seconds opens the same window on the next sync.
+- Results expose winner/reason, duration, and accepted tag count only. Active players can claim host controls without gaining a different role or additional match information. Host end is a no-winner result; if no one claims after host loss, the server ends with no winner.
+- Cleanup is invoked as a best-effort fallback on create, join, and match sync. It removes expired QR challenges/rate-limit buckets and snapshots older than seven days, and deletes terminal match metadata after its seven-day result retention. No scheduled `pg_cron` job is configured because availability has not been verified for the eventual project.
+- Checks: lifecycle SQL smoke covers Hunter/Runner departure outcomes, host-claim and end permission flow, timer deadline result duration, no-winner host loss, fix deletion, and seven-day cleanup. Full migration + SQL smoke suite passed on temporary vanilla PostgreSQL 18.6; Edge tests passed 10/10; shared unit tests passed 13/13; typecheck/build and Oxlint passed (pre-existing effect warnings remain). Supabase-hosted Auth/RLS/Realtime integration remains untested.
+
 ## Step 1: scaffold and runtime
 
 - Scaffolded with create-vite 9.2.1; dependency resolution installed Vite 8.3.4, React/React DOM 19.3.1, TypeScript 6.0.3, and @vitejs/plugin-react 6.1.2. Exact resolutions are in the root pnpm-lock.yaml.

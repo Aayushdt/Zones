@@ -1,8 +1,8 @@
 -- Test-only shim for running migrations in a vanilla PostgreSQL instance.
 -- Do not apply this file to Supabase; Supabase owns these schemas and roles.
-create role anon;
-create role authenticated;
-create role service_role;
+do $$ begin create role anon; exception when duplicate_object then null; end $$;
+do $$ begin create role authenticated; exception when duplicate_object then null; end $$;
+do $$ begin create role service_role; exception when duplicate_object then null; end $$;
 create schema auth;
 create table auth.users (id uuid primary key);
 create function auth.uid() returns uuid

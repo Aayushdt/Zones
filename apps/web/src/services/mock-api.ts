@@ -94,7 +94,9 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
     async issueQr() { return notImplemented() },
     async scanQr() { return notImplemented() },
     async confirmTag() { return notImplemented() },
-    async leaveMatch() { return { ok: true, data: undefined } },
+    async leaveMatch() { return { ok: true, data: { accepted: true, state: 'LOBBY' as const } } },
+    async claimController() { return notImplemented() },
+    async getMatchResult() { return notImplemented() },
     async endMatch() { return notImplemented() },
     async subscribe() { return () => undefined },
   }

@@ -120,6 +120,9 @@ function rpcResponse(result: JsonObject): Response {
   if (error === 'QR_USED' || error === 'QR_EXPIRED' || error === 'ALREADY_TAGGED') return fail(409, error, 'That tag code is expired, already used, or no longer valid.')
   if (error === 'DEADLINE_PASSED') return fail(409, error, 'The server deadline has passed.')
   if (error === 'INACTIVE') return fail(409, error, 'Tagging is available only during the active match.')
+  if (error === 'NOT_HOST') return fail(403, error, 'Only the current match controller can end this match.')
+  if (error === 'CLAIM_UNAVAILABLE' || error === 'CLAIM_EXPIRED' || error === 'CLAIM_TAKEN') return fail(409, error, 'Host controls are no longer available to claim.')
+  if (error === 'NOT_ENDED') return fail(409, error, 'This match has no final result yet.')
   return fail(503, 'INTERNAL', 'The game service could not complete this request.')
 }
 
@@ -161,6 +164,10 @@ export async function handleRequest(request: Request): Promise<Response> {
   const path = url.pathname.replace(/^\/functions\/v1\/api/, '').replace(/^\/api/, '')
 
   try {
+    const syncPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/sync$/i)
+    if (path === '/lobbies' || path === '/lobbies/join' || syncPath || /\/matches\/[0-9a-f-]+\/result$/i.test(path)) {
+      await callRpc('xzones_cleanup', {}).catch(() => ({ error: 'INTERNAL' }))
+    }
     if (path === '/lobbies') {
       if (!isText(body.display_name) || !numberIn(body.round_seconds, 600, 10800)
         || !numberIn(body.head_start_seconds, 0, 900) || !numberIn(body.ping_seconds, 60, 1800)
@@ -227,12 +234,16 @@ export async function handleRequest(request: Request): Promise<Response> {
       }))
     }
 
-    const syncMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/sync$/i)
+    const syncMatch = syncPath
     if (syncMatch) {
       const lastRevision = body.last_revision === undefined ? 0 : body.last_revision
       if (!numberIn(lastRevision, 0, Number.MAX_SAFE_INTEGER)) {
         return fail(400, 'INVALID_INPUT', 'last_revision must be a non-negative integer.')
       }
+      const outcome = await callRpc('xzones_resolve_match', {
+        p_auth_user_id: user.id, p_match_id: syncMatch[1],
+      })
+      if (typeof outcome.error === 'string') return rpcResponse(outcome)
       const lobby = await callRpc('xzones_sync_lobby', {
         p_auth_user_id: user.id, p_match_id: syncMatch[1],
       })
@@ -266,6 +277,10 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_last_revision: lastRevision,
       })
       if (typeof result.error === 'string') return rpcResponse(result)
+      const controls = await callRpc('xzones_match_controls', {
+        p_auth_user_id: user.id, p_match_id: syncMatch[1],
+      })
+      if (typeof controls.error === 'string') return rpcResponse(controls)
       const clock = await callRpc('xzones_match_clock', {
         p_auth_user_id: user.id, p_match_id: syncMatch[1],
       })
@@ -324,6 +339,9 @@ export async function handleRequest(request: Request): Promise<Response> {
         head_start_ends_at: clock.head_start_ends_at,
         ends_at: clock.ends_at,
         active_counts: matchEvent.data.active_counts,
+        can_end: controls.can_end === true,
+        can_claim: controls.can_claim === true,
+        claim_expires_at: typeof controls.claim_expires_at === 'string' ? controls.claim_expires_at : null,
         revision,
         events,
         next_ping_at: typeof result.next_ping_at === 'string' ? result.next_ping_at : null,
@@ -376,6 +394,41 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (confirmTagMatch) {
       return rpcResponse(await callRpc('xzones_confirm_tag', {
         p_auth_user_id: user.id, p_match_id: confirmTagMatch[1],
+      }))
+    }
+
+    const leaveMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/leave$/i)
+    if (leaveMatch) {
+      return rpcResponse(await callRpc('xzones_leave_match', {
+        p_auth_user_id: user.id, p_match_id: leaveMatch[1],
+      }))
+    }
+
+    const claimMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/host-claim$/i)
+    if (claimMatch) {
+      return rpcResponse(await callRpc('xzones_claim_controller', {
+        p_auth_user_id: user.id, p_match_id: claimMatch[1],
+      }))
+    }
+
+    const endMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/end$/i)
+    if (endMatch) {
+      if (body.reason !== 'HOST_END' && body.reason !== 'SAFETY_END') {
+        return fail(400, 'INVALID_INPUT', 'Choose a supported match end reason.')
+      }
+      const ended = await callRpc('xzones_end_match', {
+        p_auth_user_id: user.id, p_match_id: endMatch[1], p_reason: body.reason,
+      })
+      if (typeof ended.error === 'string') return rpcResponse(ended)
+      return rpcResponse(await callRpc('xzones_match_result', {
+        p_auth_user_id: user.id, p_match_id: endMatch[1],
+      }))
+    }
+
+    const resultMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/result$/i)
+    if (resultMatch) {
+      return rpcResponse(await callRpc('xzones_match_result', {
+        p_auth_user_id: user.id, p_match_id: resultMatch[1],
       }))
     }
 

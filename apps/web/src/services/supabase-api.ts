@@ -9,6 +9,7 @@ import {
   type LobbyView,
   type LocationAck,
   type LocationInput,
+  type LeaveResult,
   type MatchResult,
   type QrChallenge,
   type ReadyView,
@@ -281,6 +282,9 @@ class SupabaseGameApi implements GameApi {
       state: RoleSafeMatchView['state']
       server_now: string
       active_counts: { hunters: number; runners: number }
+      can_end?: boolean
+      can_claim?: boolean
+      claim_expires_at?: string | null
       revision: number
       next_ping_at?: string | null
       events: Array<{ type?: unknown; data?: unknown }>
@@ -290,6 +294,9 @@ class SupabaseGameApi implements GameApi {
       state: result.data.state,
       server_now: result.data.server_now,
       active_counts: result.data.active_counts,
+      can_end: result.data.can_end === true,
+      can_claim: result.data.can_claim === true,
+      claim_expires_at: result.data.claim_expires_at ?? null,
       revision: result.data.revision,
       next_ping_at: typeof result.data.next_ping_at === 'string' ? result.data.next_ping_at : null,
       own_team_positions: [] as RoleSafeMatchView['own_team_positions'],
@@ -332,8 +339,16 @@ class SupabaseGameApi implements GameApi {
     return this.post<TagResult>(`/matches/${encodeURIComponent(id)}/tag/confirm`, {})
   }
 
-  async leaveMatch(id: string): Promise<Result<void>> {
-    return this.post<void>(`/matches/${encodeURIComponent(id)}/leave`, {})
+  async leaveMatch(id: string): Promise<Result<LeaveResult>> {
+    return this.post<LeaveResult>(`/matches/${encodeURIComponent(id)}/leave`, {})
+  }
+
+  async claimController(id: string): Promise<Result<{ accepted: boolean; controller_player_id: string }>> {
+    return this.post<{ accepted: boolean; controller_player_id: string }>(`/matches/${encodeURIComponent(id)}/host-claim`, {})
+  }
+
+  async getMatchResult(id: string): Promise<Result<MatchResult>> {
+    return this.post<MatchResult>(`/matches/${encodeURIComponent(id)}/result`, {})
   }
 
   async endMatch(id: string, reason: string): Promise<Result<MatchResult>> {

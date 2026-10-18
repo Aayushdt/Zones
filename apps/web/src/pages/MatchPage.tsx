@@ -94,6 +94,24 @@ export function MatchPage() {
             : 'Hunter teammate positions and scheduled Runner ping snapshots are shown separately.'}</p></div>
           <div className="match-status-actions">
             {view.role === 'HUNTER' ? <Link className="welcome__secondary" to={`/match/${matchId}/pings`}>Pings</Link> : null}
+            {view.can_end ? <button className="welcome__secondary" onClick={() => {
+              if (window.confirm('End the match for everyone? This cannot be undone.')) {
+                void supabaseGameApi.endMatch(matchId, 'HOST_END').then((result) => {
+                  if (result.ok) navigate(`/match/${matchId}/results`, { replace: true })
+                  else setError(result.error.message)
+                })
+              }
+            }} type="button">End match</button> : null}
+            {view.can_claim ? <Link className="welcome__secondary" to={`/match/${matchId}/host-claim`}>Claim host controls</Link> : null}
+            <button className="welcome__secondary" onClick={() => {
+              if (window.confirm('Leave this match? You cannot rejoin.')) {
+                void supabaseGameApi.leaveMatch(matchId).then((result) => {
+                  if (!result.ok) { setError(result.error.message); return }
+                  if (result.data.state === 'ENDED' || result.data.state === 'CANCELLED') navigate(`/match/${matchId}/results`, { replace: true })
+                  else navigate('/', { replace: true })
+                })
+              }
+            }} type="button">Leave match</button>
             <button className="welcome__secondary" disabled={busy} onClick={() => void sync()} type="button">{busy ? 'Syncing…' : 'Sync now'}</button>
           </div>
         </div>

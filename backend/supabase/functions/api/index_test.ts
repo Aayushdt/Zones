@@ -98,6 +98,9 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
   globalThis.fetch = async (input, init) => {
     const url = String(input)
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({ deleted_matches: 0 })
+    if (url.endsWith('/rest/v1/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
+    if (url.endsWith('/rest/v1/rpc/xzones_match_controls')) return Response.json({ can_end: false, can_claim: false })
     if (url.endsWith('/rest/v1/rpc/xzones_sync_lobby')) return Response.json({ error: 'NOT_LOBBY' })
     if (url.endsWith('/rest/v1/rpc/xzones_match_clock')) return Response.json({
       state: 'ACTIVE', server_now: '2026-10-18T18:08:00.000Z', start_at: '2026-10-18T18:00:00.000Z',
@@ -161,6 +164,8 @@ Deno.test('join API maps invalid, full, started, and rate-limited codes to speci
   globalThis.fetch = async (input) => {
     const url = String(input)
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({ deleted_matches: 0 })
+    if (url.endsWith('/rest/v1/rpc/xzones_resolve_match')) return Response.json({ state: 'LOBBY' })
     if (url.endsWith('/rest/v1/rpc/xzones_join_lobby')) return Response.json({ error: rpcError })
     throw new Error(`Unexpected test URL: ${url}`)
   }
@@ -197,6 +202,8 @@ Deno.test('lobby sync returns only safe roster fields and start enforces revisio
   globalThis.fetch = async (input) => {
     const url = String(input)
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({ deleted_matches: 0 })
+    if (url.endsWith('/rest/v1/rpc/xzones_resolve_match')) return Response.json({ state: 'LOBBY' })
     if (url.endsWith('/rest/v1/rpc/xzones_sync_lobby')) return Response.json({
       state: 'LOBBY', own_player_id: 'player-1', host_player_id: 'player-1', controller_player_id: 'player-1',
       revision: 8, role: null, active_counts: { runners: 0, hunters: 0 }, can_start: false,
@@ -309,5 +316,39 @@ Deno.test('Runner fallback calls the tag-confirm RPC and exposes only its result
     }))
     assert(response.status === 200 && rpcCalled, 'fallback should call tag RPC')
     assert((await response.json()).accepted === true, 'fallback response should contain safe acceptance state')
+  } finally { globalThis.fetch = originalFetch }
+})
+
+Deno.test('leave, claim, end, and result routes call only their server-side lifecycle RPCs', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  const calls: string[] = []
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    const name = url.split('/').pop() ?? ''
+    if (name.startsWith('xzones_')) calls.push(name)
+    if (url.endsWith('/rpc/xzones_cleanup')) return Response.json({ deleted_matches: 0 })
+    if (url.endsWith('/rpc/xzones_leave_match')) return Response.json({ accepted: true, state: 'ACTIVE', claim_expires_at: '2026-10-18T13:05:00Z' })
+    if (url.endsWith('/rpc/xzones_claim_controller')) return Response.json({ accepted: true, controller_player_id: 'player-new' })
+    if (url.endsWith('/rpc/xzones_end_match')) return Response.json({ state: 'ENDED', winner: null, end_reason: 'HOST_END' })
+    if (url.endsWith('/rpc/xzones_match_result')) return Response.json({ winner: null, end_reason: 'HOST_END', ended_at: '2026-10-18T13:00:00Z', duration_seconds: 120, tag_count: 1 })
+    throw new Error(`Unexpected test URL: ${url} ${String(init?.body ?? '')}`)
+  }
+  const request = (path: string, body: Record<string, unknown> = {}) => new Request(`http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/${path}`, {
+    method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: JSON.stringify(body),
+  })
+  try {
+    const leave = await handleRequest(request('leave'))
+    assert(leave.status === 200 && (await leave.json()).claim_expires_at, 'leave should return claim-window server time')
+    const claim = await handleRequest(request('host-claim'))
+    assert(claim.status === 200 && (await claim.json()).controller_player_id === 'player-new', 'claim should return new controller')
+    const end = await handleRequest(request('end', { reason: 'HOST_END' }))
+    assert(end.status === 200 && (await end.json()).duration_seconds === 120, 'end should return persisted result')
+    const result = await handleRequest(request('result'))
+    assert(result.status === 200 && (await result.json()).end_reason === 'HOST_END', 'result should return safe outcome')
+    assert(calls.join(',') === 'xzones_leave_match,xzones_claim_controller,xzones_end_match,xzones_match_result,xzones_cleanup,xzones_match_result', 'lifecycle paths should use the expected RPCs')
   } finally { globalThis.fetch = originalFetch }
 })

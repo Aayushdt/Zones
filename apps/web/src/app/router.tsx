@@ -28,7 +28,14 @@ export const router = createBrowserRouter([
         const { TagPage } = await import('../pages/TagPage')
         return { Component: TagPage }
       } },
-      { path: '/match/:matchId/results', element: <RouteShell kind="results" /> },
+      { path: '/match/:matchId/results', lazy: async () => {
+        const { ResultsPage } = await import('../pages/ResultsPage')
+        return { Component: ResultsPage }
+      } },
+      { path: '/match/:matchId/host-claim', lazy: async () => {
+        const { HostClaimPage } = await import('../pages/HostClaimPage')
+        return { Component: HostClaimPage }
+      } },
       { path: '/settings', element: <RouteShell kind="settings" /> },
       ...(import.meta.env.DEV
         ? [{

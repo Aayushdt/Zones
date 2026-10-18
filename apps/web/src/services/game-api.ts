@@ -76,6 +76,9 @@ interface MatchViewBase {
   revision: number
   server_now: string
   active_counts: ActiveCounts
+  can_end: boolean
+  can_claim: boolean
+  claim_expires_at: string | null
   next_ping_at: string | null
   own_team_positions: Array<{ player_id: string; display_name: string; lat: number; lon: number; accuracy_m: number; captured_at: string }>
 }
@@ -112,7 +115,8 @@ export interface LocationInput {
 export interface LocationAck { accepted: boolean; server_now: string }
 export interface QrChallenge { token: string; expires_at: string; server_now: string }
 export interface TagResult { accepted: boolean; state: MatchState; winner?: Role }
-export interface MatchResult { winner: Role | null; end_reason: string; ended_at: string }
+export interface MatchResult { winner: Role | null; end_reason: string; ended_at: string; duration_seconds: number; tag_count: number }
+export interface LeaveResult { accepted: boolean; state: MatchState; claim_expires_at?: string }
 export type SafeHandlers = {
   onEvent: (event: { type: string; payload: unknown }) => void
 }
@@ -131,7 +135,9 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   issueQr(id: string): Promise<Result<QrChallenge>>
   scanQr(id: string, token: string): Promise<Result<TagResult>>
   confirmTag(id: string): Promise<Result<TagResult>>
-  leaveMatch(id: string): Promise<Result<void>>
+  leaveMatch(id: string): Promise<Result<LeaveResult>>
+  claimController(id: string): Promise<Result<{ accepted: boolean; controller_player_id: string }>>
+  getMatchResult(id: string): Promise<Result<MatchResult>>
   endMatch(id: string, reason: string): Promise<Result<MatchResult>>
   subscribe(id: string, role: Role, handlers: SafeHandlers): Promise<Unsubscribe>
 }
