@@ -1,4 +1,4 @@
-import type { Role } from '@xzones/game-core'
+import { privateMatchTopic, projectEventForRole, type Role } from '@xzones/game-core'
 import {
   apiError,
   type ApiError,
@@ -332,8 +332,73 @@ class SupabaseGameApi implements GameApi {
     return this.post<MatchResult>(`/matches/${encodeURIComponent(id)}/end`, { reason })
   }
 
-  async subscribe(_id: string, _role: Role, _handlers: SafeHandlers): Promise<Unsubscribe> {
-    throw new Error('REALTIME_NOT_READY: a live subscription is unavailable until server channel authorization is configured.')
+  async subscribe(id: string, role: Role, handlers: SafeHandlers): Promise<Unsubscribe> {
+    const membership = await this.syncMatch(id)
+    if (!membership.ok) throw new Error('REALTIME_MEMBERSHIP_REQUIRED: sync the match before joining a private channel.')
+    if (membership.data.role !== role) throw new Error('REALTIME_ROLE_MISMATCH: the server confirmed a different role.')
+    const config = settings()
+    if (!config) throw new Error('CONFIG_REQUIRED: configure the public Supabase URL and anon key.')
+    const session = await this.getSession()
+    if (!session.ok) throw new Error('REALTIME_AUTH_REQUIRED: guest session could not be refreshed.')
+
+    const { RealtimeClient } = await import('@supabase/realtime-js')
+    const client = new RealtimeClient(`${config.url}/realtime/v1`, {
+      params: { apikey: config.anonKey },
+      accessToken: async () => {
+        const current = await this.getSession()
+        return current.ok ? current.data.access_token : null
+      },
+      logLevel: 'error',
+    })
+    await client.setAuth(session.data.access_token)
+    let resyncingAfterReconnect = false
+    const channel = client.channel(privateMatchTopic(id, role), { config: { private: true } })
+      .on('broadcast', { event: 'xzones.event' }, ({ payload }) => {
+        if (resyncingAfterReconnect) return
+        const safe = projectEventForRole(role, payload)
+        if (safe && safe.match_id === id) handlers.onEvent({ type: safe.type, payload: safe })
+      })
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false
+      let firstSubscribe = true
+      let timeout = 0
+      const finish = (success: boolean, reason?: string) => {
+        if (settled) return
+        settled = true
+        window.clearTimeout(timeout)
+        if (success) resolve()
+        else reject(new Error(reason ?? 'REALTIME_UNAVAILABLE: private channel subscription failed.'))
+      }
+      timeout = window.setTimeout(() => finish(false), 15_000)
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED' && firstSubscribe) {
+          firstSubscribe = false
+          finish(true)
+        } else if (status === 'SUBSCRIBED') {
+          resyncingAfterReconnect = true
+          void this.syncMatch(id).then((current) => {
+            if (!current.ok || current.data.role !== role) {
+              void client.removeChannel(channel)
+              return
+            }
+            resyncingAfterReconnect = false
+          })
+        }
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') finish(false)
+      })
+    }).catch(async (reason: unknown) => {
+      await client.removeChannel(channel)
+      throw reason
+    })
+
+    let removed = false
+    return () => {
+      if (removed) return
+      removed = true
+      void client.removeChannel(channel)
+      void client.disconnect()
+    }
   }
 }
 

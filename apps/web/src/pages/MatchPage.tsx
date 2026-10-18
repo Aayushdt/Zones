@@ -19,6 +19,7 @@ export function MatchPage() {
   const [seconds, setSeconds] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
   const anchor = useRef(0)
 
   const sync = useCallback(async () => {
@@ -40,6 +41,22 @@ export function MatchPage() {
   }, [matchId, navigate])
 
   useEffect(() => { void sync() }, [sync])
+  useEffect(() => {
+    if (!view) return
+    let active = true
+    let unsubscribe: (() => void) | undefined
+    setLiveStatus('Connecting to your private team channel…')
+    void supabaseGameApi.subscribe(matchId, view.role, { onEvent: () => { void sync() } })
+      .then((stop) => {
+        if (!active) { stop(); return }
+        unsubscribe = stop
+        setLiveStatus('Private team channel connected. Reconnecting sync runs every 15 seconds.')
+      })
+      .catch(() => {
+        if (active) setLiveStatus('Private channel unavailable; role-safe sync will retry every 15 seconds.')
+      })
+    return () => { active = false; unsubscribe?.() }
+  }, [matchId, sync, view?.role])
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (clock) setSeconds(timeLeft(clock, anchor.current))
@@ -79,7 +96,7 @@ export function MatchPage() {
         </div>
       </section>
       {error ? <p className="form-error match-error" role="alert">{error}</p> : null}
-      <p className="match-text-status">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. The map never displays opponent distances or directions.</p>
+      <p className="match-text-status" role="status" aria-live="polite">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. {liveStatus} The map never displays opponent distances or directions.</p>
     </main>
   )
 }
