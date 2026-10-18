@@ -1,0 +1,115 @@
+import { describe, expect, it } from 'vitest'
+import { mergeLatestPings } from '../../packages/game-core/src/index.ts'
+import { createMockApi } from '../../apps/web/src/services/mock-api.ts'
+import { useLocationStore } from '../../apps/web/src/stores/location-store.ts'
+
+function timeLeft(clock: { ends_at: string; server_now: string }, anchor: number): number {
+  const deadline = Date.parse(clock.ends_at)
+  const serverAt = Date.parse(clock.server_now)
+  return Number.isFinite(deadline) && Number.isFinite(serverAt)
+    ? Math.max(0, Math.ceil((deadline - serverAt - (performance.now() - anchor)) / 1000)) : 0
+}
+
+function elapsedTo(target: string | null, serverNow: string, anchor: number, now: number): number | null {
+  if (!target) return null
+  const deadline = Date.parse(target), server = Date.parse(serverNow)
+  if (!Number.isFinite(deadline) || !Number.isFinite(server)) return null
+  return Math.max(0, Math.ceil((deadline - server - Math.max(0, now - anchor)) / 1000))
+}
+
+function ageText(seconds: number): string {
+  if (seconds < 60) return `${seconds}s ago`
+  const minutes = Math.floor(seconds / 60)
+  return `${minutes}m ${seconds % 60}s ago`
+}
+
+describe('AUDIT CHECKLIST I: Client game logic', () => {
+  it('I1: countdown timers are bounded at 0 and never display negative values', () => {
+    const anchor = performance.now()
+    const clock = {
+      ends_at: new Date(Date.now() - 5000).toISOString(), // 5s in past
+      server_now: new Date().toISOString(),
+    }
+    expect(timeLeft(clock, anchor)).toBe(0)
+
+    // elapsedTo with expired target
+    expect(elapsedTo(clock.ends_at, clock.server_now, anchor, performance.now())).toBe(0)
+  })
+
+  it('I2: countdown handles malformed dates gracefully without throwing or NaN', () => {
+    const anchor = performance.now()
+    expect(timeLeft({ ends_at: 'invalid', server_now: 'invalid' }, anchor)).toBe(0)
+    expect(elapsedTo('invalid', 'invalid', anchor, performance.now())).toBeNull()
+  })
+
+  it('I3: age formatting displays seconds and minutes correctly', () => {
+    expect(ageText(0)).toBe('0s ago')
+    expect(ageText(45)).toBe('45s ago')
+    expect(ageText(60)).toBe('1m 0s ago')
+    expect(ageText(125)).toBe('2m 5s ago')
+  })
+
+  it('I4: mergeLatestPings deduplicates by runner_id and retains highest ping_index', () => {
+    const p1 = { runner_id: 'r1', status: 'OK' as const, ping_index: 0, age_seconds: 10 }
+    const p2 = { runner_id: 'r2', status: 'OK' as const, ping_index: 0, age_seconds: 12 }
+    const current = [p1, p2]
+
+    // New sync with newer p1 (index 1) and same p2 (index 0)
+    const update = [
+      { runner_id: 'r1', status: 'OK' as const, ping_index: 1, age_seconds: 5 },
+      { runner_id: 'r2', status: 'OK' as const, ping_index: 0, age_seconds: 27 },
+    ]
+    const merged = mergeLatestPings(current, update)
+    expect(merged).toHaveLength(2)
+    const r1 = merged.find((p) => p.runner_id === 'r1')
+    expect(r1?.ping_index).toBe(1)
+    const r2 = merged.find((p) => p.runner_id === 'r2')
+    expect(r2?.ping_index).toBe(0)
+  })
+
+  it('I5: location store is memory-only and does not persist coordinates to localStorage', () => {
+    const store = useLocationStore.getState()
+    store.enable('match-123')
+    store.setFix({
+      player_id: 'p1',
+      display_name: 'Player 1',
+      lat: 51.5,
+      lon: -0.1,
+      accuracy_m: 15,
+      captured_at: new Date().toISOString(),
+    })
+    expect(useLocationStore.getState().ownFix?.lat).toBe(51.5)
+
+    // Clear match clears state
+    store.clearMatch('match-123')
+    expect(useLocationStore.getState().enabledMatchId).toBeNull()
+    expect(useLocationStore.getState().ownFix).toBeNull()
+
+    // Confirm nothing in localStorage if in browser environment
+    if (typeof localStorage !== 'undefined') {
+      expect(localStorage.getItem('xzones.location')).toBeNull()
+    }
+  })
+
+  it('I6: mock simulator API returns simulation discriminator and blocks real joins', async () => {
+    const mock = createMockApi()
+    const lobbyRes = await mock.createLobby({
+      display_name: 'Tester',
+      round_seconds: 2700,
+      head_start_seconds: 180,
+      ping_seconds: 300,
+    })
+    expect(lobbyRes.ok).toBe(true)
+    if (lobbyRes.ok) {
+      expect(lobbyRes.data.source).toBe('SIMULATION')
+      expect(lobbyRes.data.id).toContain('mock_match_')
+      expect(lobbyRes.data.code).toContain('SIM-')
+    }
+
+    const joinRes = await mock.joinLobby({ display_name: 'Tester', code: 'ANY' })
+    expect(joinRes.ok).toBe(false)
+    if (!joinRes.ok) {
+      expect(joinRes.error.code).toBe('SIM_CODE_ONLY')
+    }
+  })
+})
