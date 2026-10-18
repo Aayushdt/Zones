@@ -87,6 +87,12 @@
 
 ## Step 9d — client Realtime events (F-02)
 
-- **Changed:** The match screen now applies only role-projected private-channel events to the same role-safe view used by sync. It deduplicates event IDs, ignores older per-player location sequences, merges scheduled Hunter snapshots, stops Runner GPS immediately on its tag event, and navigates on terminal match state. The 15-second sync remains the reconnect and missed-event fallback; tagged players unsubscribe.
-- **Check:** `pnpm test:audit` passed (24/24), including duplicate/stale event and own-tag behavior. `pnpm typecheck` passed including the production build; `git diff --check` passed. This checks client event handling, not real socket delivery; that remains unverified until the CI Supabase integration job runs.
-- **Commit:** pending.
+- **Changed:** The match screen now applies only role-projected private-channel events to the same role-safe view used by sync. It deduplicates event IDs, ignores older per-player location sequences, merges scheduled Hunter snapshots, stops Runner GPS immediately on its tag event, and navigates on terminal match state. The 15-second sync remains the reconnect and missed-event fallback; tagged players unsubscribe. Added a CI job that starts a real local Supabase stack, serves the API Edge Function, creates a three-player match, and checks authenticated topic delivery/rejection, location and ping privacy, tag authorization revocation, API payloads, delivery latency, and absence of coordinate rows in `realtime.messages`.
+- **Check:** `node --check tests/realtime/integration.mjs` passed; the new integration job was not run locally because `supabase start` cannot access the Docker socket in this environment. CI result is pending. `pnpm test:audit` passed (25/25), `pnpm test:api` passed (12 Edge + 9 hostile), `pnpm typecheck` passed including production build, and `git diff --check` passed. `pnpm lint` exited successfully with existing React hook warnings. Therefore Step 9d and F-02 remain unverified pending that real-stack job.
+- **Commit:** `8ebe898` (client application) and `811f869` (CI integration gate).
+
+## Step 10 — close location throttle response gap (F-10)
+
+- **Changed:** The existing row-locked, two-second database throttle now maps to HTTP 429 with a bounded `Retry-After` header. The web client treats this response as retryable, waits the indicated time before sending another fix, and shows a non-error pacing status. Replaced the old defect-observation test with a correctness assertion and added client retry metadata coverage.
+- **Check:** `pnpm test:api` passed (12 Edge + 9 hostile, including immediate 429/Retry-After); `pnpm test:audit` passed (25/25); `pnpm typecheck` passed; `pnpm lint` exited successfully with existing hook warnings; `git diff --check` passed.
+- **Commit:** `b0c8415` (`fix: return retry guidance for throttled location uploads`).
