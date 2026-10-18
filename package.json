@@ -14,9 +14,13 @@
     "test:edge": "corepack pnpm exec deno test --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,JOIN_CODE_HMAC_SECRET,RATE_LIMIT_HASH_SECRET backend/supabase/functions/api",
     "verify:payloads": "corepack pnpm exec deno test scripts/verify-payloads.ts",
     "test:unit": "corepack pnpm --filter @xzones/game-core test",
+    "test:audit": "corepack pnpm --filter @xzones/game-core exec vitest run --root ../.. tests/audit/rules_audit.test.ts tests/audit/client_logic_audit.test.ts",
+    "test:db": "bash scripts/test-audit-db.sh",
+    "test:realtime-integration": "node tests/realtime/integration.mjs",
+    "test:api": "corepack pnpm test:edge && corepack pnpm exec deno test --allow-env tests/audit/api_hostile_audit_test.ts",
     "test:sim": "corepack pnpm exec deno test tools/simulator",
     "test:e2e": "corepack pnpm exec playwright test",
-    "test:all": "corepack pnpm test:unit && corepack pnpm test:edge && corepack pnpm verify:payloads && corepack pnpm test:sim && corepack pnpm test:e2e"
+    "test:all": "corepack pnpm test:unit && corepack pnpm test:audit && corepack pnpm test:api && corepack pnpm verify:payloads && corepack pnpm test:sim && corepack pnpm test:e2e && corepack pnpm test:db"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

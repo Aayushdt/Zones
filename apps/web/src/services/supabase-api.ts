@@ -14,6 +14,7 @@ import {
   type QrChallenge,
   type ReadyView,
   type Result,
+  type RemovePlayerResult,
   type RoleSafeMatchView,
   type SafeHandlers,
   type TagResult,
@@ -125,13 +126,15 @@ function asLobby(data: ApiLobbyResponse, displayName: string, code: string): Lob
   }
 }
 
-function parseApiError(value: unknown, status: number): ApiError {
+export function parseApiError(value: unknown, status: number, retryAfter: string | null): ApiError {
+  const retryAfterSeconds = retryAfter !== null && /^\d+$/.test(retryAfter) ? Math.min(30, Math.max(1, Number(retryAfter))) : undefined
   if (value !== null && typeof value === 'object') {
     const root = value as { error?: unknown }
     if (root.error !== null && typeof root.error === 'object') {
       const detail = root.error as { code?: unknown; message?: unknown }
       if (typeof detail.code === 'string' && typeof detail.message === 'string') {
-        return apiError(detail.code, detail.message, status >= 500)
+        return { ...apiError(detail.code, detail.message, status >= 500 || status === 429),
+          ...(status === 429 && retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}) }
       }
     }
   }
@@ -179,7 +182,7 @@ class SupabaseGameApi implements GameApi {
     }
   }
 
-  private async post<T>(path: string, body: object, retry = true): Promise<Result<T>> {
+  private async post<T>(path: string, body: object, retry = true, method: 'POST' | 'DELETE' = 'POST'): Promise<Result<T>> {
     const config = settings()
     if (!config) {
       return error('CONFIG_REQUIRED', 'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to apps/web/.env.local, then restart Vite.')
@@ -189,7 +192,7 @@ class SupabaseGameApi implements GameApi {
 
     try {
       const response = await fetch(`${config.url}/functions/v1/api${path}`, {
-        method: 'POST',
+        method,
         headers: {
           apikey: config.anonKey,
           authorization: `Bearer ${session.data.access_token}`,
@@ -201,9 +204,9 @@ class SupabaseGameApi implements GameApi {
       if (response.status === 401 && retry) {
         const refreshed = await this.getSession(true)
         if (!refreshed.ok) return refreshed
-        return this.post<T>(path, body, false)
+        return this.post<T>(path, body, false, method)
       }
-      if (!response.ok) return { ok: false, error: parseApiError(payload, response.status) }
+      if (!response.ok) return { ok: false, error: parseApiError(payload, response.status, response.headers.get('retry-after')) }
       return { ok: true, data: payload as T }
     } catch {
       return error('NETWORK_ERROR', 'Could not reach the game service. Check your connection.', true)
@@ -251,6 +254,10 @@ class SupabaseGameApi implements GameApi {
     }
   }
 
+  async removeLobbyPlayer(id: string, playerId: string): Promise<Result<RemovePlayerResult>> {
+    return this.post<RemovePlayerResult>(`/matches/${encodeURIComponent(id)}/players/${encodeURIComponent(playerId)}`, {}, true, 'DELETE')
+  }
+
   async selectTeam(id: string, role: Role | 'RANDOM'): Promise<Result<TeamView>> {
     const result = await this.post<{ role: Role; counts: { hunters: number; runners: number }; can_start: boolean; block_reason?: string }>(
       `/matches/${encodeURIComponent(id)}/team`, { role },
@@ -286,11 +293,13 @@ class SupabaseGameApi implements GameApi {
       can_claim?: boolean
       claim_expires_at?: string | null
       own_player_id?: string | null
+      own_status?: 'ACTIVE' | 'TAGGED'
       revision: number
       next_ping_at?: string | null
       events: Array<{ type?: unknown; data?: unknown }>
     }>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: revision })
     if (!result.ok) return result
+    const ownStatus: 'ACTIVE' | 'TAGGED' = result.data.own_status === 'TAGGED' ? 'TAGGED' : 'ACTIVE'
     const common = {
       state: result.data.state,
       server_now: result.data.server_now,
@@ -299,6 +308,7 @@ class SupabaseGameApi implements GameApi {
       can_claim: result.data.can_claim === true,
       claim_expires_at: result.data.claim_expires_at ?? null,
       own_player_id: result.data.own_player_id ?? '',
+      own_status: ownStatus,
       revision: result.data.revision,
       next_ping_at: typeof result.data.next_ping_at === 'string' ? result.data.next_ping_at : null,
       own_team_positions: result.data.events.flatMap((event) => {
@@ -385,7 +395,7 @@ class SupabaseGameApi implements GameApi {
     })
     await client.setAuth(session.data.access_token)
     let resyncingAfterReconnect = false
-    const channel = client.channel(privateMatchTopic(id, role), { config: { private: true } })
+    const channel = client.channel(privateMatchTopic(id, role, membership.data.own_player_id), { config: { private: true } })
       .on('broadcast', { event: 'xzones.event' }, ({ payload }) => {
         if (resyncingAfterReconnect) return
         const safe = projectEventForRole(role, payload)

@@ -17,6 +17,7 @@ interface LocationState {
   setFix: (fix: CurrentFix) => void
   setStatus: (status: string) => void
   clearMatch: (matchId: string) => void
+  stopSharing: (matchId: string, reason: string) => void
 }
 
 // Deliberately memory-only: never persist a coordinate or location status.
@@ -29,4 +30,6 @@ export const useLocationStore = create<LocationState>((set) => ({
   setStatus: (status) => set({ status }),
   clearMatch: (matchId) => set((state) => state.enabledMatchId === matchId
     ? { enabledMatchId: null, ownFix: null, status: 'Location sharing stopped.' } : state),
+  stopSharing: (matchId, status) => set((state) => state.enabledMatchId === matchId
+    ? { enabledMatchId: null, ownFix: null, status } : state),
 }))

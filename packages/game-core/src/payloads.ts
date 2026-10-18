@@ -36,8 +36,10 @@ function projectData(role: RecipientRole, type: string, data: Data): Data | null
       if (data.team_role !== undefined && data.team_role !== role) return null
       const point = geoPoint(data), playerId = text(data.player_id)
       const age = integer(data.age_seconds)
+      const sequence = integer(data.sequence)
       return point && playerId && age !== null && age >= 0 && typeof data.is_stale === 'boolean'
-        ? { player_id: playerId, display_name: text(data.display_name), ...point, age_seconds: age, is_stale: data.is_stale }
+        ? { player_id: playerId, display_name: text(data.display_name), ...point, age_seconds: age, is_stale: data.is_stale,
+          ...(sequence !== null && sequence >= 0 ? { sequence } : {}) }
         : point && playerId ? { player_id: playerId, ...point } : null
     }
     case 'hunter.runner_ping': {
@@ -80,7 +82,8 @@ function projectData(role: RecipientRole, type: string, data: Data): Data | null
     case 'player.left':
       return { player_id: text(data.player_id), status: data.status === 'LEFT' ? 'LEFT' : null }
     case 'match.host_migrated':
-      return { controller_player_id: text(data.controller_player_id), claim_expires_at: text(data.claim_expires_at) }
+      return { controller_player_id: text(data.controller_player_id),
+        claim_expires_at: data.claim_expires_at === null ? null : text(data.claim_expires_at) }
     case 'match.ended':
       return { state: data.state === 'ENDED' || data.state === 'CANCELLED' ? data.state : null,
         winner: data.winner === 'HUNTER' || data.winner === 'RUNNER' ? data.winner : null,

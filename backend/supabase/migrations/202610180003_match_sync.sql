@@ -79,15 +79,15 @@ begin
         v_due_index,
         case
           when f.player_id is null then 'NO_FIX'
-          when f.received_at < v_server_now - interval '60 seconds' then 'STALE'
+          when f.captured_at <= v_server_now - interval '60 seconds' then 'STALE'
           else 'OK'
         end,
-        case when f.player_id is not null and f.received_at >= v_server_now - interval '60 seconds' then f.lat else null end,
-        case when f.player_id is not null and f.received_at >= v_server_now - interval '60 seconds' then f.lon else null end,
-        case when f.player_id is not null and f.received_at >= v_server_now - interval '60 seconds' then f.accuracy_m else null end,
-        case when f.player_id is not null and f.received_at >= v_server_now - interval '60 seconds' then f.captured_at else null end,
+        case when f.player_id is not null and f.captured_at > v_server_now - interval '60 seconds' then f.lat else null end,
+        case when f.player_id is not null and f.captured_at > v_server_now - interval '60 seconds' then f.lon else null end,
+        case when f.player_id is not null and f.captured_at > v_server_now - interval '60 seconds' then f.accuracy_m else null end,
+        case when f.player_id is not null and f.captured_at > v_server_now - interval '60 seconds' then f.captured_at else null end,
         v_ping_at,
-        case when f.player_id is null then 0 else greatest(0, floor(extract(epoch from (v_server_now - f.received_at))))::integer end,
+        case when f.player_id is null then 0 else greatest(0, floor(extract(epoch from (v_server_now - f.captured_at))))::integer end,
         v_server_now,
         v_match.revision + 1
       from public.players p
@@ -111,14 +111,14 @@ begin
       'accuracy_m', latest.accuracy_m,
       'captured_at', latest.captured_at,
       'ping_at', latest.ping_at,
-      'age_seconds', greatest(0, floor(extract(epoch from (v_server_now - latest.received_at))))::integer,
+      'age_seconds', latest.age_seconds,
       'ping_index', latest.ping_index,
       'revision', latest.revision
     ) order by latest.runner_id), '[]'::jsonb)
     into v_due_pings
     from (
       select distinct on (s.runner_id)
-        s.runner_id, s.status, s.lat, s.lon, s.accuracy_m, s.captured_at,
+        s.runner_id, s.status, s.lat, s.lon, s.accuracy_m, s.captured_at, s.age_seconds,
         s.ping_at, s.received_at, s.ping_index, s.revision
       from public.ping_snapshots s
       where s.match_id = p_match_id

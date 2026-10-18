@@ -5,15 +5,15 @@ This list records incomplete implementation or checks. It does not imply that an
 ## Requires a Supabase project
 
 - No hosted Supabase project is configured. Private create/join, anonymous Auth, Edge Function RPCs, server secrets, RLS, and private Realtime have not been exercised end to end against Supabase.
-- Docker was unavailable to this development session, so `supabase start`, `supabase db reset`, and local Edge Function serving were not run. Migrations and SQL smoke tests were instead run on temporary vanilla PostgreSQL 18.6 with test-only Auth/Realtime shims.
-- Realtime authorization predicates and event projections have local tests, but admission/publish behavior in Supabase Realtime remains unverified.
+- `supabase start` fails in this development environment because access to `/var/run/docker.sock` is denied. A `supabase-realtime` GitHub Actions job now starts the real local Supabase stack, serves the `api` Edge Function, and exercises Auth/Realtime; it has not run yet. Migrations and SQL smoke tests were run on temporary vanilla PostgreSQL with test-only Auth/Realtime shims.
+- Realtime event publishing and client application are implemented, with role projections, RLS predicates, mocked transport tests, client deduplication, and a real-stack integration script. Actual Supabase topic admission, delivery latency, tag/leave revocation, and `realtime.messages` persistence checks remain unverified until that job passes.
 
 ## Gameplay and phone verification
 
-- Live teammate coordinates are stored and returned through the role-filtered match sync endpoint. The location upload endpoint does not itself publish a Realtime Broadcast; the map currently relies on its 15-second match sync fallback. True low-latency live position broadcasts have not been verified or implemented.
+- Live teammate coordinates are stored in one mutable row and published to private same-team topics after accepted uploads. The map applies role-projected, deduplicated events and keeps a 15-second sync fallback. End-to-end live delivery is not verified until the Supabase integration job passes.
 - Browser tests cover onboarding, settings persistence, join-code validation, and offline messaging. They do not create a real match or exercise location permission, camera, QR tagging, device background suspension, or two-phone play.
 - The PWA requires HTTPS on phones for geolocation and camera. No HTTPS deployment or Android device test has been done. Phase A does not provide reliable lock-screen/background location; keep the phone with you and the screen awake.
-- Cloudflare Pages deployment is configured as a manual, opt-in workflow but has not been configured or run. GitHub Actions CI has not yet run on GitHub.
+- Cloudflare Pages deployment is configured as a manual, opt-in workflow but has not been configured or run. GitHub Actions CI and its Supabase integration job have not run on GitHub.
 
 ## Build and provider notes
 

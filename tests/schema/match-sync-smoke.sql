@@ -91,6 +91,14 @@ begin
      or v_runner_result::text like '%42.88%' or v_runner_result::text like '%hunter.runner_ping%' then
     raise exception 'Runner sync response leaked coordinate or Hunter snapshot fields';
   end if;
+
+  update public.players set status = 'TAGGED' where id = v_fresh_runner;
+  delete from public.latest_fix where player_id = v_fresh_runner;
+  v_runner_result := public.xzones_sync_match(v_fresh_runner, v_match, 0);
+  if v_runner_result->>'own_status' <> 'TAGGED' or v_runner_result->>'own_player_id' <> v_fresh_runner::text
+     or v_runner_result->'runner_notice' <> 'null'::jsonb then
+    raise exception 'Tagged Runner must receive own status only, with no ping notice: %', v_runner_result;
+  end if;
 end;
 $$;
 

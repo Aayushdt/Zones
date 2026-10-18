@@ -71,7 +71,8 @@ export function canStartLobby(players: readonly TeamMember[]): StartCheck {
 
   if (active.length < MIN_PLAYERS) return { canStart: false, blockReason: 'NEEDS_THREE_PLAYERS', activeCounts }
   if (active.length > MAX_PLAYERS) return { canStart: false, blockReason: 'LOBBY_FULL', activeCounts }
-  if (active.some((player) => player.role === null) || hunters === 0 || runners === 0) {
+  const target = balanceTeams(active.length)?.hunters
+  if (active.some((player) => player.role === null) || hunters !== target || runners === 0) {
     return { canStart: false, blockReason: 'NEEDS_TEAMS', activeCounts }
   }
   if (active.some((player) => !player.ready)) {

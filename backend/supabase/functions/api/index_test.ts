@@ -1,8 +1,48 @@
 import { handleRequest } from './index.ts'
+import { publishRoleEvents } from './broadcast.ts'
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
 }
+
+Deno.test('low-frequency Realtime events are role-projected, private, and best-effort', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  const sent: Array<{ url: string; headers: Headers; payload: Record<string, unknown> }> = []
+  globalThis.fetch = async (input, init) => {
+    if (String(input).includes('/rest/v1/players?')) return Response.json([
+      { id: 'f28cc076-14b5-4553-8d39-86daf01e4cc0', role: 'RUNNER' },
+      { id: '18c5cc21-ded0-4a61-a3f4-5e3af52a867b', role: 'RUNNER' },
+      { id: '6e69bd10-73ec-46ae-b497-846029e38b1f', role: 'HUNTER' },
+    ])
+    sent.push({ url: String(input), headers: new Headers(init?.headers), payload: JSON.parse(String(init?.body)) })
+    return new Response(null, { status: 202 })
+  }
+  const matchId = '63adbd40-4fc6-4d7c-b7a8-1f18f97496a3'
+  const events = [
+    { event_id: 'state-1', match_id: matchId, revision: 7, server_at: '2026-10-19T00:00:00Z', type: 'match.state',
+      data: { state: 'ACTIVE', server_now: '2026-10-19T00:00:00Z', ends_at: '2026-10-19T00:45:00Z', active_counts: { hunters: 1, runners: 2 } } },
+    { event_id: 'ping-1', match_id: matchId, revision: 7, server_at: '2026-10-19T00:00:00Z', type: 'hunter.runner_ping',
+      data: { runner_id: 'runner-1', status: 'OK', lat: 1, lon: 2, accuracy_m: 5, captured_at: '2026-10-19T00:00:00Z', ping_at: '2026-10-19T00:00:00Z', age_seconds: 0, ping_index: 0 } },
+    { event_id: 'live-1', match_id: matchId, revision: 7, server_at: '2026-10-19T00:00:00Z', type: 'team.location_live',
+      data: { player_id: 'runner-1', team_role: 'RUNNER', lat: 1, lon: 2, accuracy_m: 5, captured_at: '2026-10-19T00:00:00Z', age_seconds: 0, is_stale: false, sequence: 99 } },
+  ]
+  try {
+    await publishRoleEvents(matchId, events)
+    assert(sent.length === 6, 'should fan out each role-projected event to active players only')
+    const topicOf = (message: { url: string }) => decodeURIComponent(new URL(message.url).pathname.split('/api/broadcast/')[1].split('/events/')[0])
+    assert(sent.filter((message) => topicOf(message).includes(':hunter:')).length === 2, 'active Hunter topic should receive state and its scheduled ping')
+    assert(sent.filter((message) => topicOf(message).includes(':runner:')).length === 4, 'active Runner topics should receive safe state and teammate location')
+    assert(sent.every((message) => message.url.includes('?private=true') && message.url.includes('/events/xzones.event')), 'broadcasts must use the private shared event name')
+    assert(sent.every((message) => message.headers.get('apikey') === 'server-test-key'), 'server API key must authenticate REST publishing')
+    assert(!sent.some((message) => topicOf(message).includes(':runner:') && message.payload.type === 'hunter.runner_ping'), 'Runner topic must never receive the Hunter-only ping')
+    assert((sent.find((message) => message.payload.type === 'team.location_live')?.payload.data as Record<string, unknown>).sequence === 99, 'team location event should preserve the fix sequence')
+  } finally { globalThis.fetch = originalFetch }
+
+  globalThis.fetch = async () => { throw new Error('Realtime unavailable') }
+  try { await publishRoleEvents(matchId, events) } finally { globalThis.fetch = originalFetch }
+})
 
 Deno.test('api router handles CORS, method and guest-auth errors without leaking details', async () => {
   const options = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies', { method: 'OPTIONS' }))
@@ -94,19 +134,32 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
   Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
   Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
   let requestedRole: 'HUNTER' | 'RUNNER' = 'RUNNER'
+  let requestedStatus: 'ACTIVE' | 'TAGGED' = 'ACTIVE'
+  let teamPositionsCalled = false
+  const published: Array<{ topic: string; payload: Record<string, unknown> }> = []
   const originalFetch = globalThis.fetch
   globalThis.fetch = async (input, init) => {
     const url = String(input)
+    if (url.includes('/rest/v1/players?')) return Response.json([
+      { id: 'f28cc076-14b5-4553-8d39-86daf01e4cc0', role: requestedRole },
+    ])
+    if (url.includes('/rest/v1/matches?')) return Response.json([{ revision: 9, state: 'ACTIVE', ends_at: '2026-10-18T18:45:00Z' }])
+    if (url.includes('/realtime/v1/api/broadcast/')) {
+      const topic = decodeURIComponent(new URL(url).pathname.split('/api/broadcast/')[1].split('/events/')[0])
+      published.push({ topic, payload: JSON.parse(String(init?.body)) as Record<string, unknown> })
+      return new Response(null, { status: 202 })
+    }
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
     if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({ deleted_matches: 0 })
     if (url.endsWith('/rest/v1/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
     if (url.endsWith('/rest/v1/rpc/xzones_match_controls')) return Response.json({ can_end: false, can_claim: false })
-    if (url.endsWith('/rest/v1/rpc/xzones_team_positions')) return Response.json({
-      role: requestedRole, own_player_id: 'own-player', positions: [
+    if (url.endsWith('/rest/v1/rpc/xzones_team_positions')) {
+      teamPositionsCalled = true
+      return Response.json({ role: requestedRole, own_player_id: 'own-player', positions: [
         { player_id: 'same-team', display_name: 'Teammate', team_role: requestedRole, lat: 25.6, lon: 85.1, accuracy_m: 5, captured_at: '2026-10-18T18:07:58Z', age_seconds: 2, is_stale: false },
         { player_id: 'opposing-player', display_name: 'Opponent', team_role: requestedRole === 'RUNNER' ? 'HUNTER' : 'RUNNER', lat: 99, lon: 99, accuracy_m: 1, captured_at: 't', age_seconds: 1, is_stale: false },
-      ],
-    })
+      ] })
+    }
     if (url.endsWith('/rest/v1/rpc/xzones_sync_lobby')) return Response.json({ error: 'NOT_LOBBY' })
     if (url.endsWith('/rest/v1/rpc/xzones_match_clock')) return Response.json({
       state: 'ACTIVE', server_now: '2026-10-18T18:08:00.000Z', start_at: '2026-10-18T18:00:00.000Z',
@@ -118,6 +171,7 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
       return Response.json({
         state: 'ACTIVE', server_now: '2026-10-18T18:08:00.000Z', ends_at: '2026-10-18T18:45:00.000Z',
         revision: 9, role: requestedRole, active_counts: { hunters: 1, runners: 2 },
+        own_player_id: 'own-player', own_status: requestedStatus,
         due_pings: [{
           runner_id: 'fake-runner-1', status: 'OK', lat: 12.3, lon: 45.6, accuracy_m: 5,
           captured_at: '2026-10-18T18:07:58.000Z', ping_at: '2026-10-18T18:08:00.000Z',
@@ -130,8 +184,10 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     throw new Error(`Unexpected test URL: ${url}`)
   }
 
-  async function syncAs(role: 'HUNTER' | 'RUNNER') {
+  async function syncAs(role: 'HUNTER' | 'RUNNER', status: 'ACTIVE' | 'TAGGED' = 'ACTIVE') {
     requestedRole = role
+    requestedStatus = status
+    teamPositionsCalled = false
     return handleRequest(new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/sync', {
       method: 'POST',
       headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
@@ -151,7 +207,11 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     assert(runner.own_player_id === 'own-player', 'sync should identify the current member for local map rendering')
     assert(runner.events.some((event: { type: string; data: { player_id?: string } }) => event.type === 'team.location_live' && event.data.player_id === 'same-team'), 'Runner should receive live Runner teammate positions')
     assert(!JSON.stringify(runner).includes('opposing-player'), 'Runner response leaked a Hunter teammate position')
+    assert(runner.own_status === 'ACTIVE', 'sync should return the caller own active status')
+    assert(published.some((event) => event.topic.endsWith(':runner:f28cc076-14b5-4553-8d39-86daf01e4cc0') && event.payload.type === 'runner.location_revealed'), 'Runner generic ping notice should publish to its player topic')
+    assert(!published.some((event) => event.topic.includes(':runner:') && event.payload.type === 'hunter.runner_ping'), 'Hunter-only snapshots must not publish to a Runner topic')
 
+    published.length = 0
     const hunterResponse = await syncAs('HUNTER')
     const hunter = await hunterResponse.json()
     assert(hunterResponse.status === 200, 'Hunter sync should succeed')
@@ -159,6 +219,16 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     assert(!JSON.stringify(hunter).includes('hunter_coordinates'), 'Hunter response leaked hidden extra metadata')
     assert(hunter.events.some((event: { type: string; data: { player_id?: string } }) => event.type === 'team.location_live' && event.data.player_id === 'same-team'), 'Hunter should receive live Hunter teammate positions')
     assert(!JSON.stringify(hunter).includes('opposing-player'), 'Hunter response leaked a Runner live position')
+    assert(published.some((event) => event.topic.includes(':hunter:') && event.payload.type === 'hunter.runner_ping'), 'scheduled ping snapshots should publish to Hunter player topics')
+    assert(!published.some((event) => event.topic.includes(':runner:') && event.payload.type === 'hunter.runner_ping'), 'Hunter snapshots must never publish to a Runner topic')
+
+    const taggedResponse = await syncAs('RUNNER', 'TAGGED')
+    const tagged = await taggedResponse.json()
+    assert(taggedResponse.status === 200, 'tagged Runner sync should remain available')
+    assert(tagged.own_status === 'TAGGED', 'sync should expose only the caller tagged status')
+    assert(!teamPositionsCalled, 'tagged Runner must not trigger live team-location reads')
+    assert(!tagged.events.some((event: { type: string }) => event.type === 'team.location_live'), 'tagged Runner must not receive live locations')
+    assert(!teamPositionsCalled, 'tagged Runner must not trigger live team-location reads')
   } finally {
     globalThis.fetch = originalFetch
   }
@@ -370,9 +440,18 @@ Deno.test('location route validates before RPC, stores through the server, and n
   Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
   const originalFetch = globalThis.fetch
   const captured: Record<string, unknown>[] = []
+  const broadcasts: Array<{ topic: string; event: Record<string, unknown> }> = []
   globalThis.fetch = async (input, init) => {
     const url = String(input)
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.includes('/rest/v1/matches?')) return Response.json([{ revision: 12, state: 'ACTIVE', ends_at: '2026-10-18T18:45:00Z', controller_player_id: 'player-1', claim_expires_at: null }])
+    if (url.includes('/rest/v1/players?')) return Response.json([{ id: 'f28cc076-14b5-4553-8d39-86daf01e4cc0', display_name: 'Runner One', role: 'RUNNER' }])
+    if (url.includes('/rest/v1/latest_fix?')) return Response.json([{ player_id: 'player-1', lat: 25.6, lon: 85.1, accuracy_m: 5, captured_at: '2026-10-18T12:59:55Z', sequence: 7 }])
+    if (url.includes('/realtime/v1/api/broadcast/')) {
+      const topic = decodeURIComponent(new URL(url).pathname.split('/api/broadcast/')[1].split('/events/')[0])
+      broadcasts.push({ topic, event: JSON.parse(String(init?.body)) as Record<string, unknown> })
+      return new Response(null, { status: 202 })
+    }
     if (url.endsWith('/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
     if (url.endsWith('/rpc/xzones_update_location')) {
       captured.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
@@ -391,5 +470,9 @@ Deno.test('location route validates before RPC, stores through the server, and n
     assert(response.status === 200 && ack.accepted === true, 'valid location should be acknowledged')
     assert(captured[0]?.p_sequence === 7, 'location sequence should reach the storage RPC')
     assert(ack.lat === undefined && ack.lon === undefined, 'acknowledgement must never echo coordinates')
+    assert(broadcasts.length === 1 && broadcasts[0].topic.endsWith(':runner:f28cc076-14b5-4553-8d39-86daf01e4cc0'), 'accepted fix should publish only to the verified Runner player topic')
+    assert(broadcasts[0].event.type === 'team.location_live' && broadcasts[0].event.server_at === '2026-10-18T13:00:00Z', 'broadcast should use the event type and server acknowledgement time')
+    assert((broadcasts[0].event.data as Record<string, unknown>).captured_at === '2026-10-18T12:59:55Z', 'broadcast must use the server-stored clamped timestamp')
+    assert((broadcasts[0].event.data as Record<string, unknown>).sequence === 7, 'location event should include sequence for dedupe')
   } finally { globalThis.fetch = originalFetch }
 })

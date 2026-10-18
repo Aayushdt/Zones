@@ -8,7 +8,7 @@ import { useLocationStore } from '../stores/location-store'
 const reasonText: Record<string, string> = {
   NEEDS_THREE_PLAYERS: 'At least three active players are needed.',
   LOBBY_FULL: 'This lobby has reached its 12-player limit.',
-  NEEDS_TEAMS: 'Assign every player to a team. Keep at least one Runner and one Hunter.',
+  NEEDS_TEAMS: 'Choose teams using the required Hunter count and assign everyone before starting.',
   WAITING_FOR_READY: 'Every player must be ready before the host can start.',
 }
 
@@ -66,6 +66,15 @@ export function LobbyPage() {
     await refresh()
   }
 
+  async function removePlayer(playerId: string) {
+    if (!lobby || lobby.you.id !== lobby.controller_player_id || playerId === lobby.you.id) return
+    setPending(true)
+    const result = await supabaseGameApi.removeLobbyPlayer(matchId, playerId)
+    setPending(false)
+    if (!result.ok) { setError(result.error.message); return }
+    await refresh()
+  }
+
   async function start() {
     if (!lobby?.can_start || lobby.you.id !== lobby.controller_player_id) return
     setPending(true)
@@ -115,9 +124,9 @@ export function LobbyPage() {
           <span className="team-count runner-count">{lobby.active_counts.runners} Runners</span>
           <span className="team-count hunter-count">{lobby.active_counts.hunters} Hunters</span>
         </div>
-        <Roster title="Runners" players={runners} youId={lobby.you.id} controllerId={lobby.controller_player_id} />
-        <Roster title="Hunters" players={hunters} youId={lobby.you.id} controllerId={lobby.controller_player_id} />
-        {unassigned.length ? <Roster title="Choose a team" players={unassigned} youId={lobby.you.id} controllerId={lobby.controller_player_id} /> : null}
+        <Roster title="Runners" players={runners} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
+        <Roster title="Hunters" players={hunters} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
+        {unassigned.length ? <Roster title="Choose a team" players={unassigned} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} /> : null}
         <div className="team-picker" aria-label="Choose team">
           {(['RUNNER', 'HUNTER', 'RANDOM'] as const).map((role) => (
             <button key={role} className={ownRole === role ? 'segment is-selected' : 'segment'} aria-pressed={ownRole === role} disabled={pending} onClick={() => void selectTeam(role)} type="button">
@@ -139,7 +148,14 @@ export function LobbyPage() {
   )
 }
 
-function Roster({ title, players, youId, controllerId }: { title: string; players: PlayerView[]; youId: string; controllerId: string }) {
+function Roster({ title, players, youId, controllerId, onRemove, disabled }: {
+  title: string
+  players: PlayerView[]
+  youId: string
+  controllerId: string
+  onRemove?: (playerId: string) => void
+  disabled: boolean
+}) {
   return (
     <section className="roster" aria-label={title}>
       <h2>{title} <span>{players.length}</span></h2>
@@ -150,6 +166,9 @@ function Roster({ title, players, youId, controllerId }: { title: string; player
             {player.id === controllerId ? <span className="ready-chip host-chip">Host</span> : null}
             {player.id === youId && player.id !== controllerId ? <span className="ready-chip">You</span> : null}
             {player.ready ? <span className="ready-chip">Ready</span> : <span className="not-ready-chip">Not ready</span>}
+            {onRemove && player.id !== youId
+              ? <button aria-label={`Remove ${player.display_name} from lobby`} className="welcome__secondary" disabled={disabled} onClick={() => onRemove(player.id)} type="button">Remove</button>
+              : null}
           </span>
         </div>
       )) : <p className="field-help">No players yet.</p>}

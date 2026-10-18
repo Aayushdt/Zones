@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import type { QrChallenge, RoleSafeMatchView, TagResult } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
+import { useLocationStore } from '../stores/location-store'
 
 const CameraScanner = lazy(() => import('../components/CameraScanner'))
 
@@ -18,13 +19,17 @@ export function TagPage() {
   const [error, setError] = useState('')
   const [seconds, setSeconds] = useState(0)
   const [anchor, setAnchor] = useState<{ serverNow: number; monotonic: number } | null>(null)
+  const stopSharing = useLocationStore((state) => state.stopSharing)
 
   const sync = useCallback(async () => {
     const result = await supabaseGameApi.syncMatch(matchId)
     if (!result.ok) { setError(result.error.message); return }
     setView(result.data)
+    if (result.data.own_status === 'TAGGED') {
+      stopSharing(matchId, 'You are tagged. Location sharing and GPS watcher are stopped.')
+    }
     if (result.data.state === 'ENDED') navigate(`/match/${matchId}/results`, { replace: true })
-  }, [matchId, navigate])
+  }, [matchId, navigate, stopSharing])
 
   useEffect(() => { void sync() }, [sync])
   useEffect(() => {
@@ -78,9 +83,11 @@ export function TagPage() {
     </div>
     <section className="state-panel tag-panel" aria-label="Tag controls">
       {role === 'RUNNER' && <>
+        {view?.own_status === 'TAGGED' ? <p role="status">You are tagged. Your location sharing has stopped.</p> : <>
         <p role="status">{status || 'Keep this screen ready if a Hunter tags you.'}</p>
         {qrDataUrl && seconds > 0 ? <div className="tag-qr"><img src={qrDataUrl} alt="One-time Runner tag QR code" /><span>{seconds}s remaining</span></div> : <button className="welcome__action" disabled={busy} onClick={() => void issue()} type="button">{busy ? 'Preparing…' : 'Generate tag QR'}</button>}
         <button className="welcome__secondary" disabled={busy} onClick={() => void confirm()} type="button">I was tagged</button>
+        </>}
       </>}
       {role === 'HUNTER' && <>
         <p role="status">{status || 'Scan the QR shown by the Runner to record a tag.'}</p>

@@ -6,6 +6,7 @@ export type ApiError = {
   code: string
   message: string
   retryable: boolean
+  retryAfterSeconds?: number
 }
 
 export interface PlayerView {
@@ -42,7 +43,7 @@ export interface CreateInput {
   zone_diameter_m?: number
   round_seconds: number
   head_start_seconds: number
-  ping_seconds: number
+  ping_seconds: number | null
 }
 
 export interface JoinInput {
@@ -63,6 +64,8 @@ export interface ReadyView {
   block_reason?: string
 }
 
+export interface RemovePlayerResult { accepted: boolean; player_id: string; state: 'LOBBY' }
+
 export interface ClockView {
   state: 'HEAD_START' | 'ACTIVE' | 'ENDED'
   server_now: string
@@ -80,6 +83,7 @@ interface MatchViewBase {
   can_claim: boolean
   claim_expires_at: string | null
   own_player_id: string
+  own_status: 'ACTIVE' | 'TAGGED'
   next_ping_at: string | null
   own_team_positions: Array<{ player_id: string; display_name: string; lat: number; lon: number; accuracy_m: number; captured_at: string; age_seconds: number; is_stale: boolean }>
 }
@@ -127,6 +131,7 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   createLobby(input: CreateInput): Promise<Result<Lobby>>
   joinLobby(input: JoinInput): Promise<Result<Lobby>>
   getLobby(id: string): Promise<Result<Lobby>>
+  removeLobbyPlayer(id: string, playerId: string): Promise<Result<RemovePlayerResult>>
   selectTeam(id: string, role: Role | 'RANDOM'): Promise<Result<TeamView>>
   setReady(id: string, ready: boolean): Promise<Result<ReadyView>>
   startMatch(id: string, expectedRevision?: number): Promise<Result<ClockView>>

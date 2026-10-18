@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router-dom'
 import { haversineDistanceMeters } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useLocationStore } from '../stores/location-store'
+import { watchDeviceLocation } from '../services/device-lifecycle'
 
 let lastSequence = 0
 let lastSentAt = 0
@@ -31,8 +32,8 @@ export function LocationSharing() {
       return
     }
     let disposed = false
-    let watchId: number | null = null
     let sending = false
+    let retryAfterAt = 0
     const syncOnResume = () => {
       if (document.visibilityState === 'visible' && navigator.onLine) void supabaseGameApi.syncMatch(matchId)
     }
@@ -46,6 +47,10 @@ export function LocationSharing() {
         setStatus('Background or offline; uploads paused. Your last fix becomes stale.')
         return
       }
+      if (Date.now() < retryAfterAt) {
+        setStatus(`Location update paced by the server; retrying in ${Math.ceil((retryAfterAt - Date.now()) / 1000)} seconds.`)
+        return
+      }
       const moved = lastSentFix ? haversineDistanceMeters(lastSentFix.lat, lastSentFix.lon, point.lat, point.lon) ?? 0 : Infinity
       if (sending || (lastSentAt && Date.now() - lastSentAt < 10_000 && moved < 10)) return
       sending = true
@@ -56,7 +61,15 @@ export function LocationSharing() {
       })
       sending = false
       if (disposed) return
-      if (!result.ok) { setStatus(result.error.message); return }
+      if (!result.ok) {
+        if (result.error.code === 'RATE_LIMITED') {
+          const delay = result.error.retryAfterSeconds ?? 2
+          retryAfterAt = Date.now() + delay * 1000
+          setStatus(`Location update paced by the server; retrying in ${delay} seconds.`)
+          return
+        }
+        setStatus(result.error.message); return
+      }
       if (!result.data.accepted) { setStatus(result.data.reason === 'POOR_ACCURACY' ? 'GPS accuracy is over 100 m; waiting for a clearer fix.' : 'The server rejected this stale location fix.'); return }
       lastSentAt = Date.now()
       lastSentFix = point
@@ -69,9 +82,7 @@ export function LocationSharing() {
         void supabaseGameApi.setReady(matchId, false)
       } else setStatus('Waiting for GPS. Move outdoors or retry after the signal improves.')
     }
-    watchId = navigator.geolocation.watchPosition((fix) => void upload(fix), onError, {
-      enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000,
-    })
+    const stopWatching = watchDeviceLocation(true, navigator.geolocation, (fix) => void upload(fix), onError)
     const onOnline = () => { setStatus('Connection restored; syncing match.'); syncOnResume() }
     const onOffline = () => setStatus('Offline; location uploads paused and match data is not cached.')
     window.addEventListener('online', onOnline)
@@ -79,7 +90,7 @@ export function LocationSharing() {
     document.addEventListener('visibilitychange', syncOnResume)
     return () => {
       disposed = true
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId)
+      stopWatching()
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
       document.removeEventListener('visibilitychange', syncOnResume)

@@ -103,7 +103,7 @@ begin
   if v_result->>'state' <> 'ENDED' or v_result->>'winner' <> 'RUNNER' then
     raise exception 'timer deadline should award Runners: %', v_result;
   end if;
-  if not exists (select 1 from public.match_results where match_id = v_match_timer and end_reason = 'TIME_EXPIRED') then
+  if not exists (select 1 from public.match_results where match_id = v_match_timer and end_reason = 'TIME_LIMIT') then
     raise exception 'timer outcome should be persisted';
   end if;
   if exists (select 1 from public.latest_fix where match_id = v_match_timer) then raise exception 'timer outcome must delete fixes'; end if;
