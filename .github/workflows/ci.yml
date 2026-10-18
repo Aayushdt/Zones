@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/phase-a]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: xzones
+          POSTGRES_PASSWORD: xzones
+          POSTGRES_DB: xzones
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U xzones -d xzones"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:unit
+      - run: pnpm test:edge
+      - run: pnpm verify:payloads
+      - run: pnpm test:sim
+      - run: pnpm test:e2e
+      - run: bash scripts/test-schema.sh
+        env:
+          DATABASE_URL: postgresql://xzones:xzones@localhost:5432/xzones
+      - run: pnpm --filter @xzones/web lint
+      - run: pnpm --filter @xzones/web build

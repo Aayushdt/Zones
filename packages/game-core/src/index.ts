@@ -12,7 +12,9 @@ export type {
 } from './types.ts'
 export {
   balanceTeams,
+  advanceZoneConfirmation,
   canStartLobby,
+  classifyZoneSample,
   didTagMeetDeadline,
   haversineDistanceMeters,
   latestDuePingIndex,
