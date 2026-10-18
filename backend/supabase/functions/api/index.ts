@@ -1,3 +1,4 @@
+import { projectEventForRole } from './payloads.ts'
 type JsonObject = Record<string, unknown>
 
 const corsHeaders = {
@@ -97,6 +98,7 @@ function rpcResponse(result: JsonObject): Response {
   if (error === 'ALREADY_MEMBER') return fail(409, error, 'This guest is already in the lobby.')
   if (error === 'INVALID_STATE') return fail(409, error, 'This action is not available in the current match state.')
   if (error === 'NOT_MEMBER') return fail(403, error, 'Join this private lobby before changing it.')
+  if (error === 'TEAM_NOT_SELECTED') return fail(409, error, 'Choose a team before this match can sync.')
   if (error === 'NOT_FOUND') return fail(404, error, 'The lobby could not be found.')
   return fail(503, 'INTERNAL', 'The game service could not complete this request.')
 }
@@ -203,6 +205,75 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_code_hash: bytea(codeHash),
         p_session_cap_hash: bytea(capHash),
       }))
+    }
+
+    const syncMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/sync$/i)
+    if (syncMatch) {
+      const lastRevision = body.last_revision === undefined ? 0 : body.last_revision
+      if (!numberIn(lastRevision, 0, Number.MAX_SAFE_INTEGER)) {
+        return fail(400, 'INVALID_INPUT', 'last_revision must be a non-negative integer.')
+      }
+      const result = await callRpc('xzones_sync_match', {
+        p_auth_user_id: user.id,
+        p_match_id: syncMatch[1],
+        p_last_revision: lastRevision,
+      })
+      if (typeof result.error === 'string') return rpcResponse(result)
+      if (result.role !== 'HUNTER' && result.role !== 'RUNNER') {
+        return fail(409, 'TEAM_NOT_SELECTED', 'Choose a team before this match can sync.')
+      }
+
+      const role = result.role
+      const revision = typeof result.revision === 'number' ? result.revision : null
+      const serverNow = typeof result.server_now === 'string' ? result.server_now : null
+      const matchState = typeof result.state === 'string' ? result.state : null
+      const counts = result.active_counts
+      if (revision === null || serverNow === null || matchState === null
+        || counts === null || typeof counts !== 'object' || Array.isArray(counts)) {
+        return fail(503, 'INTERNAL', 'The game service could not complete this request.')
+      }
+
+      const events = []
+      const matchEvent = projectEventForRole(role, {
+        event_id: `match:${syncMatch[1]}:revision:${revision}:state`,
+        match_id: syncMatch[1], revision, server_at: serverNow, type: 'match.state',
+        data: { state: matchState, server_now: serverNow, ends_at: result.ends_at, active_counts: counts },
+      })
+      if (!matchEvent) return fail(503, 'INTERNAL', 'The game service could not complete this request.')
+      events.push(matchEvent)
+
+      if (role === 'HUNTER' && Array.isArray(result.due_pings)) {
+        for (const ping of result.due_pings) {
+          const pingData = ping !== null && typeof ping === 'object' ? ping as JsonObject : null
+          if (!pingData) continue
+          const runnerId = typeof pingData.runner_id === 'string' ? pingData.runner_id : 'unknown'
+          const pingIndex = typeof pingData.ping_index === 'number' ? pingData.ping_index : -1
+          const projected = projectEventForRole(role, {
+            event_id: `match:${syncMatch[1]}:runner:${runnerId}:ping:${pingIndex}`,
+            match_id: syncMatch[1], revision, server_at: serverNow, type: 'hunter.runner_ping', data: pingData,
+          })
+          if (projected) events.push(projected)
+        }
+      }
+
+      if (role === 'RUNNER' && result.runner_notice !== null && typeof result.runner_notice === 'object') {
+        const notice = projectEventForRole(role, {
+          event_id: `match:${syncMatch[1]}:revision:${revision}:runner-notice`,
+          match_id: syncMatch[1], revision, server_at: serverNow,
+          type: 'runner.location_revealed', data: result.runner_notice,
+        })
+        if (notice) events.push(notice)
+      }
+
+      return ok({
+        role,
+        state: matchState,
+        server_now: serverNow,
+        active_counts: matchEvent.data.active_counts,
+        revision,
+        events,
+        next_ping_at: typeof result.next_ping_at === 'string' ? result.next_ping_at : null,
+      })
     }
 
     const teamMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/team$/i)

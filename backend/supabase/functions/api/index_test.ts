@@ -88,3 +88,58 @@ Deno.test('lobby creation rejects odd zone diameters to avoid integer-radius tru
     globalThis.fetch = originalFetch
   }
 })
+
+Deno.test('sync returns role-projected snapshots and generic Runner notices only', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  let requestedRole: 'HUNTER' | 'RUNNER' = 'RUNNER'
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_sync_match')) {
+      const args = JSON.parse(String(init?.body)) as Record<string, unknown>
+      assert(args.p_last_revision === 4, 'sync should use the client revision cursor')
+      return Response.json({
+        state: 'ACTIVE', server_now: '2026-10-18T18:08:00.000Z', ends_at: '2026-10-18T18:45:00.000Z',
+        revision: 9, role: requestedRole, active_counts: { hunters: 1, runners: 2 },
+        due_pings: [{
+          runner_id: 'fake-runner-1', status: 'OK', lat: 12.3, lon: 45.6, accuracy_m: 5,
+          captured_at: '2026-10-18T18:07:58.000Z', ping_at: '2026-10-18T18:08:00.000Z',
+          age_seconds: 2, ping_index: 1, hunter_coordinates: { lat: 99, lon: 99 },
+        }],
+        runner_notice: { ping_index: 1, ping_at: '2026-10-18T18:08:00.000Z', hunter_positions: [{ lat: 98, lon: 98 }] },
+        next_ping_at: '2026-10-18T18:13:00.000Z',
+      })
+    }
+    throw new Error(`Unexpected test URL: ${url}`)
+  }
+
+  async function syncAs(role: 'HUNTER' | 'RUNNER') {
+    requestedRole = role
+    return handleRequest(new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/sync', {
+      method: 'POST',
+      headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ last_revision: 4 }),
+    }))
+  }
+
+  try {
+    const runnerResponse = await syncAs('RUNNER')
+    const runner = await runnerResponse.json()
+    assert(runnerResponse.status === 200, 'Runner sync should succeed')
+    assert(runner.events.every((event: { type: string }) => event.type !== 'hunter.runner_ping'), 'Runner must not get Hunter ping payloads')
+    assert(runner.events.some((event: { type: string }) => event.type === 'runner.location_revealed'), 'Runner should get a generic ping notice')
+    assert(!JSON.stringify(runner).includes('hunter_positions'), 'Runner response leaked Hunter metadata')
+    assert(!JSON.stringify(runner).includes('fake-runner-1'), 'Runner response leaked Hunter-only snapshot ID')
+
+    const hunterResponse = await syncAs('HUNTER')
+    const hunter = await hunterResponse.json()
+    assert(hunterResponse.status === 200, 'Hunter sync should succeed')
+    assert(hunter.events.some((event: { type: string }) => event.type === 'hunter.runner_ping'), 'Hunter should get scheduled ping snapshot')
+    assert(!JSON.stringify(hunter).includes('hunter_coordinates'), 'Hunter response leaked hidden extra metadata')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})

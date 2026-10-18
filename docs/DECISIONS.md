@@ -57,6 +57,14 @@
 - Added a fixed-seed three-fake-player simulator scenario (1 Hunter / 2 Runners), a fixed epoch clock, and a dev-only clock-advance control. Production build still omits the simulator route.
 - Vitest passed 10/10 cases; deterministic simulator check passed 1/1; game-core typecheck, web production build, and Oxlint passed.
 
+## Step 10: fake-player scheduled ping sync
+
+- Added migration `202610180003_match_sync.sql`: snapshots now carry `OK | NO_FIX | STALE`, nullable fix columns for absent/stale states, server receive age, and the revision that created them.
+- Added the transactional `xzones_sync_match` RPC. It uses `clock_timestamp()`, advances HEAD_START at its server deadline, coalesces missed slots to one newest due snapshot per active Runner, treats fixes older than 60 seconds as STALE without coordinates, and records NO_FIX when no row exists. It stores one snapshot per Runner/slot and returns a stable revision cursor for idempotent retry.
+- Added `/matches/:id/sync` to the single API router. It resolves role from the database, projects `match.state` with aggregate active counts, sends Hunter snapshots through the role allow-list, and returns Runner generic ping notice only. No client-provided role is trusted.
+- Applied migrations 0001–0003 in order to temporary PostgreSQL 18.6 with an auth schema shim, then ran `tests/schema/match-sync-smoke.sql`: one fresh fix, one stale fix, and one no-fix Runner produced the expected snapshots; missed indexes coalesced to the latest; duplicate retry kept database snapshot count stable; acknowledged revision returned no duplicate; Runner response contained no coordinates or Hunter ping event.
+- Deno handler tests and type checks pass. GPS, Docker-backed Supabase integration, and Realtime transport remain untested; this step uses inserted fake `latest_fix` fixtures and server RPC calls only.
+
 ## Step 5: GameApi and MOCK adapter
 
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.
