@@ -282,6 +282,7 @@ class SupabaseGameApi implements GameApi {
       server_now: string
       active_counts: { hunters: number; runners: number }
       revision: number
+      next_ping_at?: string | null
       events: Array<{ type?: unknown; data?: unknown }>
     }>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: revision })
     if (!result.ok) return result
@@ -290,9 +291,16 @@ class SupabaseGameApi implements GameApi {
       server_now: result.data.server_now,
       active_counts: result.data.active_counts,
       revision: result.data.revision,
+      next_ping_at: typeof result.data.next_ping_at === 'string' ? result.data.next_ping_at : null,
       own_team_positions: [] as RoleSafeMatchView['own_team_positions'],
     }
-    if (result.data.role === 'RUNNER') return { ok: true, data: { ...common, role: 'RUNNER', own_team_positions: [] } }
+    if (result.data.role === 'RUNNER') {
+      const notice = result.data.events.find((event) => event.type === 'runner.location_revealed')?.data
+      const value = notice && typeof notice === 'object' ? notice as Record<string, unknown> : null
+      const runner_ping_notice = value && typeof value.ping_index === 'number' && typeof value.ping_at === 'string'
+        ? { ping_index: value.ping_index, ping_at: value.ping_at } : null
+      return { ok: true, data: { ...common, role: 'RUNNER', own_team_positions: [], runner_ping_notice } }
+    }
     if (result.data.role !== 'HUNTER') return error('INVALID_ROLE', 'The server did not confirm a match role.')
     const snapshots = result.data.events.flatMap((event) => {
       if (event.type !== 'hunter.runner_ping' || !event.data || typeof event.data !== 'object') return []

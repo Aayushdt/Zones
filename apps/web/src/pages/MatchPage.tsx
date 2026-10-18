@@ -92,7 +92,10 @@ export function MatchPage() {
           <div><strong>You are a {roleLabel}</strong><p>{view.role === 'RUNNER'
             ? 'Stay hidden. Your map displays your own team only.'
             : 'Hunter teammate positions and scheduled Runner ping snapshots are shown separately.'}</p></div>
-          <button className="welcome__secondary" disabled={busy} onClick={() => void sync()} type="button">{busy ? 'Syncing…' : 'Sync now'}</button>
+          <div className="match-status-actions">
+            {view.role === 'HUNTER' ? <Link className="welcome__secondary" to={`/match/${matchId}/pings`}>Pings</Link> : null}
+            <button className="welcome__secondary" disabled={busy} onClick={() => void sync()} type="button">{busy ? 'Syncing…' : 'Sync now'}</button>
+          </div>
         </div>
       </section>
       {error ? <p className="form-error match-error" role="alert">{error}</p> : null}

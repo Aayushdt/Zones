@@ -76,11 +76,13 @@ interface MatchViewBase {
   revision: number
   server_now: string
   active_counts: ActiveCounts
+  next_ping_at: string | null
   own_team_positions: Array<{ player_id: string; display_name: string; lat: number; lon: number; accuracy_m: number; captured_at: string }>
 }
 
 export interface RunnerMatchView extends MatchViewBase {
   role: 'RUNNER'
+  runner_ping_notice: { ping_index: number; ping_at: string } | null
 }
 
 export interface HunterMatchView extends MatchViewBase {

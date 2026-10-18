@@ -20,3 +20,4 @@ export {
 } from './rules.ts'
 export { privateMatchTopic } from './realtime.ts'
 export { projectEventForRole, type EventEnvelope, type RecipientRole } from './payloads.ts'
+export { mergeLatestPings, type PingCursor } from './pings.ts'

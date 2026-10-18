@@ -430,6 +430,7 @@
 .match-status-card strong { color: var(--color-accent); }
 .match-status-card p { margin: 0.25rem 0 0; color: var(--color-muted); font-size: 0.75rem; line-height: 1.4; }
 .match-status-card > .welcome__secondary { flex: 0 0 auto; }
+.match-status-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .match-error { margin: 0.5rem 0; }
 .match-text-status { margin: 0; padding: 0.5rem; color: var(--color-muted); font-size: 0.75rem; }
 @media (max-width: 380px) {
@@ -439,6 +440,20 @@
   .match-timer { grid-column: 3; grid-row: 1; }
   .match-status-card { align-items: flex-start; flex-direction: column; }
 }
+
+.pings-page { align-content: start; }
+.ping-list { display: grid; gap: 0.85rem; }
+.ping-next { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--color-border); color: var(--color-muted); }
+.ping-next strong { color: var(--color-text); font: 700 1.4rem var(--font-mono); font-variant-numeric: tabular-nums; }
+.ping-card { padding: 0.9rem; border: 1px solid var(--color-border); border-left: 4px solid var(--color-accent); border-radius: var(--radius-control); background: var(--color-background); }
+.ping-card--no_fix, .ping-card--stale { border-left-color: var(--color-warning); }
+.ping-card__heading { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.ping-card h2 { margin: 0; color: var(--color-text); font-size: 0.95rem; }
+.ping-card p { margin: 0.55rem 0 0; color: var(--color-muted); font-size: 0.82rem; line-height: 1.5; }
+.ping-card .ping-age { color: var(--color-accent); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.ping-card time { display: inline-block; margin-top: 0.45rem; color: var(--color-muted); font-size: 0.72rem; }
+.ping-status { padding: 0.25rem 0.45rem; border-radius: 99px; background: var(--color-surface-raised); color: var(--color-accent); font: 700 0.68rem var(--font-mono); }
+.ping-card--no_fix .ping-status, .ping-card--stale .ping-status { color: var(--color-warning); }
 
 @media (max-width: 360px) {
   .route-shell {

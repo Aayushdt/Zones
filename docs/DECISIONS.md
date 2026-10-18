@@ -103,6 +103,13 @@
 - `corepack pnpm test:unit` passed 12/12, payload privacy tests passed 2/2, Edge handler tests passed 6/6, typecheck/build passed, and all six migrations plus five PostgreSQL smoke scripts passed on a vanilla PostgreSQL harness with test-only Auth/Realtime shims. Initial JS gzip is 109.04 KB, Realtime client chunk 16.35 KB, MapLibre chunk 289.61 KB; together the planned map/realtime share is 305.96 KB gzip.
 - The Supabase Docker stack was unavailable in this environment, and no cloud project exists yet. Therefore actual private-channel admission/rejection and reconnect behavior against Supabase Realtime remain untested. The database predicate tests verify role/member/topic decisions; the SQL shim does not simulate Realtime’s join authorization engine.
 
+## Step 16: Hunter Pings and Runner-safe ping notice
+
+- Added `/match/:matchId/pings` as a lazy-loaded role-aware screen. Hunters see one latest card per Runner with status (`OK`, `NO_FIX`, `STALE`), ping index, scheduled time, age, and server-derived next-ping timer. It only displays snapshots returned by sync; it does not request live Runner locations.
+- Runner view displays only the generic server ping notice (`ping_index`, `ping_at`) and states that Hunter data is unavailable. Runner's `RoleSafeMatchView` contains no snapshot field. Match-screen Pings navigation is Hunter-only.
+- Added shared pure `mergeLatestPings`: it keeps the newest ping per Runner and ignores duplicate/equal or older sync retry results. Added deterministic unit test for repeated delivery and multiple skipped indices.
+- Checks: unit tests passed 13/13; Edge 6/6; payload leak 2/2; typecheck/build and Oxlint passed. Pings lazy chunk is 1.82 KB gzip, initial bundle 109.15 KB, map chunk 289.61 KB, Realtime chunk 16.35 KB. Live scheduled location feed awaits actual Supabase server publication; API sync fallback currently provides snapshots on the 15-second schedule.
+
 ## Step 5: GameApi and MOCK adapter
 
 - Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.
