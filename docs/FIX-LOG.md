@@ -39,4 +39,4 @@
 
 - **Changed:** Added migration 012 so repeated host end/cancel requests first recheck controller permission, then return the existing stored terminal state/result/timestamp. Expanded the retry regression to compare all committed result fields.
 - **Check:** `pnpm test:db` applied the full migration chain and passed all lifecycle/schema checks plus all 13/13 audit SQL scenarios. F-06 repeat returned the same state, winner, reason, and timestamp.
-- **Commit:** pending.
+- **Commit:** `e5d60b9` (`fix: make host end requests idempotent`).
