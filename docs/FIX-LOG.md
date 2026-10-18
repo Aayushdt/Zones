@@ -69,4 +69,11 @@
 
 - **Changed:** Documented post-commit, role-filtered publishing through Supabase's private Realtime REST broadcast endpoint; failures are best-effort and polling remains fallback. Coordinate-bearing events will not use database Broadcast because it writes rows to `realtime.messages` with three-day retention according to current official docs.
 - **Check:** Read the current official Supabase Broadcast documentation. It distinguishes REST Broadcast (HTTP to WebSocket delivery) from database Broadcast (stored in `realtime.messages`, retained three days). This is design-source verification, not runtime integration verification.
-- **Commit:** pending.
+- **Commit:** `e7d412c` (`docs: choose ephemeral realtime broadcast transport`).
+
+## Step 9b — low-frequency role-filtered events (F-02)
+
+- **Changed:** Added a best-effort REST broadcaster using private `match:<id>:hunter|runner` topics, the shared `projectEventForRole` allow-list, and one `xzones.event` envelope. Sync publishes match state, Hunter-only scheduled pings, and Runner-only generic ping notices; lobby create/join/team/readiness/removal, match start, tag accepted/result, host migration, leave, and match end paths publish after their mutation RPC returns. REST publishing and read-after-write metadata failures do not change the successful action response. Team coordinates remain explicitly excluded for Step 9c.
+- **Test first:** `deno test ... --filter 'low-frequency Realtime events'` failed with the publisher temporarily disabled (0 sent vs expected 3); passed after restoring the publisher.
+- **Check:** `pnpm test:api` passed 12 Edge and 9 hostile tests; `pnpm verify:payloads` passed 2/2; `pnpm typecheck`/production build passed; `pnpm lint` exited successfully with existing React hook warnings; `git diff --check` passed. These are unit/mocked-transport checks. Real Supabase delivery is not verified because `supabase start` failed with Docker socket permission denied; GitHub integration job remains to be added in Step 9d.
+- **Commit:** `a210075` (`feat(api): publish low-frequency realtime events (F-02)`).
