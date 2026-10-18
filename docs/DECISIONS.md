@@ -6,9 +6,10 @@
 - Corepack resolved pnpm 12.14.0. Node.js is v24.19.0 in this environment. The official Node release page lists the Node 24 line as LTS: https://nodejs.org/en/about/previous-releases.
 - Vite's official guide states the runtime requirement is Node 20.19+ or 22.12+: https://vite.dev/guide/. Available Node 24 satisfies this.
 - Initial TypeScript production build, Oxlint, and localhost HTTP smoke check passed in this environment. The dev server returned the XZones HTML shell.
-- Not verified yet: current Supabase Free quotas/pause rules and Edge Function invocation quota/accounting; PMTiles/MapTiler/Cloudflare free eligibility; library maintenance beyond resolved package versions; hosted Supabase project details. Recheck official sources as implementation reaches those dependencies.
-- Supabase CLI is not installed. Docker 29.9.1 is available. Local Supabase integration remains untested until the CLI is installed and the local stack starts.
+- Not verified yet at initial scaffold: Supabase Free pause rules; PMTiles/MapTiler/Cloudflare free eligibility; library maintenance beyond resolved package versions; hosted Supabase project details. Recheck official sources as implementation reaches those dependencies.
+- Supabase CLI was not installed at initial scaffold and is installed at Step 6. Docker 29.9.1 is present, but access to its socket is denied in this environment.
 - No Supabase URL or keys were supplied; hosted calls/deployment are not configured. Names only are in root .env.example; no secret values are stored.
+- Supabase official docs currently list 500,000 Edge Function invocations per month on Free, with no paid overage for Free; over-quota Free projects receive a notice/grace period. Preflight OPTIONS calls are not billed. Source: https://supabase.com/docs/guides/platform/manage-your-usage/edge-function-invocations (checked 2026-10-18). The plan's estimate is ~3,640 calls per 12-player match, so the quota covers ~137 such matches if no other function traffic uses it; ~100 matches would consume ~364,000. This is a planning estimate, not observed usage.
 
 ## Step 2: workspace boundaries
 
@@ -27,6 +28,12 @@
 - Added the planned route table (home, create, join, lobby, head start, match, Hunter Pings, tag, results, settings, simulator, and not-found) with reusable accessible loading/empty/error/offline/success state panels.
 - Added Zustand persisted preferences for Dusk/Paper theme and guest display name. The app header toggles and persists theme; routes show an explicit not-connected empty state and never fabricate a match.
 - State preview links render all five status variants on the current route. Production build and Oxlint passed. Automated browser navigation and persistence checks are not added until the planned test step.
+
+## Step 6: first database migration
+
+- Installed the official Supabase CLI 2.121.0 as an exact root dev dependency and initialized config under `backend/supabase`; anonymous local auth is enabled.
+- Added the core tables, checks, indexes, composite match/player references, hashed-code/capability columns, controller/claim fields, rate limits, and RLS enabled with no browser table grants. Zone storage is consistently `zone_radius_m` (200–1500), the database half of the 400–3000m UI/API diameter.
+- Docker is installed but the Docker socket returned `permission denied` even when checked outside the sandbox. Supabase's full container stack therefore could not start. Instead, applied the migration successfully to a temporary local PostgreSQL 18.6 instance after adding only a minimal `auth.users` schema shim, then ran `tests/schema/core-smoke.sql`; duration/hash/radius/FK violation checks passed. This is a PostgreSQL DDL smoke check, not a Supabase integration test.
 
 ## Step 5: GameApi and MOCK adapter
 

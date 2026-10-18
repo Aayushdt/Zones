@@ -7,5 +7,8 @@
     "build": "corepack pnpm --filter @xzones/web build",
     "lint": "corepack pnpm --filter @xzones/web lint",
     "typecheck": "corepack pnpm --filter @xzones/game-core typecheck && corepack pnpm --filter @xzones/web build"
+  },
+  "devDependencies": {
+    "supabase": "2.121.0"
   }
 }
