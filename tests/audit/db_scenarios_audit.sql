@@ -244,6 +244,8 @@ declare
   v_p2_auth uuid := gen_random_uuid();
   v_p3_auth uuid := gen_random_uuid();
   v_p4_auth uuid := gen_random_uuid();
+  v_extra_auth uuid;
+  v_extra_auths uuid[] := array[]::uuid[];
   v_code_hash bytea := pg_temp.rand_bytes();
   v_match_id uuid;
   v_claim2 jsonb;
@@ -271,15 +273,30 @@ begin
     'P4_4', v_code_hash, pg_temp.rand_bytes()
   );
 
+  -- Eleven players permit the prescribed two-Hunter team to survive the host leaving.
+  for i in 1..7 loop
+    v_extra_auth := gen_random_uuid();
+    v_extra_auths := array_append(v_extra_auths, v_extra_auth);
+    insert into auth.users (id) values (v_extra_auth);
+    perform public.xzones_join_lobby(v_extra_auth, pg_temp.rand_bytes(), pg_temp.rand_bytes(),
+      'Extra_4', v_code_hash, pg_temp.rand_bytes());
+  end loop;
+
   perform public.xzones_select_team(v_h_auth, v_match_id, 'HUNTER');
   perform public.xzones_select_team(v_p4_auth, v_match_id, 'HUNTER'); -- 2nd hunter so hunter team remains
   perform public.xzones_select_team(v_p2_auth, v_match_id, 'RUNNER');
   perform public.xzones_select_team(v_p3_auth, v_match_id, 'RUNNER');
+  foreach v_extra_auth in array v_extra_auths loop
+    perform public.xzones_select_team(v_extra_auth, v_match_id, 'RUNNER');
+  end loop;
 
   perform public.xzones_set_ready(v_h_auth, v_match_id, true);
   perform public.xzones_set_ready(v_p4_auth, v_match_id, true);
   perform public.xzones_set_ready(v_p2_auth, v_match_id, true);
   perform public.xzones_set_ready(v_p3_auth, v_match_id, true);
+  foreach v_extra_auth in array v_extra_auths loop
+    perform public.xzones_set_ready(v_extra_auth, v_match_id, true);
+  end loop;
 
   perform public.xzones_start_match(v_h_auth, v_match_id, (select revision from public.matches where id = v_match_id));
 
@@ -671,6 +688,53 @@ begin
     insert into audit_results values ('Scenario 11: Realtime role channel security', 'PASS', 'Cross-role and invalid topic subscriptions strictly rejected');
   else
     insert into audit_results values ('Scenario 11: Realtime role channel security', 'FAIL', 'H=' || v_h_topic_check || ', Cross=' || v_r_cross_check || ', Inv=' || v_invalid_topic);
+  end if;
+end;
+$$;
+
+-- ==========================================================================
+-- F-07: Exact Hunter target is enforced by the server lobby status/start gate
+-- ==========================================================================
+DO $$
+declare
+  v_auth_ids uuid[] := array[]::uuid[];
+  v_auth uuid;
+  v_match_id uuid;
+  v_code_hash bytea := pg_temp.rand_bytes();
+  v_status jsonb;
+  v_start jsonb;
+begin
+  for i in 1..12 loop
+    v_auth := gen_random_uuid();
+    v_auth_ids := array_append(v_auth_ids, v_auth);
+    insert into auth.users (id) values (v_auth);
+  end loop;
+  v_match_id := (public.xzones_create_lobby(
+    v_auth_ids[1], pg_temp.rand_bytes(), 'Host F07', v_code_hash, pg_temp.rand_bytes(),
+    2700, 180, 300, null, null, null
+  )->>'match_id')::uuid;
+  for i in 2..12 loop
+    perform public.xzones_join_lobby(v_auth_ids[i], pg_temp.rand_bytes(), pg_temp.rand_bytes(),
+      'Player F07', v_code_hash, pg_temp.rand_bytes());
+  end loop;
+
+  with ordered_players as (
+    select id, row_number() over (order by joined_at, id) as position
+    from public.players where match_id = v_match_id
+  )
+  update public.players p set
+    role = case when o.position <= 5 then 'HUNTER'::public.player_role else 'RUNNER'::public.player_role end,
+    ready = true
+  from ordered_players o where p.id = o.id;
+
+  v_status := public.xzones_lobby_status(v_match_id);
+  v_start := public.xzones_start_match(v_auth_ids[1], v_match_id,
+    (select revision from public.matches where id = v_match_id));
+  if v_status->>'can_start' = 'false' and v_status->>'block_reason' = 'NEEDS_TEAMS'
+     and v_start->>'error' = 'NOT_READY' and v_start->>'block_reason' = 'NEEDS_TEAMS' then
+    insert into audit_results values ('F-07: exact Hunter target enforced by server', 'PASS', 'Five Hunters in a 12-player lobby cannot start; target is two');
+  else
+    insert into audit_results values ('F-07: exact Hunter target enforced by server', 'FAIL', 'Lobby status: ' || coalesce(v_status::text, 'null'));
   end if;
 end;
 $$;

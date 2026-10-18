@@ -40,3 +40,9 @@
 - **Changed:** Added migration 012 so repeated host end/cancel requests first recheck controller permission, then return the existing stored terminal state/result/timestamp. Expanded the retry regression to compare all committed result fields.
 - **Check:** `pnpm test:db` applied the full migration chain and passed all lifecycle/schema checks plus all 13/13 audit SQL scenarios. F-06 repeat returned the same state, winner, reason, and timestamp.
 - **Commit:** `e5d60b9` (`fix: make host end requests idempotent`).
+
+## Step 5 — exact team balance
+
+- **Changed:** Shared `canStartLobby` and server `xzones_lobby_status` now require the exact target Hunter count for each active lobby size, and `xzones_start_match` uses that status as its gate. Updated the host-loss race fixture from an invalid 2-Hunter/4-player lobby to 2 Hunters in 11 players. Tests cover all team sizes 3–12 and server rejection of 5 Hunters in a 12-player lobby.
+- **Check:** `pnpm test:unit` passed 17/17; `pnpm test:audit` passed 21/21; `pnpm typecheck` passed; `pnpm test:db` passed schema/lifecycle and all 14 audit scenarios.
+- **Commit:** pending.

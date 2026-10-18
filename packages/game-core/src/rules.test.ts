@@ -14,6 +14,20 @@ import {
 import type { TeamMember } from './types.ts'
 
 describe('team balance and readiness', () => {
+  it('starts only when each supported lobby has its exact prescribed Hunter count', () => {
+    for (let count = 3; count <= 12; count += 1) {
+      const targetHunters = balanceTeams(count)!.hunters
+      const players: TeamMember[] = Array.from({ length: count }, (_, index) => ({
+        role: index < targetHunters ? 'HUNTER' : 'RUNNER', status: 'ACTIVE', ready: true,
+      }))
+      expect(canStartLobby(players).canStart).toBe(true)
+      if (targetHunters < Math.floor(count / 2)) {
+        players[targetHunters] = { role: 'HUNTER', status: 'ACTIVE', ready: true }
+        expect(canStartLobby(players).blockReason).toBe('NEEDS_TEAMS')
+      }
+    }
+  })
+
   it('accepts the defaults and Ping Off while enforcing cross-field timing', () => {
     expect(isValidMatchConfig(DEFAULT_MATCH_CONFIG)).toBe(true)
     expect(isValidMatchConfig({ ...DEFAULT_MATCH_CONFIG, pingSeconds: null })).toBe(true)
