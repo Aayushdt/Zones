@@ -55,6 +55,9 @@ export function RouteShell({ kind }: { kind: Screen }) {
           </nav>
         ) : null}
         {kind === 'settings' ? <Link className="welcome__secondary" to="/">Back to XZones</Link> : null}
+        {kind === 'home' && import.meta.env.DEV ? (
+          <Link className="welcome__secondary" to="/dev/sim">Open simulator</Link>
+        ) : null}
       </StatePanel>
       <nav className="route-shell__previews" aria-label="State previews">
         {(['loading', 'empty', 'error', 'offline', 'success'] as const).map((preview) => (

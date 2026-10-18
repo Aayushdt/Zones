@@ -27,3 +27,9 @@
 - Added the planned route table (home, create, join, lobby, head start, match, Hunter Pings, tag, results, settings, simulator, and not-found) with reusable accessible loading/empty/error/offline/success state panels.
 - Added Zustand persisted preferences for Dusk/Paper theme and guest display name. The app header toggles and persists theme; routes show an explicit not-connected empty state and never fabricate a match.
 - State preview links render all five status variants on the current route. Production build and Oxlint passed. Automated browser navigation and persistence checks are not added until the planned test step.
+
+## Step 5: GameApi and MOCK adapter
+
+- Added a typed `GameApi` contract with result/error types and separate Runner/Hunter match-view unions. Runner view types contain no Hunter coordinates, distance, direction, or marker metadata fields.
+- Added a development-only MOCK implementation and simulator route. It returns visibly prefixed fake IDs and `SIM-*` codes under a persistent `SIMULATION: NOT A REAL MATCH` banner; no network or GPS code is used. Mock types use a separate `source: SIMULATION` discriminator and cannot satisfy the real LobbyView type.
+- Verified the production build and Oxlint pass, and searched built assets to confirm the simulator banner is excluded from production. Full simulator team/clock behavior is deferred to Step 9.

@@ -16,7 +16,15 @@ export const router = createBrowserRouter([
       { path: '/match/:matchId/tag', element: <RouteShell kind="tag" /> },
       { path: '/match/:matchId/results', element: <RouteShell kind="results" /> },
       { path: '/settings', element: <RouteShell kind="settings" /> },
-      { path: '/dev/sim', element: <RouteShell kind="simulator" /> },
+      ...(import.meta.env.DEV
+        ? [{
+            path: '/dev/sim',
+            lazy: async () => {
+              const { SimulatorPage } = await import('../pages/SimulatorPage')
+              return { Component: SimulatorPage }
+            },
+          }]
+        : []),
       { path: '*', element: <RouteShell kind="not-found" /> },
     ],
   },
