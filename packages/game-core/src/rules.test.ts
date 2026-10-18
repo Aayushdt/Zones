@@ -4,6 +4,7 @@ import {
   canStartLobby,
   didTagMeetDeadline,
   latestDuePingIndex,
+  haversineDistanceMeters,
   nextRandomRole,
   resolveActiveOutcome,
 } from './rules.ts'
@@ -89,5 +90,12 @@ describe('lazy ping scheduling', () => {
   it('does not create a ping at or after match end', () => {
     expect(latestDuePingIndex(7, firstPing, 300, endsAt, endsAt)).toBeNull()
     expect(latestDuePingIndex(7, firstPing, 300, endsAt + 1, endsAt)).toBeNull()
+  })
+})
+
+describe('distance helper', () => {
+  it('calculates meters without exposing or persisting a route', () => {
+    expect(haversineDistanceMeters(0, 0, 0, 1)).toBeCloseTo(111_195, -1)
+    expect(haversineDistanceMeters(91, 0, 0, 1)).toBeNull()
   })
 })

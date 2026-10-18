@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { Role } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
 import type { LobbyView, PlayerView } from '../services/game-api'
+import { useLocationStore } from '../stores/location-store'
 
 const reasonText: Record<string, string> = {
   NEEDS_THREE_PLAYERS: 'At least three active players are needed.',
@@ -17,6 +18,8 @@ export function LobbyPage() {
   const [lobby, setLobby] = useState<LobbyView | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const enableLocation = useLocationStore((state) => state.enable)
+  const clearLocation = useLocationStore((state) => state.clearMatch)
 
   const refresh = useCallback(async () => {
     setPending(true)
@@ -39,10 +42,27 @@ export function LobbyPage() {
   }
 
   async function setReady(ready: boolean) {
+    let consentedLocation = false
+    if (ready && !lobby?.you.ready) {
+      if (!window.isSecureContext || !navigator.geolocation) {
+        setError('Location permission requires HTTPS on a phone (localhost is allowed for development).')
+        return
+      }
+      setPending(true)
+      setError('Allow location to check the GPS permission. Coordinates are not retained by this check.')
+      const permission = await new Promise<boolean>((resolve) => navigator.geolocation.getCurrentPosition(
+        () => resolve(true), () => resolve(false), { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
+      ))
+      setPending(false)
+      if (!permission) { setError('Location permission or a GPS fix is required before readying. Allow location and try again.'); return }
+      consentedLocation = true
+    }
     setPending(true)
     const result = await supabaseGameApi.setReady(matchId, ready)
     setPending(false)
-    if (!result.ok) { setError(result.error.message); return }
+    if (!result.ok) { if (ready) clearLocation(matchId); setError(result.error.message); return }
+    if (consentedLocation) enableLocation(matchId)
+    if (!ready) clearLocation(matchId)
     await refresh()
   }
 
@@ -86,6 +106,7 @@ export function LobbyPage() {
         <p className="welcome__copy">Choose a team, mark ready, then the host starts the server-timed round.</p>
       </div>
       <section className="state-panel lobby-panel" aria-label="Lobby players">
+        <p className="field-help">Readying checks your GPS permission. During the round, your live location is shared with your teammates; Runner locations reach Hunters only in scheduled ping snapshots. GPS does not tag anyone.</p>
         <div className="lobby-code">
           <div><span className="field-help">Private join code</span><strong className="code-input">{lobby.code || 'Stored on creator device'}</strong></div>
           {isController ? <button className="welcome__secondary" onClick={() => void copyCode()} type="button">Copy code</button> : null}

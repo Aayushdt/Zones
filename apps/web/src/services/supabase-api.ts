@@ -285,6 +285,7 @@ class SupabaseGameApi implements GameApi {
       can_end?: boolean
       can_claim?: boolean
       claim_expires_at?: string | null
+      own_player_id?: string | null
       revision: number
       next_ping_at?: string | null
       events: Array<{ type?: unknown; data?: unknown }>
@@ -297,16 +298,25 @@ class SupabaseGameApi implements GameApi {
       can_end: result.data.can_end === true,
       can_claim: result.data.can_claim === true,
       claim_expires_at: result.data.claim_expires_at ?? null,
+      own_player_id: result.data.own_player_id ?? '',
       revision: result.data.revision,
       next_ping_at: typeof result.data.next_ping_at === 'string' ? result.data.next_ping_at : null,
-      own_team_positions: [] as RoleSafeMatchView['own_team_positions'],
+      own_team_positions: result.data.events.flatMap((event) => {
+        if (event.type !== 'team.location_live' || !event.data || typeof event.data !== 'object') return []
+        const data = event.data as Record<string, unknown>
+        if (typeof data.player_id !== 'string' || typeof data.display_name !== 'string'
+          || typeof data.lat !== 'number' || typeof data.lon !== 'number' || typeof data.accuracy_m !== 'number'
+          || typeof data.captured_at !== 'string' || typeof data.age_seconds !== 'number' || typeof data.is_stale !== 'boolean') return []
+        return [{ player_id: data.player_id, display_name: data.display_name, lat: data.lat, lon: data.lon,
+          accuracy_m: data.accuracy_m, captured_at: data.captured_at, age_seconds: data.age_seconds, is_stale: data.is_stale }]
+      }),
     }
     if (result.data.role === 'RUNNER') {
       const notice = result.data.events.find((event) => event.type === 'runner.location_revealed')?.data
       const value = notice && typeof notice === 'object' ? notice as Record<string, unknown> : null
       const runner_ping_notice = value && typeof value.ping_index === 'number' && typeof value.ping_at === 'string'
         ? { ping_index: value.ping_index, ping_at: value.ping_at } : null
-      return { ok: true, data: { ...common, role: 'RUNNER', own_team_positions: [], runner_ping_notice } }
+      return { ok: true, data: { ...common, role: 'RUNNER', runner_ping_notice } }
     }
     if (result.data.role !== 'HUNTER') return error('INVALID_ROLE', 'The server did not confirm a match role.')
     const snapshots = result.data.events.flatMap((event) => {

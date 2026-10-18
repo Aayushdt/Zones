@@ -14,6 +14,7 @@ export {
   balanceTeams,
   canStartLobby,
   didTagMeetDeadline,
+  haversineDistanceMeters,
   latestDuePingIndex,
   nextRandomRole,
   resolveActiveOutcome,

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { ClockView, RoleSafeMatchView } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
 import { GameMap, type GameMapData } from '../components/GameMap'
+import { useLocationStore } from '../stores/location-store'
 
 function timeLeft(clock: ClockView, anchor: number): number {
   const deadline = Date.parse(clock.ends_at)
@@ -21,6 +22,8 @@ export function MatchPage() {
   const [busy, setBusy] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
   const anchor = useRef(0)
+  const currentFix = useLocationStore((state) => state.ownFix)
+  const locationStatus = useLocationStore((state) => state.status)
 
   const sync = useCallback(async () => {
     setBusy(true)
@@ -65,9 +68,10 @@ export function MatchPage() {
     return () => { window.clearInterval(timer); window.clearInterval(polling) }
   }, [clock, sync])
 
+  const ownPosition = currentFix ? { ...currentFix, player_id: view?.own_player_id ?? currentFix.player_id } : null
   const mapData: GameMapData | null = view ? view.role === 'RUNNER'
-    ? { role: 'RUNNER', own_position: null, own_team_positions: view.own_team_positions }
-    : { role: 'HUNTER', own_position: null, own_team_positions: view.own_team_positions, runner_snapshots: view.runner_snapshots }
+    ? { role: 'RUNNER', own_position: ownPosition, own_team_positions: view.own_team_positions }
+    : { role: 'HUNTER', own_position: ownPosition, own_team_positions: view.own_team_positions, runner_snapshots: view.runner_snapshots }
     : null
 
   if (!view || !mapData) return (
@@ -118,6 +122,7 @@ export function MatchPage() {
       </section>
       {error ? <p className="form-error match-error" role="alert">{error}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. {liveStatus} The map never displays opponent distances or directions.</p>
+      <p className="match-text-status" role="status" aria-live="polite">{locationStatus}</p>
     </main>
   )
 }

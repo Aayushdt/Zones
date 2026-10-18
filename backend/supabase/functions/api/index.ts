@@ -123,6 +123,8 @@ function rpcResponse(result: JsonObject): Response {
   if (error === 'NOT_HOST') return fail(403, error, 'Only the current match controller can end this match.')
   if (error === 'CLAIM_UNAVAILABLE' || error === 'CLAIM_EXPIRED' || error === 'CLAIM_TAKEN') return fail(409, error, 'Host controls are no longer available to claim.')
   if (error === 'NOT_ENDED') return fail(409, error, 'This match has no final result yet.')
+  if (error === 'INVALID_FIX') return fail(400, error, 'The location fix is invalid or too old to accept.')
+  if (error === 'OLD_SEQUENCE') return fail(409, error, 'A newer location update was already received.')
   return fail(503, 'INTERNAL', 'The game service could not complete this request.')
 }
 
@@ -143,6 +145,10 @@ function isText(value: unknown, max = 24): value is string {
 
 function numberIn(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max
+}
+
+function finiteIn(value: unknown, min: number, max: number): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
 }
 
 export async function handleRequest(request: Request): Promise<Response> {
@@ -281,6 +287,13 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_auth_user_id: user.id, p_match_id: syncMatch[1],
       })
       if (typeof controls.error === 'string') return rpcResponse(controls)
+      const team = await callRpc('xzones_team_positions', {
+        p_auth_user_id: user.id, p_match_id: syncMatch[1],
+      })
+      if (typeof team.error === 'string') return rpcResponse(team)
+      if (team.role !== result.role || !Array.isArray(team.positions)) {
+        return fail(503, 'INTERNAL', 'The game service could not complete this request.')
+      }
       const clock = await callRpc('xzones_match_clock', {
         p_auth_user_id: user.id, p_match_id: syncMatch[1],
       })
@@ -307,6 +320,22 @@ export async function handleRequest(request: Request): Promise<Response> {
       })
       if (!matchEvent) return fail(503, 'INTERNAL', 'The game service could not complete this request.')
       events.push(matchEvent)
+
+      for (const item of team.positions) {
+        if (!item || typeof item !== 'object') continue
+        const position = item as JsonObject
+        if (typeof position.player_id !== 'string' || position.player_id === team.own_player_id
+          || position.team_role !== role
+          || typeof position.display_name !== 'string' || typeof position.lat !== 'number' || typeof position.lon !== 'number'
+          || typeof position.accuracy_m !== 'number' || typeof position.captured_at !== 'string'
+          || typeof position.age_seconds !== 'number' || typeof position.is_stale !== 'boolean') continue
+        const projected = projectEventForRole(role, {
+          event_id: `match:${syncMatch[1]}:revision:${revision}:team:${position.player_id}`,
+          match_id: syncMatch[1], revision, server_at: serverNow, type: 'team.location_live',
+          data: position,
+        })
+        if (projected) events.push(projected)
+      }
 
       if (role === 'HUNTER' && Array.isArray(result.due_pings)) {
         for (const ping of result.due_pings) {
@@ -342,6 +371,7 @@ export async function handleRequest(request: Request): Promise<Response> {
         can_end: controls.can_end === true,
         can_claim: controls.can_claim === true,
         claim_expires_at: typeof controls.claim_expires_at === 'string' ? controls.claim_expires_at : null,
+        own_player_id: typeof team.own_player_id === 'string' ? team.own_player_id : null,
         revision,
         events,
         next_ping_at: typeof result.next_ping_at === 'string' ? result.next_ping_at : null,
@@ -429,6 +459,21 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (resultMatch) {
       return rpcResponse(await callRpc('xzones_match_result', {
         p_auth_user_id: user.id, p_match_id: resultMatch[1],
+      }))
+    }
+
+    const locationMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/location$/i)
+    if (locationMatch) {
+      if (!finiteIn(body.lat, -90, 90) || !finiteIn(body.lon, -180, 180)
+        || !finiteIn(body.accuracy_m, 0, 10_000) || typeof body.captured_at !== 'string'
+        || !Number.isFinite(Date.parse(body.captured_at)) || !numberIn(body.sequence, 0, Number.MAX_SAFE_INTEGER)) {
+        return fail(400, 'INVALID_FIX', 'Send valid coordinates, accuracy, capture time, and sequence.')
+      }
+      const outcome = await callRpc('xzones_resolve_match', { p_auth_user_id: user.id, p_match_id: locationMatch[1] })
+      if (typeof outcome.error === 'string') return rpcResponse(outcome)
+      return rpcResponse(await callRpc('xzones_update_location', {
+        p_auth_user_id: user.id, p_match_id: locationMatch[1], p_lat: body.lat, p_lon: body.lon,
+        p_accuracy_m: body.accuracy_m, p_captured_at: body.captured_at, p_sequence: body.sequence,
       }))
     }
 

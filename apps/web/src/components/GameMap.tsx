@@ -11,6 +11,8 @@ export interface MapPlayerPoint {
   lon: number
   accuracy_m: number
   captured_at: string
+  age_seconds?: number
+  is_stale?: boolean
 }
 
 export type GameMapData =
@@ -61,6 +63,10 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
   const markersRef = useRef<import('maplibre-gl').Marker[]>([])
+  useEffect(() => {
+    const fix = data.own_position ?? data.own_team_positions[0]
+    if (fix) setCenter((current) => current ?? [fix.lon, fix.lat])
+  }, [data.own_position?.lat, data.own_position?.lon, data.own_team_positions])
   const markerPoints = useMemo(() => {
     const own = data.own_position ?? localPosition
     const teammates = data.own_team_positions.filter((point) => point.player_id !== own?.player_id)
@@ -122,8 +128,9 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
         markersRef.current.push(marker)
       }
       for (const point of markerPoints.teammates) {
-        const marker = new Marker({ element: pointElement('teammate', `Teammate ${point.display_name}`), anchor: 'center' })
+        const marker = new Marker({ element: pointElement('teammate', `Teammate ${point.display_name}, ${point.is_stale ? 'stale' : `${point.age_seconds ?? 0} seconds old`}`), anchor: 'center' })
           .setLngLat([point.lon, point.lat]).addTo(map)
+        if (point.is_stale) marker.getElement().style.opacity = '0.4'
         markersRef.current.push(marker)
       }
       for (const snapshot of markerPoints.snapshots) {
@@ -148,7 +155,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
       setLocalPosition(point)
       setCenter((current) => current ?? [point.lon, point.lat])
       mapRef.current?.easeTo({ center: [point.lon, point.lat], zoom: 16 })
-      setMapError('Location is used only to center this map in this build.')
+      setMapError('Centered on your latest fix. Team sharing status appears below the map.')
     }, (error) => {
       setMapError(error.code === error.PERMISSION_DENIED
         ? 'Location permission was denied. Enable it in browser settings, or continue without a centered map.'

@@ -10,6 +10,16 @@ import type {
 const MIN_PLAYERS = 3
 const MAX_PLAYERS = 12
 
+export function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number | null {
+  if (![lat1, lon1, lat2, lon2].every(Number.isFinite)
+    || lat1 < -90 || lat1 > 90 || lat2 < -90 || lat2 > 90
+    || lon1 < -180 || lon1 > 180 || lon2 < -180 || lon2 > 180) return null
+  const radians = (degrees: number) => degrees * Math.PI / 180
+  const deltaLat = radians(lat2 - lat1), deltaLon = radians(lon2 - lon1)
+  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(deltaLon / 2) ** 2
+  return 6_371_000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 /** Balanced target from the plan: ceil(N / 10), bounded by floor(N / 2). */
 export function balanceTeams(playerCount: number): TeamBalance | null {
   if (!Number.isInteger(playerCount) || playerCount < MIN_PLAYERS || playerCount > MAX_PLAYERS) return null

@@ -79,8 +79,9 @@ interface MatchViewBase {
   can_end: boolean
   can_claim: boolean
   claim_expires_at: string | null
+  own_player_id: string
   next_ping_at: string | null
-  own_team_positions: Array<{ player_id: string; display_name: string; lat: number; lon: number; accuracy_m: number; captured_at: string }>
+  own_team_positions: Array<{ player_id: string; display_name: string; lat: number; lon: number; accuracy_m: number; captured_at: string; age_seconds: number; is_stale: boolean }>
 }
 
 export interface RunnerMatchView extends MatchViewBase {
@@ -112,7 +113,7 @@ export interface LocationInput {
   sequence: number
 }
 
-export interface LocationAck { accepted: boolean; server_now: string }
+export interface LocationAck { accepted: boolean; server_now: string; player_id?: string; stale: boolean; reason?: string }
 export interface QrChallenge { token: string; expires_at: string; server_now: string }
 export interface TagResult { accepted: boolean; state: MatchState; winner?: Role }
 export interface MatchResult { winner: Role | null; end_reason: string; ended_at: string; duration_seconds: number; tag_count: number }

@@ -35,7 +35,10 @@ function projectData(role: RecipientRole, type: string, data: Data): Data | null
     case 'team.location_live': {
       if (data.team_role !== undefined && data.team_role !== role) return null
       const point = geoPoint(data), playerId = text(data.player_id)
-      return point && playerId ? { player_id: playerId, ...point } : null
+      const age = integer(data.age_seconds)
+      return point && playerId && age !== null && age >= 0 && typeof data.is_stale === 'boolean'
+        ? { player_id: playerId, display_name: text(data.display_name), ...point, age_seconds: age, is_stale: data.is_stale }
+        : point && playerId ? { player_id: playerId, ...point } : null
     }
     case 'hunter.runner_ping': {
       if (role !== 'HUNTER') return null
