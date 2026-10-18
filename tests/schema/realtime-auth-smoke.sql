@@ -4,6 +4,8 @@ declare
   v_hunter uuid := gen_random_uuid();
   v_runner uuid := gen_random_uuid();
   v_match uuid := gen_random_uuid();
+  v_hunter_player uuid;
+  v_runner_player uuid;
 begin
   insert into auth.users(id) values (v_hunter), (v_runner);
   insert into public.matches(id, code_hash, round_seconds, head_start_seconds, ping_seconds, expires_at)
@@ -11,28 +13,33 @@ begin
   insert into public.players(match_id, auth_user_id, display_name, role, session_cap_hash)
     values (v_match, v_hunter, 'Hunter', 'HUNTER', decode(repeat('b', 64), 'hex')),
            (v_match, v_runner, 'Runner', 'RUNNER', decode(repeat('c', 64), 'hex'));
+  select id into v_hunter_player from public.players where match_id = v_match and auth_user_id = v_hunter;
+  select id into v_runner_player from public.players where match_id = v_match and auth_user_id = v_runner;
 
   perform set_config('request.jwt.claim.sub', v_hunter::text, true);
-  if not public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':hunter') then
-    raise exception 'Hunter must be authorized for Hunter topic';
+  if not public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':hunter:' || v_hunter_player::text) then
+    raise exception 'Hunter must be authorized for own Hunter topic';
   end if;
-  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':runner') then
+  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':runner:' || v_hunter_player::text) then
     raise exception 'Hunter must be denied Runner topic';
   end if;
-  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':hunter:extra') then
+  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':hunter:' || v_runner_player::text) then
+    raise exception 'Hunter must be denied another player topic';
+  end if;
+  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':hunter:' || v_hunter_player::text || ':extra') then
     raise exception 'topic suffix injection must be denied';
   end if;
 
   perform set_config('request.jwt.claim.sub', v_runner::text, true);
-  if not public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':runner') then
-    raise exception 'Runner must be authorized for Runner topic';
+  if not public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':runner:' || v_runner_player::text) then
+    raise exception 'Runner must be authorized for own Runner topic';
   end if;
-  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':hunter') then
+  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':hunter:' || v_runner_player::text) then
     raise exception 'Runner must be denied Hunter topic';
   end if;
 
   update public.players set status = 'LEFT' where match_id = v_match and auth_user_id = v_runner;
-  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':runner') then
+  if public.xzones_can_receive_realtime_topic('match:' || v_match::text || ':runner:' || v_runner_player::text) then
     raise exception 'A left player must lose channel authorization';
   end if;
   if not exists (select 1 from pg_policies where schemaname = 'realtime' and tablename = 'messages'

@@ -79,21 +79,28 @@ corepack pnpm exec supabase functions serve --workdir backend/supabase --env-fil
 corepack pnpm typecheck
 corepack pnpm lint
 corepack pnpm test:unit
+corepack pnpm test:audit
 corepack pnpm verify:payloads
 corepack pnpm test:edge
+corepack pnpm test:api
 corepack pnpm test:sim
+corepack pnpm test:db
 corepack pnpm exec playwright install chromium
 corepack pnpm test:e2e
 corepack pnpm build
 ```
 
-`test:e2e` starts the web app on port 5175 when one is not already running. The SQL harness requires a new, disposable PostgreSQL database; it applies a test-only Auth/Realtime shim, every migration, and every SQL smoke test:
+`test:e2e` starts the web app on port 5175 when one is not already running. `test:db` starts a temporary PostgreSQL instance and applies a test-only Auth/Realtime shim, every migration, and every SQL smoke test. It needs local PostgreSQL server tools (`initdb`, `pg_ctl`, `createdb`, and `psql`) and permission to open a local socket.
+
+The real Realtime integration runs in the `supabase-realtime` GitHub Actions job. It starts the complete local Supabase stack, serves the API Edge Function, then runs `corepack pnpm test:realtime-integration`. For manual use, start Supabase and the `api` function, then set `SUPABASE_API_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_DB_URL` from `supabase status -o env`; the test uses `psql` to check that coordinate-bearing REST broadcasts were not persisted. The test cannot pass against the native PostgreSQL shim alone.
+
+To run the schema smoke harness against an explicitly managed, disposable PostgreSQL database instead:
 
 ```sh
 DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/EMPTY_TEST_DATABASE' bash scripts/test-schema.sh
 ```
 
-Do not point the schema harness at a real or valuable database. GitHub Actions runs the unit, API, privacy, simulator, browser, SQL, lint, and build checks.
+Never point the schema harness at a real or valuable database. GitHub Actions runs the unit, audit, API, privacy, simulator, browser, SQL, lint, build, and Supabase Realtime integration checks.
 
 ## Free deployment
 

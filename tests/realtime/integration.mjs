@@ -108,14 +108,14 @@ await request(`/functions/v1/api/matches/${matchId}/start`, host, { expected_rev
 const hostClient = await startClient(host), hunterClient = await startClient(hunter)
 const runnerClient = await startClient(runner), runner2Client = await startClient(runner2)
 await Promise.all([
-  hostClient.subscribe(`match:${matchId}:runner`),
-  hunterClient.subscribe(`match:${matchId}:hunter`),
-  runnerClient.subscribe(`match:${matchId}:runner`),
-  runner2Client.subscribe(`match:${matchId}:runner`),
+  hostClient.subscribe(`match:${matchId}:runner:${created.player_id}`),
+  hunterClient.subscribe(`match:${matchId}:hunter:${second.player_id}`),
+  runnerClient.subscribe(`match:${matchId}:runner:${third.player_id}`),
+  runner2Client.subscribe(`match:${matchId}:runner:${fourth.player_id}`),
 ])
-await expectRejectedSubscription(hostClient, `match:${matchId}:hunter`)
+await expectRejectedSubscription(hostClient, `match:${matchId}:hunter:${created.player_id}`)
 const anonymousRealtime = unauthenticatedClient()
-await expectRejectedSubscription(anonymousRealtime, `match:${matchId}:runner`)
+await expectRejectedSubscription(anonymousRealtime, `match:${matchId}:runner:${created.player_id}`)
 await anonymousRealtime.client.disconnect()
 
 // A valid Hunter in a different match still cannot join this match's Hunter topic.
@@ -127,7 +127,7 @@ const otherCreated = await request('/functions/v1/api/lobbies', otherHostToken, 
 await request('/functions/v1/api/lobbies/join', otherHunterToken, { display_name: 'Other Hunter', code: otherCreated.code })
 await request(`/functions/v1/api/matches/${otherCreated.match_id}/team`, otherHunterToken, { role: 'HUNTER' })
 const otherMatchClient = await startClient(otherHunterToken)
-await expectRejectedSubscription(otherMatchClient, `match:${matchId}:hunter`)
+await expectRejectedSubscription(otherMatchClient, `match:${matchId}:hunter:${second.player_id}`)
 await otherMatchClient.close()
 
 const uniqueLat = 12.34567, uniqueLon = 67.89123

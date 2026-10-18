@@ -395,7 +395,7 @@ class SupabaseGameApi implements GameApi {
     })
     await client.setAuth(session.data.access_token)
     let resyncingAfterReconnect = false
-    const channel = client.channel(privateMatchTopic(id, role), { config: { private: true } })
+    const channel = client.channel(privateMatchTopic(id, role, membership.data.own_player_id), { config: { private: true } })
       .on('broadcast', { event: 'xzones.event' }, ({ payload }) => {
         if (resyncingAfterReconnect) return
         const safe = projectEventForRole(role, payload)

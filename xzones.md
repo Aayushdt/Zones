@@ -367,8 +367,10 @@ All screens specify loading, empty, error, offline, success behavior. Controls m
 | Results | Winner, duration, tag count, cancellation reason; no routes. |
 | Settings | Name, theme, Dusk/Paper map style, haptics, privacy, safe-play, version, leave/end. |
 
+The optional zone is advisory only in Phase A: display the boundary and a local out-of-zone warning. Being outside it never tags a player, reveals live location, or changes the server outcome.
+
 ## 21. UI board reference
-Board image was unavailable locally; this table maps the detailed prompt description and corrections.
+Visual source: [`docs/design/XZONES_Dusk_Contour_Game_UI_Board.png`](docs/design/XZONES_Dusk_Contour_Game_UI_Board.png). The top row is Dusk and the bottom row is Paper; this table maps its screens while the Phase A corrections below override conflicting board details.
 
 | Board element | XZones route | Copy | Change |
 |---|---|---|---|
@@ -569,9 +571,13 @@ create index latest_fix_match_received_idx on latest_fix(match_id,received_at);
 create table ping_snapshots (
  id uuid primary key default gen_random_uuid(), match_id uuid not null references matches(id) on delete cascade,
  runner_id uuid not null references players(id), ping_index int not null,
- lat double precision not null, lon double precision not null, accuracy_m real not null,
- captured_at timestamptz not null, ping_at timestamptz not null,
- unique(match_id,runner_id,ping_index)
+ status text not null check(status in ('OK','NO_FIX','STALE')),
+ lat double precision, lon double precision, accuracy_m real,
+ captured_at timestamptz, ping_at timestamptz not null, age_seconds int not null,
+ received_at timestamptz not null default now(), revision bigint not null,
+ unique(match_id,runner_id,ping_index),
+ check ((status='OK' and lat is not null and lon is not null and accuracy_m is not null and captured_at is not null)
+     or (status in ('NO_FIX','STALE') and lat is null and lon is null and accuracy_m is null and captured_at is null))
 );
 create index ping_snapshots_match_time_idx on ping_snapshots(match_id,ping_at desc);
 create table tags (
@@ -608,7 +614,8 @@ RLS/authorization:
 - Players: members see names/role/status/readiness only; no auth IDs/token hashes. Own selection/readiness via function.
 - latest_fix, ping_snapshots, QR challenges: no direct client read/write. Service-role functions only.
 - Tags/results: members read minimal status; writes only functions.
-- Realtime private topic match:<id>:hunter or :runner. RLS on realtime.messages checks Auth user is active match member and topic suffix matches DB role; publish cross-role snapshots only from service role.
+- Realtime private topic match:<id>:hunter|runner:<player_id>. RLS on realtime.messages checks the Auth user, match, player ID, active status, and role. The server fans each role-projected event out only to currently active player topics; this avoids relying on cached Realtime authorization to revoke a connected tagged/left player. Publish cross-role snapshots only from the server role projector.
+- Publish events after committed mutations through the single `api` Edge Function using private REST Broadcast. It is ephemeral; never persist coordinate-bearing events in `realtime.messages`. Delivery failures are best-effort and the 15-second sync remains the fallback.
 - Hunter channel contains Hunter team live positions and scheduled Runner snapshots only. Runner channel contains Runner team live positions and generic ping notice; absolutely no Hunter coordinate/distance/direction/marker metadata.
 - Never trust client role claims; resolve from players table. Deny table subscriptions for latest_fix and snapshots.
 - Service role keys never reach browser. Anonymous Supabase Auth user is the identity; display name is not verified. Capability is random 256-bit, server hashes it, revokes on leave/end.
@@ -628,7 +635,7 @@ All JSON over HTTPS with Supabase Auth bearer. One deployed Supabase Edge Functi
 | POST /api/matches/:id/ready | Member; {ready} | {ready,can_start,block_reason} | 409 INVALID_STATE; lobby.readiness |
 | POST /api/matches/:id/start | Host; {expected_revision} | {state,start_at,head_start_ends_at,ends_at,revision} | 403 NOT_HOST, 409 NOT_READY/REVISION_CONFLICT; match.started |
 | POST /api/matches/:id/sync | Member; {last_revision} | {state,server_now,role_view,due_pings,next_ping_at,revision} | 401/403/404; match.state, Hunter ping or Runner notice |
-| POST /api/matches/:id/location | Active member; {lat,lon,accuracy_m,captured_at,sequence} | {accepted,server_received_at,stale} | 400 INVALID_FIX, 409 OLD_SEQUENCE; same-team team.location_live |
+| POST /api/matches/:id/location | Active member; {lat,lon,accuracy_m,captured_at,sequence} | {accepted,server_now,player_id?,stale,reason?} | 400 INVALID_FIX, 409 OLD_SEQUENCE, 429 RATE_LIMITED + `Retry-After`; accepted fix emits same-team `team.location_live` |
 | POST /api/matches/:id/qr | Active Runner; {} | {token,expires_at} | 403 WRONG_ROLE, 409 INACTIVE; no token event |
 | POST /api/matches/:id/qr/scan | Active Hunter; {token} | {tag_id,status,accepted_at} | 403 WRONG_ROLE, 404 INVALID_QR/WRONG_MATCH, 409 QR_USED/EXPIRED/DEADLINE; tag.accepted |
 | POST /api/matches/:id/tag/confirm | Active Runner; {} | {tag_id,status,accepted_at} | 409 ALREADY_TAGGED/DEADLINE; tag.accepted |
@@ -750,9 +757,10 @@ Build order (plan, not execution); each step has touched paths and done check:
 | Deadline | Tag at/after deadline | Server timestamp decides |
 | Zone | Haversine with accuracy and uncertain edge | No reveal until two confident samples |
 | QR | Replay/expiry/wrong match | Rejected; no second tag |
-| Privacy | Capture all payloads for both roles | Runner never sees Hunter fields or opponent metadata; Hunter no live Runner |
+| Realtime | Real Supabase integration captures API responses and messages for Hunter, Runner/host, and another match | Runner never sees Hunter fields or opponent metadata; Hunter receives Runner coordinates only in scheduled snapshots; unauthorized joins fail; tagged/left access stops; coordinates are absent from `realtime.messages` |
 | Cleanup | Tag/leave/end and advance retention | Latest row immediate; metadata/pings by day 7 |
 | Idempotency | Retry event | One transition |
+| Location throttle | Two accepted fixes less than two seconds apart | Second returns 429 + Retry-After; client backs off normally |
 | Permission | Deny location | Clear block; no fake fix |
 | Network | Disconnect/return | Stale/offline then sync |
 | Host loss | Claim/timeout | Limited control or no-winner end |
@@ -766,6 +774,7 @@ Simulator uses scripted fake players, deterministic paths, stale/low-accuracy fi
 - [ ] Server timestamps drive head-start, timer, pings, deadline.
 - [ ] Live teammates distinct from scheduled age-labelled snapshots.
 - [ ] Runner never gets Hunter coords/distance/direction/markers/metadata; Hunter never gets live Runner positions between pings.
+- [ ] Real Supabase Realtime integration proves private topic admission/rejection, sub-5-second delivery, tag/leave revocation, role payload privacy, and no coordinate rows in `realtime.messages`.
 - [ ] Single-use QR and Runner fallback work; proximity never tags.
 - [ ] Results cover timer/all-tagged/host-end/host-disconnect.
 - [ ] latest_fix deleted at tag/leave/end; no route history; snapshots/metadata by seven days.

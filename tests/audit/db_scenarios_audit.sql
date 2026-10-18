@@ -692,6 +692,8 @@ declare
   v_r_auth uuid := gen_random_uuid();
   v_code_hash bytea := pg_temp.rand_bytes();
   v_match_id uuid;
+  v_h_player_id uuid;
+  v_r_player_id uuid;
   v_h_topic_check boolean;
   v_r_cross_check boolean;
   v_invalid_topic boolean;
@@ -707,17 +709,19 @@ begin
 
   perform public.xzones_select_team(v_h_auth, v_match_id, 'HUNTER');
   perform public.xzones_select_team(v_r_auth, v_match_id, 'RUNNER');
+  select id into v_h_player_id from public.players where match_id = v_match_id and auth_user_id = v_h_auth;
+  select id into v_r_player_id from public.players where match_id = v_match_id and auth_user_id = v_r_auth;
 
   -- Test xzones_can_receive_realtime_topic with simulated auth.uid()
   -- 1) Hunter listening to Hunter topic
   perform set_config('request.jwt.claim.sub', v_h_auth::text, true);
-  v_h_topic_check := public.xzones_can_receive_realtime_topic('match:' || v_match_id || ':hunter');
+  v_h_topic_check := public.xzones_can_receive_realtime_topic('match:' || v_match_id || ':hunter:' || v_h_player_id);
 
   -- 2) Hunter attempting to listen to Runner topic -> must be FALSE
-  v_r_cross_check := public.xzones_can_receive_realtime_topic('match:' || v_match_id || ':runner');
+  v_r_cross_check := public.xzones_can_receive_realtime_topic('match:' || v_match_id || ':runner:' || v_h_player_id);
 
   -- 3) Invalid topic
-  v_invalid_topic := public.xzones_can_receive_realtime_topic('match:' || v_match_id || ':admin');
+  v_invalid_topic := public.xzones_can_receive_realtime_topic('match:' || v_match_id || ':admin:' || v_h_player_id);
 
   if v_h_topic_check = true and v_r_cross_check = false and v_invalid_topic = false then
     insert into audit_results values ('Scenario 11: Realtime role channel security', 'PASS', 'Cross-role and invalid topic subscriptions strictly rejected');

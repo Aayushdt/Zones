@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { privateMatchTopic, projectEventForRole } from './index.ts'
 
 const matchId = '2ad47d8c-5065-428b-9a4d-59340e9fe836'
+const playerId = 'f28cc076-14b5-4553-8d39-86daf01e4cc0'
 
 describe('private Realtime topics and client projection', () => {
-  it('constructs only exact role topics from UUID match ids', () => {
-    expect(privateMatchTopic(matchId, 'HUNTER')).toBe(`match:${matchId}:hunter`)
-    expect(privateMatchTopic(matchId, 'RUNNER')).toBe(`match:${matchId}:runner`)
-    expect(() => privateMatchTopic(`${matchId}:runner`, 'HUNTER')).toThrow('Invalid match id')
+  it('constructs only exact player topics from UUID match and player ids', () => {
+    expect(privateMatchTopic(matchId, 'HUNTER', playerId)).toBe(`match:${matchId}:hunter:${playerId}`)
+    expect(privateMatchTopic(matchId, 'RUNNER', playerId)).toBe(`match:${matchId}:runner:${playerId}`)
+    expect(() => privateMatchTopic(`${matchId}:runner`, 'HUNTER', playerId)).toThrow('Invalid match id')
+    expect(() => privateMatchTopic(matchId, 'RUNNER', `${playerId}:extra`)).toThrow('Invalid player id')
   })
 
   it('drops cross-role broadcasts and removes hidden fields before store delivery', () => {
