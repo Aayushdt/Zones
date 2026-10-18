@@ -12,7 +12,7 @@ export function CreatePage() {
   const setGuestName = useAppStore((state) => state.setGuestName)
   const [name, setName] = useState(savedName)
   const [duration, setDuration] = useState<(typeof durations)[number]>(45)
-  const [pingMinutes, setPingMinutes] = useState<(typeof pingOptions)[number]>(5)
+  const [pingMinutes, setPingMinutes] = useState<(typeof pingOptions)[number] | null>(5)
   const [headStart, setHeadStart] = useState(180)
   const [fixedZone, setFixedZone] = useState(false)
   const [diameter, setDiameter] = useState(1000)
@@ -43,7 +43,7 @@ export function CreatePage() {
       display_name: trimmedName,
       round_seconds: duration * 60,
       head_start_seconds: headStart,
-      ping_seconds: pingMinutes * 60,
+      ping_seconds: pingMinutes === null ? null : pingMinutes * 60,
       ...(fixedZone ? {
         zone_diameter_m: diameter,
         zone_lat: Number(latitude),
@@ -104,6 +104,12 @@ export function CreatePage() {
                 type="button"
               >{minutes} min</button>
             ))}
+            <button
+              aria-pressed={pingMinutes === null}
+              className={pingMinutes === null ? 'segment is-selected' : 'segment'}
+              onClick={() => setPingMinutes(null)}
+              type="button"
+            >Off</button>
           </div>
         </fieldset>
 

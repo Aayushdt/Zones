@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_MATCH_CONFIG, isValidMatchConfig } from './config.ts'
 import {
   balanceTeams,
   advanceZoneConfirmation,
@@ -13,6 +14,13 @@ import {
 import type { TeamMember } from './types.ts'
 
 describe('team balance and readiness', () => {
+  it('accepts the defaults and Ping Off while enforcing cross-field timing', () => {
+    expect(isValidMatchConfig(DEFAULT_MATCH_CONFIG)).toBe(true)
+    expect(isValidMatchConfig({ ...DEFAULT_MATCH_CONFIG, pingSeconds: null })).toBe(true)
+    expect(isValidMatchConfig({ roundSeconds: 600, headStartSeconds: 301, pingSeconds: null })).toBe(false)
+    expect(isValidMatchConfig({ roundSeconds: 600, headStartSeconds: 300, pingSeconds: 301 })).toBe(false)
+  })
+
   it('balances every supported lobby size from 3 through 12', () => {
     for (let count = 3; count <= 12; count += 1) {
       const result = balanceTeams(count)

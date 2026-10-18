@@ -449,7 +449,7 @@ begin
   v_sync := public.xzones_sync_match(v_h_auth, v_match_id, 0);
 
   if v_sync->>'next_ping_at' is null and jsonb_array_length(v_sync->'due_pings') = 0 then
-    insert into audit_results values ('Scenario 7: Ping Off and zone Off', 'PASS', 'Ping Off correctly yields null next_ping_at and empty due_pings in DB (API creation rejects it)');
+    insert into audit_results values ('Scenario 7: Ping Off and zone Off', 'PASS', 'Ping Off correctly persists through lobby creation, with null next_ping_at and no due pings');
   else
     insert into audit_results values ('Scenario 7: Ping Off and zone Off', 'FAIL', 'Sync: ' || coalesce(v_sync::text, 'null'));
   end if;

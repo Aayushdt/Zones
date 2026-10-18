@@ -24,6 +24,30 @@ begin
     raise exception 'zone diameter 1000 did not store as 500m radius';
   end if;
 
+  v_result := public.xzones_create_lobby(
+    v_host, decode(repeat('9', 64), 'hex'), 'Ping Off', decode(repeat('8', 64), 'hex'),
+    decode(repeat('7', 64), 'hex'), 600, 300, null, null, null, null
+  );
+  if v_result ? 'error' or (select ping_seconds from public.matches where id = (v_result->>'match_id')::uuid) is not null then
+    raise exception 'valid Ping Off configuration should create a lobby: %', v_result;
+  end if;
+
+  v_result := public.xzones_create_lobby(
+    v_host, decode(repeat('6', 64), 'hex'), 'Invalid timing', decode(repeat('5', 64), 'hex'),
+    decode(repeat('4', 64), 'hex'), 600, 301, null, null, null, null
+  );
+  if v_result->>'error' <> 'INVALID_CONFIG' then
+    raise exception 'configuration with less than five active minutes should be rejected: %', v_result;
+  end if;
+
+  v_result := public.xzones_create_lobby(
+    v_host, decode(repeat('3', 64), 'hex'), 'Ping too late', decode(repeat('2', 64), 'hex'),
+    decode(repeat('1', 64), 'hex'), 600, 300, 301, null, null, null
+  );
+  if v_result->>'error' <> 'INVALID_CONFIG' then
+    raise exception 'ping interval greater than active time should be rejected: %', v_result;
+  end if;
+
   v_result := public.xzones_join_lobby(
     v_runner_a, v_user_bucket, v_failed_bucket, 'Runner A', v_code_hash,
     decode(repeat('5', 64), 'hex')

@@ -1,4 +1,5 @@
 import { projectEventForRole } from './payloads.ts'
+import { isValidMatchConfig } from '../../../../packages/game-core/src/config.ts'
 type JsonObject = Record<string, unknown>
 
 const corsHeaders = {
@@ -175,8 +176,12 @@ export async function handleRequest(request: Request): Promise<Response> {
       await callRpc('xzones_cleanup', {}).catch(() => ({ error: 'INTERNAL' }))
     }
     if (path === '/lobbies') {
-      if (!isText(body.display_name) || !numberIn(body.round_seconds, 600, 10800)
-        || !numberIn(body.head_start_seconds, 0, 900) || !numberIn(body.ping_seconds, 60, 1800)
+      const pingSeconds = body.ping_seconds === undefined ? null : body.ping_seconds
+      if (!isText(body.display_name) || !isValidMatchConfig({
+        roundSeconds: body.round_seconds as number,
+        headStartSeconds: body.head_start_seconds as number,
+        pingSeconds: pingSeconds as number | null,
+      })
         || (body.zone_diameter_m !== undefined
           && (!numberIn(body.zone_diameter_m, 400, 3000) || body.zone_diameter_m % 2 !== 0))) {
         return fail(400, 'INVALID_CONFIG', 'Check the name, duration, head start, ping, and zone size.')
@@ -205,7 +210,7 @@ export async function handleRequest(request: Request): Promise<Response> {
           p_session_cap_hash: bytea(capHash),
           p_round_seconds: body.round_seconds,
           p_head_start_seconds: body.head_start_seconds,
-          p_ping_seconds: body.ping_seconds,
+          p_ping_seconds: pingSeconds,
           p_zone_lat: zoneLat ?? null,
           p_zone_lon: zoneLon ?? null,
           p_zone_diameter_m: body.zone_diameter_m ?? null,

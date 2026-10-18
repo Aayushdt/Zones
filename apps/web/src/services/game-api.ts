@@ -42,7 +42,7 @@ export interface CreateInput {
   zone_diameter_m?: number
   round_seconds: number
   head_start_seconds: number
-  ping_seconds: number
+  ping_seconds: number | null
 }
 
 export interface JoinInput {

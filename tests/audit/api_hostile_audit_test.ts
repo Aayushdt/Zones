@@ -15,7 +15,17 @@ function setupEnv() {
 Deno.test('F-03: Create lobby accepts Ping Off (null or omitted)', async () => {
   setupEnv()
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async () => Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+  let createArgs: Record<string, unknown> | undefined
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({ ok: true })
+    if (url.endsWith('/rest/v1/rpc/xzones_create_lobby')) {
+      createArgs = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({ match_id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc', player_id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bd' })
+    }
+    throw new Error(`Unexpected URL: ${url}`)
+  }
 
   try {
     // Spec section 19-25: "ping 1-30 min or Off (default 5)".
@@ -31,6 +41,7 @@ Deno.test('F-03: Create lobby accepts Ping Off (null or omitted)', async () => {
       }),
     }))
     assert(resNull.status === 200, `Ping Off null should succeed; got ${resNull.status}`)
+    assert(createArgs?.p_ping_seconds === null, 'Ping Off should reach the create RPC as null')
 
     // Client omits ping_seconds (Ping Off)
     const resOmitted = await handleRequest(new Request('http://localhost/functions/v1/api/lobbies', {
@@ -43,6 +54,7 @@ Deno.test('F-03: Create lobby accepts Ping Off (null or omitted)', async () => {
       }),
     }))
     assert(resOmitted.status === 200, `Omitted ping Off should succeed; got ${resOmitted.status}`)
+    assert(createArgs?.p_ping_seconds === null, 'omitted ping should normalize to null')
   } finally {
     globalThis.fetch = originalFetch
   }
