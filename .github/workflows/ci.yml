@@ -38,6 +38,11 @@ jobs:
           deno-version: v2.9.6
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      - name: Install PostgreSQL server binaries for isolated database audits
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql
+          echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test:unit

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { RealtimeClient } from '../../apps/web/node_modules/@supabase/realtime-js/dist/module/index.js'
+// Load the package's CommonJS entry point: the ESM build uses extensionless
+// internal imports, which Node 24 does not resolve in this script.
+import { RealtimeClient } from '../../apps/web/node_modules/@supabase/realtime-js/dist/main/index.js'
 
 const base = process.env.SUPABASE_API_URL
 const anonKey = process.env.SUPABASE_ANON_KEY
