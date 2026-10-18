@@ -126,13 +126,15 @@ function asLobby(data: ApiLobbyResponse, displayName: string, code: string): Lob
   }
 }
 
-function parseApiError(value: unknown, status: number): ApiError {
+export function parseApiError(value: unknown, status: number, retryAfter: string | null): ApiError {
+  const retryAfterSeconds = retryAfter !== null && /^\d+$/.test(retryAfter) ? Math.min(30, Math.max(1, Number(retryAfter))) : undefined
   if (value !== null && typeof value === 'object') {
     const root = value as { error?: unknown }
     if (root.error !== null && typeof root.error === 'object') {
       const detail = root.error as { code?: unknown; message?: unknown }
       if (typeof detail.code === 'string' && typeof detail.message === 'string') {
-        return apiError(detail.code, detail.message, status >= 500)
+        return { ...apiError(detail.code, detail.message, status >= 500 || status === 429),
+          ...(status === 429 && retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}) }
       }
     }
   }
@@ -204,7 +206,7 @@ class SupabaseGameApi implements GameApi {
         if (!refreshed.ok) return refreshed
         return this.post<T>(path, body, false, method)
       }
-      if (!response.ok) return { ok: false, error: parseApiError(payload, response.status) }
+      if (!response.ok) return { ok: false, error: parseApiError(payload, response.status, response.headers.get('retry-after')) }
       return { ok: true, data: payload as T }
     } catch {
       return error('NETWORK_ERROR', 'Could not reach the game service. Check your connection.', true)

@@ -655,6 +655,13 @@ export async function handleRequest(request: Request): Promise<Response> {
       if (!result.error && result.accepted === true && typeof result.player_id === 'string' && typeof result.server_now === 'string') {
         await publishLatestLocation(locationMatch[1], result.player_id, result.server_now)
       }
+      if (result.error === 'RATE_LIMITED') {
+        const seconds = typeof result.retry_after_seconds === 'number' && Number.isInteger(result.retry_after_seconds)
+          ? Math.max(1, Math.min(30, result.retry_after_seconds)) : 2
+        return Response.json({ error: { code: 'RATE_LIMITED', message: 'Location updates are arriving too quickly.' } }, {
+          status: 429, headers: { ...corsHeaders, 'retry-after': String(seconds) },
+        })
+      }
       return rpcResponse(result)
     }
 

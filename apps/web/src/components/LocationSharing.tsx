@@ -33,6 +33,7 @@ export function LocationSharing() {
     }
     let disposed = false
     let sending = false
+    let retryAfterAt = 0
     const syncOnResume = () => {
       if (document.visibilityState === 'visible' && navigator.onLine) void supabaseGameApi.syncMatch(matchId)
     }
@@ -46,6 +47,10 @@ export function LocationSharing() {
         setStatus('Background or offline; uploads paused. Your last fix becomes stale.')
         return
       }
+      if (Date.now() < retryAfterAt) {
+        setStatus(`Location update paced by the server; retrying in ${Math.ceil((retryAfterAt - Date.now()) / 1000)} seconds.`)
+        return
+      }
       const moved = lastSentFix ? haversineDistanceMeters(lastSentFix.lat, lastSentFix.lon, point.lat, point.lon) ?? 0 : Infinity
       if (sending || (lastSentAt && Date.now() - lastSentAt < 10_000 && moved < 10)) return
       sending = true
@@ -56,7 +61,15 @@ export function LocationSharing() {
       })
       sending = false
       if (disposed) return
-      if (!result.ok) { setStatus(result.error.message); return }
+      if (!result.ok) {
+        if (result.error.code === 'RATE_LIMITED') {
+          const delay = result.error.retryAfterSeconds ?? 2
+          retryAfterAt = Date.now() + delay * 1000
+          setStatus(`Location update paced by the server; retrying in ${delay} seconds.`)
+          return
+        }
+        setStatus(result.error.message); return
+      }
       if (!result.data.accepted) { setStatus(result.data.reason === 'POOR_ACCURACY' ? 'GPS accuracy is over 100 m; waiting for a clearer fix.' : 'The server rejected this stale location fix.'); return }
       lastSentAt = Date.now()
       lastSentFix = point

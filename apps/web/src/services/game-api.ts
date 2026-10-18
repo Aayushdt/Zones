@@ -6,6 +6,7 @@ export type ApiError = {
   code: string
   message: string
   retryable: boolean
+  retryAfterSeconds?: number
 }
 
 export interface PlayerView {

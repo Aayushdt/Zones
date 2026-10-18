@@ -4,6 +4,7 @@ import { createMockApi } from '../../apps/web/src/services/mock-api.ts'
 import { useLocationStore } from '../../apps/web/src/stores/location-store.ts'
 import { maintainScreenWakeLock, watchDeviceLocation } from '../../apps/web/src/services/device-lifecycle.ts'
 import { createRealtimeEventGate, applyMatchRealtimeEvent } from '../../apps/web/src/services/realtime-events.ts'
+import { parseApiError } from '../../apps/web/src/services/supabase-api.ts'
 
 function timeLeft(clock: { ends_at: string; server_now: string }, anchor: number): number {
   const deadline = Date.parse(clock.ends_at)
@@ -44,6 +45,12 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
     expect(gate.accept(stale)).toBe(false)
     const tagged = applyMatchRealtimeEvent(withNewer, { event_id: 'tag-3', match_id: 'match-1', revision: 3, server_at: 't', type: 'tag.accepted', data: { runner_id: 'runner-self', status: 'TAGGED', method: 'QR', accepted_at: 't' } })
     expect(tagged?.own_status).toBe('TAGGED')
+  })
+
+  it('F10: a throttled location response is retryable and carries a bounded server delay', () => {
+    expect(parseApiError({ error: { code: 'RATE_LIMITED', message: 'paced' } }, 429, '2'))
+      .toEqual({ code: 'RATE_LIMITED', message: 'paced', retryable: true, retryAfterSeconds: 2 })
+    expect(parseApiError({ error: { code: 'RATE_LIMITED', message: 'paced' } }, 429, '900').retryAfterSeconds).toBe(30)
   })
 
   it('F12: screen wake lock is acquired only while visible and released on hide/unmount', async () => {

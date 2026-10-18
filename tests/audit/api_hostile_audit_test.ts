@@ -144,7 +144,7 @@ Deno.test('AUDIT A3: Started/full join responses are returned only behind the se
   }
 })
 
-Deno.test('AUDIT C1: Location endpoint lacks rate limiting [FINDING]', async () => {
+Deno.test('F-10: Location uploads return 429 and Retry-After when the DB throttles a player', async () => {
   setupEnv()
   const originalFetch = globalThis.fetch
   let rpcCalls = 0
@@ -155,15 +155,15 @@ Deno.test('AUDIT C1: Location endpoint lacks rate limiting [FINDING]', async () 
     if (url.endsWith('/rest/v1/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
     if (url.endsWith('/rest/v1/rpc/xzones_update_location')) {
       rpcCalls += 1
-      return Response.json({ accepted: true, stale: false, player_id: 'p-1', server_now: new Date().toISOString() })
+      return rpcCalls === 1
+        ? Response.json({ accepted: true, stale: false, player_id: 'p-1', server_now: new Date().toISOString() })
+        : Response.json({ error: 'RATE_LIMITED', retry_after_seconds: 2 })
     }
     throw new Error(`Unexpected URL: ${url}`)
   }
 
   try {
-    // Fire 20 consecutive location uploads from same client
-    const promises = Array.from({ length: 20 }, (_, i) =>
-      handleRequest(new Request('http://localhost/functions/v1/api/matches/11111111-1111-1111-1111-111111111111/location', {
+    const upload = (sequence: number) => handleRequest(new Request('http://localhost/functions/v1/api/matches/11111111-1111-1111-1111-111111111111/location', {
         method: 'POST',
         headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -171,16 +171,17 @@ Deno.test('AUDIT C1: Location endpoint lacks rate limiting [FINDING]', async () 
           lon: -0.1,
           accuracy_m: 10,
           captured_at: new Date().toISOString(),
-          sequence: i + 1,
+          sequence,
         }),
       }))
-    )
-    const results = await Promise.all(promises)
-    // All 20 succeed with 200 OK because there is NO rate limiting on /location!
-    for (const res of results) {
-      assert(res.status === 200, 'location upload accepted without rate limiting')
-    }
-    assert(rpcCalls === 20, 'all 20 location uploads hit the database RPC')
+    const accepted = await upload(1)
+    const limited = await upload(2)
+    assert(accepted.status === 200, 'first location upload is accepted')
+    assert(limited.status === 429, 'throttled upload returns HTTP 429')
+    assert(limited.headers.get('retry-after') === '2', '429 includes the database retry delay')
+    const body = await limited.json()
+    assert(body.error.code === 'RATE_LIMITED', '429 uses the stable rate-limit error code')
+    assert(rpcCalls === 2, 'each attempt is checked by the atomic existing-row throttle')
   } finally {
     globalThis.fetch = originalFetch
   }
