@@ -7,7 +7,7 @@
 ## Summary and status counts
 
 - Verified base: `88b59d79bd704b2c654d5eb7631582c44dc57449` (`fix/review-findings`); verification branch: `verify/gameplay`.
-- Environment: clean local clone for install/typecheck/lint/unit/build; production Vite preview for mobile Chromium smoke. Local Docker socket was inaccessible. PR [#11](https://github.com/Aayushdt/Zones/pull/11) is open and not merged; GitHub's `verify` job succeeded, while `supabase-realtime` was still running at report time.
+- Environment: clean local clone for install/typecheck/lint/unit/build; production Vite preview for mobile Chromium smoke. Local Docker socket was inaccessible. PR [#11](https://github.com/Aayushdt/Zones/pull/11) is open and not merged. Its first `verify` and `supabase-realtime` jobs succeeded; another run for the latest push is in progress.
 - Requested gameplay matrix: 68 G steps and 10 full-match journeys.
 - Status totals: **PASS 0; PASS-WITH-WORKAROUND 0; FAIL 0; BLOCKED 78; PHONE-ONLY 1 checklist**. G1.1 has UI-only observations but remains BLOCKED under the all-channel pass rule. The separate verification harness passed 3/3 and existing Playwright smoke passed 4/4; neither counts as a complete gameplay step.
 - No `V-xx` app finding was confirmed. No application failure was reproduced under real-backend gameplay conditions. Environment blockers are not misreported as product failures.
@@ -116,8 +116,9 @@ A gameplay step is PASS only when the observed UI, before/after database state, 
 ## Privacy proof
 
 - **Canary:** PASS. The harness injected a fake `{type: "match.state", hunter_lat, hunter_lon}` payload into a Runner receive record; the guard threw the expected error.
-- **Role-specific live traffic:** BLOCKED. No match was connected to the player harness, so no conclusion is made about server-side privacy.
-- **`realtime.messages`:** Not queried locally because `supabase start` could not run and no DB URL was available. The PR Supabase job result is still pending.
+- **Gameplay-harness role capture:** BLOCKED. No match was connected to the new player harness, so the full per-step/per-role matrix remains unproven.
+- **Existing CI real-stack integration:** PASS for its limited fixture. GitHub Actions run [39220318924, `supabase-realtime`](https://github.com/Aayushdt/Zones/actions/runs/39220318924) started the Supabase stack and API Edge Function; its integration script exercised four anonymous players, private role topics and denied subscriptions, Runner/Hunter payload filtering, scheduled Hunter ping delivery, tag and leave revocation, and checked that a coordinate was not persisted in `realtime.messages`. This is API/Realtime fixture evidence, not UI-driven full-match proof.
+- **`realtime.messages`:** CI queried the table for the fixture coordinate and asserted it was absent. The repeat job for the latest commit was still in progress when recorded.
 - Host information limits, Hunter ping-only Runner positions, non-member denial, and tagged/left unsubscribe remain unproven here.
 - Committed traffic logs redact values and sensitive URL parameters. Full HAR/trace output stays in `/tmp/xzones-gameplay-artifacts/` and is not committed.
 
@@ -139,12 +140,12 @@ See [Stage 0 environment record](docs/verification/STAGE-0-ENVIRONMENT.md). Actu
 - `corepack pnpm --filter @xzones/web build`: pass; generic large-chunk warning.
 - `corepack pnpm test:e2e` in clean clone: 4/4 pass. React Router emitted a `HydrateFallback` console warning; no complete journey assertions were made.
 - `playwright test --config=tests/e2e-verify/playwright.config.ts`: 3/3 pass (mobile Home/no-geolocation smoke, privacy canary, harness module load).
-- `SUPABASE_TELEMETRY_DISABLED=1 corepack pnpm exec supabase start`: blocked, Docker socket permission denied.
-- PR #11 GitHub Actions: `verify` succeeded in 1m55s; `supabase-realtime` was still in progress at report time. Existing workflow does not invoke `tests/e2e-verify/` or upload game-verification artifacts.
+- `SUPABASE_TELEMETRY_DISABLED=1 corepack pnpm exec supabase start`: locally blocked, Docker socket permission denied.
+- PR #11 first GitHub Actions run: `verify` succeeded in 1m55s and `supabase-realtime` succeeded in 3m41s. The latter started Supabase, served the Edge Function and ran `pnpm test:realtime-integration` successfully. The repeat run for the latest commit was in progress when recorded. Existing workflow does not invoke `tests/e2e-verify/` or upload gameplay artifacts.
 
 ## Not run / what is needed next
 
-1. Check PR #11's final `supabase-realtime` result. It exercises the current integration test, not the G/J matrix.
+1. Check the latest PR #11 `supabase-realtime` result. The prior run succeeded for the current integration fixture, not the G/J matrix.
 2. For full gameplay verification, enable Docker socket access for this user and run local Supabase, or provide a CI workflow/job that runs the gameplay harness against ephemeral Supabase and uploads compact artifacts. This pass did not modify workflow configuration because configuration changes were prohibited.
 3. Run each G group and J journey with separate actors, DB inspection and per-role traffic capture. Commit each group/journey only after its checks pass or record its actual failure.
 4. Run the [real-phone checklist](docs/verification/PHONE-ONLY.md) over HTTPS. Real GPS, camera, background, battery, haptics and mobile network tests cannot be inferred from emulation.
