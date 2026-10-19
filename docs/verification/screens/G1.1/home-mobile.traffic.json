@@ -1,0 +1,68 @@
+[
+  {
+    "at": "2026-10-19T08:08:22.598Z",
+    "direction": "request",
+    "url": "http://127.0.0.1:4175/"
+  },
+  {
+    "at": "2026-10-19T08:08:22.602Z",
+    "direction": "response",
+    "url": "http://127.0.0.1:4175/",
+    "status": 200
+  },
+  {
+    "at": "2026-10-19T08:08:22.608Z",
+    "direction": "request",
+    "url": "http://127.0.0.1:4175/assets/index-71hCHXmv.js"
+  },
+  {
+    "at": "2026-10-19T08:08:22.608Z",
+    "direction": "request",
+    "url": "http://127.0.0.1:4175/assets/jsx-runtime-DyZJNswf.js"
+  },
+  {
+    "at": "2026-10-19T08:08:22.608Z",
+    "direction": "request",
+    "url": "http://127.0.0.1:4175/assets/index-DV_tSKer.css"
+  },
+  {
+    "at": "2026-10-19T08:08:22.617Z",
+    "direction": "response",
+    "url": "http://127.0.0.1:4175/assets/index-DV_tSKer.css",
+    "status": 200
+  },
+  {
+    "at": "2026-10-19T08:08:22.621Z",
+    "direction": "response",
+    "url": "http://127.0.0.1:4175/assets/jsx-runtime-DyZJNswf.js",
+    "status": 200
+  },
+  {
+    "at": "2026-10-19T08:08:22.637Z",
+    "direction": "response",
+    "url": "http://127.0.0.1:4175/assets/index-71hCHXmv.js",
+    "status": 200
+  },
+  {
+    "at": "2026-10-19T08:08:22.729Z",
+    "direction": "request",
+    "url": "http://127.0.0.1:4175/assets/bricolage-grotesque-latin-wght-normal-DLoelf7F.woff2"
+  },
+  {
+    "at": "2026-10-19T08:08:22.729Z",
+    "direction": "request",
+    "url": "http://127.0.0.1:4175/assets/manrope-latin-wght-normal-DHIcAJRg.woff2"
+  },
+  {
+    "at": "2026-10-19T08:08:22.744Z",
+    "direction": "response",
+    "url": "http://127.0.0.1:4175/assets/manrope-latin-wght-normal-DHIcAJRg.woff2",
+    "status": 200
+  },
+  {
+    "at": "2026-10-19T08:08:22.744Z",
+    "direction": "response",
+    "url": "http://127.0.0.1:4175/assets/bricolage-grotesque-latin-wght-normal-DLoelf7F.woff2",
+    "status": 200
+  }
+]

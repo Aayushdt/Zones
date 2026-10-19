@@ -87,6 +87,8 @@ jobs:
             printf 'SUPABASE_API_URL=%s\n' "$API_URL"
             printf 'SUPABASE_DB_URL=%s\n' "$DB_URL"
             printf 'SUPABASE_ANON_KEY=%s\n' "$ANON_KEY"
+            printf 'SUPABASE_URL=%s\n' "$API_URL"
+            printf 'SUPABASE_SERVICE_ROLE_KEY=%s\n' "$SERVICE_ROLE_KEY"
           } >> "$GITHUB_ENV"
       - name: Serve the API Edge Function with ephemeral test secrets
         working-directory: backend/supabase
@@ -106,3 +108,35 @@ jobs:
       - name: Install PostgreSQL client for ephemeral-storage assertion
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: pnpm test:realtime-integration
+      - name: Install Chromium for UI gameplay verification
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Build the production PWA against the disposable Supabase stack
+        run: pnpm --filter @xzones/web build
+        env:
+          VITE_SUPABASE_URL: ${{ env.SUPABASE_API_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
+      - name: Serve production build
+        run: |
+          nohup pnpm --filter @xzones/web preview -- --host 127.0.0.1 --port 4175 > /tmp/xzones-preview.log 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4175/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/xzones-preview.log
+          exit 1
+      - name: Run real-backend browser verification
+        run: pnpm exec playwright test --config=tests/e2e-verify/playwright.config.ts
+        env:
+          XZONES_BASE_URL: http://127.0.0.1:4175
+          XZONES_ARTIFACTS_DIR: /tmp/xzones-gameplay-artifacts
+      - name: Upload gameplay screenshots, HAR and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gameplay-verification-${{ github.run_id }}
+          path: |
+            /tmp/xzones-gameplay-artifacts/
+            docs/verification/screens/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
