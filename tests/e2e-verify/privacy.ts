@@ -6,7 +6,7 @@ const coordinateKeys = /^(lat|latitude|lon|lng|longitude|heading|bearing|distanc
 /** Role privacy guard used on every recorded HTTP and websocket payload. */
 export function assertRolePrivacy(role: 'HUNTER' | 'RUNNER', records: TrafficRecord[]): void {
   for (const record of records) {
-    if (record.direction !== 'request' && record.direction !== 'ws-receive') continue
+    if (record.direction !== 'response' && record.direction !== 'ws-receive') continue
     for (const value of walk(record.payload)) {
       const key = value.key
       const event = value.event
@@ -22,6 +22,7 @@ export function assertRolePrivacy(role: 'HUNTER' | 'RUNNER', records: TrafficRec
 export function redactTraffic(records: TrafficRecord[]): TrafficRecord[] {
   return records.map((record) => ({
     ...record,
+    url: redactUrl(record.url),
     payload: scrub(record.payload),
   }))
 }
@@ -39,10 +40,24 @@ function* walk(input: unknown, parentEvent = ''): Generator<{ key: string; event
 
 function scrub(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(scrub)
+  if (typeof value === 'string') return '[TEXT REDACTED]'
+  if (typeof value === 'number') return '[NUMBER REDACTED]'
   if (!value || typeof value !== 'object') return value
   const result: Record<string, unknown> = {}
   for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
-    result[key] = coordinateKeys.test(key) || /code|token|secret|authorization/i.test(key) ? '[REDACTED]' : scrub(child)
+    result[key] = coordinateKeys.test(key) || /code|token|secret|authorization|id|name|location|position|message|fix/i.test(key)
+      ? '[REDACTED]' : scrub(child)
   }
   return result
+}
+
+function redactUrl(value: string): string {
+  try {
+    const url = new URL(value)
+    for (const key of [...url.searchParams.keys()]) {
+      if (/key|token|code|auth|secret/i.test(key)) url.searchParams.set(key, '[REDACTED]')
+    }
+    url.pathname = url.pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '[ID]')
+    return url.toString()
+  } catch { return '[URL REDACTED]' }
 }

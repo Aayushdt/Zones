@@ -7,6 +7,19 @@ import { assertRolePrivacy, redactTraffic } from './privacy'
 export interface Actor { player: Player; role: 'HUNTER' | 'RUNNER'; kind: 'host' | 'hunter' | 'runner' | 'tagged' | 'left' | 'non-member' }
 export interface StepEvidence { id: string; name: string; statuses: Record<string, string>; screenshotPaths: string[] }
 
+export class LatencyRecorder {
+  private readonly causes = new Map<string, number>()
+  readonly samples: Array<{ event: string; role: string; milliseconds: number }> = []
+  caused(eventId: string): void { this.causes.set(eventId, performance.now()) }
+  received(eventId: string, event: string, role: string): number {
+    const start = this.causes.get(eventId)
+    if (start === undefined) throw new Error(`No cause timestamp recorded for ${eventId}`)
+    const milliseconds = performance.now() - start
+    this.samples.push({ event, role, milliseconds })
+    return milliseconds
+  }
+}
+
 /** Every action captures the visible client state and checks captured traffic. */
 export async function step(id: string, name: string, actors: Record<string, Actor>, action: () => Promise<void>, screenshotRoot: string): Promise<StepEvidence> {
   await action()

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { assertRolePrivacy } from './privacy'
 import { DbInspector } from './db-inspector'
-import { step } from './scenario'
+import { LatencyRecorder, step } from './scenario'
 import { shiftMatchTime } from './clock'
 import type { TrafficRecord } from './player'
 
@@ -16,5 +16,6 @@ test('privacy capture canary rejects an injected Hunter location leak to a Runne
 test('verification harness exports player, scenario, DB and clock tools', async () => {
   expect(typeof DbInspector).toBe('function')
   expect(typeof step).toBe('function')
+  expect(typeof LatencyRecorder).toBe('function')
   expect(typeof shiftMatchTime).toBe('function')
 })

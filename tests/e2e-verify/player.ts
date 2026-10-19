@@ -84,8 +84,9 @@ export class Player {
     let payload: unknown
     try {
       const contentType = response.headers()['content-type'] ?? ''
+      // The API uses JSON; omitting HTML/JS/CSS bodies avoids bloated logs and
+      // keeps the recorded payload scope focused on application traffic.
       if (contentType.includes('json')) payload = await response.json()
-      else if (contentType.includes('text')) payload = await response.text()
     } catch { /* A response may be unavailable after navigation or download. */ }
     this.traffic.push({ at: new Date().toISOString(), direction: 'response', url: response.url(), status: response.status(), payload })
   }
