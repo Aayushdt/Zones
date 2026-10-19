@@ -265,13 +265,12 @@ This crosswalk records current event behavior as found in `index.ts`, `broadcast
 
 ## Findings
 
-### R-01 — `location.stale` is never emitted by sync (LOW)
+### R-01 — `location.stale` is never emitted by sync (LOW) — FIXED
 
-- **Reproduction:** `corepack pnpm exec deno test --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY tests/review/stale-event-reproduction_test.ts`.
+- **Initial reproduction:** Before the fix, the focused router test established the sync response had `is_stale: true` but no `location.stale` event.
 - **Expected:** XZones §25 says same-team subscribers receive `location.stale: { player_id, is_stale }`.
-- **Actual:** The test calls the real `handleRequest` router with a stale teammate position. The 200 sync response includes `team.location_live` with `is_stale: true`, but neither the response nor captured broadcasts contains `location.stale`. This is a contract mismatch; the sync fallback exposes stale status, so the report rates it LOW.
-- **Location:** `backend/supabase/functions/api/index.ts:455-500` (sync event construction and publication); projector is present at `packages/game-core/src/payloads.ts:69`.
-- **Suggested fix:** When sync reads a stale same-team position, emit a coordinate-free `location.stale` event to that player’s role-scoped topic; add a positive assertion and retain the polling fallback.
+- **Fix:** When sync reads a stale same-team position, it emits a stable-ID, coordinate-free event with only `player_id` and `is_stale`. The event is broadcast only to the syncing role's private player topics; the client marks an existing teammate stale. Polling still carries the full allow-listed team snapshot.
+- **Verification:** The updated focused test passes and asserts one sync event, one private same-role broadcast, matching dedupe IDs, no coordinates, and no opposing Hunter broadcast. The client audit test verifies the reducer applies the stale flag. `pnpm test:all` passed; actual hosted Supabase delivery remains under the separate F-02 integration limitation.
 
 ## Coverage and mutation status
 

@@ -6,7 +6,8 @@ function assert(condition: unknown, message: string): asserts condition {
 
 const hiddenKeys = new Set([
   'hunter_id', 'hunter_position', 'hunter_positions', 'hunter_coordinates', 'hunter_lat', 'hunter_lon',
-  'opponent', 'opponents', 'opponent_distance', 'distance', 'direction', 'bearing', 'marker_metadata',
+  'hunter_direction', 'hunter_distance', 'opponent', 'opponents', 'opponent_distance', 'opponent_metadata',
+  'opponent_markers', 'distance', 'direction', 'bearing', 'marker_metadata',
   'latest_fix', 'live_runner_position', 'runner_live_position', 'runner_route', 'raw_fix', 'coordinates',
   'auth_user_id', 'session_cap_hash', 'code_hash', 'token_hash', 'session_capability', 'token', 'code',
 ])
@@ -33,7 +34,8 @@ const envelope = (type: string, data: Record<string, unknown>) => ({
 })
 
 const hostile = {
-  hunter_id: 'hidden-hunter', hunter_positions: [{ lat: 1, lon: 2 }],
+  hunter_id: 'hidden-hunter', hunter_positions: [{ lat: 1, lon: 2 }], hunter_lat: 1, hunter_lon: 2,
+  hunter_direction: 'north', hunter_distance: 15, opponent_metadata: { role: 'HUNTER' },
   distance: 10, direction: 'north', opponent_distance: 10,
   marker_metadata: { icon: 'secret' }, latest_fix: { lat: 3, lon: 4 },
   extra_metadata: { hidden: true },

@@ -1,0 +1,491 @@
+state,action,actor,expected,condition_or_reason,execution_result
+LOBBY,CREATE_LOBBY,host_controller,N/A,operation creates a different match,UNVERIFIED — no DB/API matrix ran
+LOBBY,JOIN,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_TEAM,host_controller,CONDITIONAL,member; valid role/readiness mutation,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_READY,host_controller,CONDITIONAL,member; valid role/readiness mutation,UNVERIFIED — no DB/API matrix ran
+LOBBY,START,host_controller,CONDITIONAL,"controller; 3–12 players, exact team balance, all ready, revision current",UNVERIFIED — no DB/API matrix ran
+LOBBY,SYNC,host_controller,ALLOW,active lobby member; role-safe view only,UNVERIFIED — no DB/API matrix ran
+LOBBY,UPDATE_LOCATION,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,ISSUE_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SCAN_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,CONFIRM_TAG,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,LEAVE,host_controller,ALLOW,active lobby participant; rebalance before start,UNVERIFIED — no DB/API matrix ran
+LOBBY,HOST_CLAIM,host_controller,CONDITIONAL,explicit host leave/claim window is open,UNVERIFIED — no DB/API matrix ran
+LOBBY,END,host_controller,ALLOW,current controller may cancel lobby,UNVERIFIED — no DB/API matrix ran
+LOBBY,READ_RESULT,host_controller,REJECT,lobby has no terminal result,UNVERIFIED — no DB/API matrix ran
+LOBBY,CREATE_LOBBY,active_hunter,N/A,operation creates a different match,UNVERIFIED — no DB/API matrix ran
+LOBBY,JOIN,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_TEAM,active_hunter,CONDITIONAL,member; valid role/readiness mutation,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_READY,active_hunter,CONDITIONAL,member; valid role/readiness mutation,UNVERIFIED — no DB/API matrix ran
+LOBBY,START,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SYNC,active_hunter,ALLOW,active lobby member; role-safe view only,UNVERIFIED — no DB/API matrix ran
+LOBBY,UPDATE_LOCATION,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,ISSUE_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SCAN_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,CONFIRM_TAG,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,LEAVE,active_hunter,ALLOW,active lobby participant; rebalance before start,UNVERIFIED — no DB/API matrix ran
+LOBBY,HOST_CLAIM,active_hunter,CONDITIONAL,explicit host leave/claim window is open,UNVERIFIED — no DB/API matrix ran
+LOBBY,END,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,READ_RESULT,active_hunter,REJECT,lobby has no terminal result,UNVERIFIED — no DB/API matrix ran
+LOBBY,CREATE_LOBBY,active_runner,N/A,operation creates a different match,UNVERIFIED — no DB/API matrix ran
+LOBBY,JOIN,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_TEAM,active_runner,CONDITIONAL,member; valid role/readiness mutation,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_READY,active_runner,CONDITIONAL,member; valid role/readiness mutation,UNVERIFIED — no DB/API matrix ran
+LOBBY,START,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SYNC,active_runner,ALLOW,active lobby member; role-safe view only,UNVERIFIED — no DB/API matrix ran
+LOBBY,UPDATE_LOCATION,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,ISSUE_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SCAN_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,CONFIRM_TAG,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,LEAVE,active_runner,ALLOW,active lobby participant; rebalance before start,UNVERIFIED — no DB/API matrix ran
+LOBBY,HOST_CLAIM,active_runner,CONDITIONAL,explicit host leave/claim window is open,UNVERIFIED — no DB/API matrix ran
+LOBBY,END,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,READ_RESULT,active_runner,REJECT,lobby has no terminal result,UNVERIFIED — no DB/API matrix ran
+LOBBY,CREATE_LOBBY,non_member,N/A,operation creates a different match,UNVERIFIED — no DB/API matrix ran
+LOBBY,JOIN,non_member,CONDITIONAL,"private code valid, not expired/full/started and rate limit passes",UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_TEAM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_READY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,START,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SYNC,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,UPDATE_LOCATION,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,ISSUE_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SCAN_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,CONFIRM_TAG,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,LEAVE,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,HOST_CLAIM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,END,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,READ_RESULT,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,CREATE_LOBBY,tagged_runner,N/A,operation creates a different match,UNVERIFIED — no DB/API matrix ran
+LOBBY,JOIN,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_TEAM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_READY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,START,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SYNC,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,UPDATE_LOCATION,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,ISSUE_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SCAN_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,CONFIRM_TAG,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,LEAVE,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,HOST_CLAIM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,END,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,READ_RESULT,tagged_runner,REJECT,lobby has no terminal result,UNVERIFIED — no DB/API matrix ran
+LOBBY,CREATE_LOBBY,left_player,N/A,operation creates a different match,UNVERIFIED — no DB/API matrix ran
+LOBBY,JOIN,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_TEAM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_READY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,START,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SYNC,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,UPDATE_LOCATION,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,ISSUE_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SCAN_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,CONFIRM_TAG,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,LEAVE,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,HOST_CLAIM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,END,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,READ_RESULT,left_player,REJECT,lobby has no terminal result,UNVERIFIED — no DB/API matrix ran
+LOBBY,CREATE_LOBBY,removed_player,N/A,operation creates a different match,UNVERIFIED — no DB/API matrix ran
+LOBBY,JOIN,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_TEAM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SET_READY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,START,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SYNC,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,UPDATE_LOCATION,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,ISSUE_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,SCAN_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,CONFIRM_TAG,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,LEAVE,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,HOST_CLAIM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,END,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+LOBBY,READ_RESULT,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CREATE_LOBBY,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,JOIN,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_TEAM,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_READY,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,START,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SYNC,host_controller,ALLOW,participant status allowed; role-specific payload only,UNVERIFIED — no DB/API matrix ran
+HEAD_START,UPDATE_LOCATION,host_controller,ALLOW,own fix only; server validates membership/state,UNVERIFIED — no DB/API matrix ran
+HEAD_START,ISSUE_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SCAN_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CONFIRM_TAG,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,LEAVE,host_controller,ALLOW,active player explicitly leaves; server evaluates win rule,UNVERIFIED — no DB/API matrix ran
+HEAD_START,HOST_CLAIM,host_controller,CONDITIONAL,controller claim window open; no information privilege,UNVERIFIED — no DB/API matrix ran
+HEAD_START,END,host_controller,ALLOW,current controller; terminal action idempotent,UNVERIFIED — no DB/API matrix ran
+HEAD_START,READ_RESULT,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CREATE_LOBBY,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,JOIN,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_TEAM,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_READY,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,START,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SYNC,active_hunter,ALLOW,participant status allowed; role-specific payload only,UNVERIFIED — no DB/API matrix ran
+HEAD_START,UPDATE_LOCATION,active_hunter,ALLOW,own fix only; server validates membership/state,UNVERIFIED — no DB/API matrix ran
+HEAD_START,ISSUE_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SCAN_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CONFIRM_TAG,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,LEAVE,active_hunter,ALLOW,active player explicitly leaves; server evaluates win rule,UNVERIFIED — no DB/API matrix ran
+HEAD_START,HOST_CLAIM,active_hunter,CONDITIONAL,controller claim window open; no information privilege,UNVERIFIED — no DB/API matrix ran
+HEAD_START,END,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,READ_RESULT,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CREATE_LOBBY,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,JOIN,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_TEAM,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_READY,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,START,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SYNC,active_runner,ALLOW,participant status allowed; role-specific payload only,UNVERIFIED — no DB/API matrix ran
+HEAD_START,UPDATE_LOCATION,active_runner,ALLOW,own fix only; server validates membership/state,UNVERIFIED — no DB/API matrix ran
+HEAD_START,ISSUE_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SCAN_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CONFIRM_TAG,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,LEAVE,active_runner,ALLOW,active player explicitly leaves; server evaluates win rule,UNVERIFIED — no DB/API matrix ran
+HEAD_START,HOST_CLAIM,active_runner,CONDITIONAL,controller claim window open; no information privilege,UNVERIFIED — no DB/API matrix ran
+HEAD_START,END,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,READ_RESULT,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CREATE_LOBBY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,JOIN,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_TEAM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_READY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,START,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SYNC,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,UPDATE_LOCATION,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,ISSUE_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SCAN_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CONFIRM_TAG,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,LEAVE,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,HOST_CLAIM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,END,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,READ_RESULT,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CREATE_LOBBY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,JOIN,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_TEAM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_READY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,START,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SYNC,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,UPDATE_LOCATION,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,ISSUE_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SCAN_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CONFIRM_TAG,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,LEAVE,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,HOST_CLAIM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,END,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,READ_RESULT,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CREATE_LOBBY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,JOIN,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_TEAM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_READY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,START,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SYNC,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,UPDATE_LOCATION,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,ISSUE_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SCAN_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CONFIRM_TAG,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,LEAVE,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,HOST_CLAIM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,END,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,READ_RESULT,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CREATE_LOBBY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,JOIN,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_TEAM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SET_READY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,START,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SYNC,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,UPDATE_LOCATION,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,ISSUE_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,SCAN_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,CONFIRM_TAG,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,LEAVE,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,HOST_CLAIM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,END,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+HEAD_START,READ_RESULT,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CREATE_LOBBY,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,JOIN,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_TEAM,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_READY,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,START,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SYNC,host_controller,ALLOW,participant status allowed; role-specific payload only,UNVERIFIED — no DB/API matrix ran
+ACTIVE,UPDATE_LOCATION,host_controller,ALLOW,own fix only; server validates membership/state,UNVERIFIED — no DB/API matrix ran
+ACTIVE,ISSUE_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SCAN_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CONFIRM_TAG,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,LEAVE,host_controller,ALLOW,active player explicitly leaves; server evaluates win rule,UNVERIFIED — no DB/API matrix ran
+ACTIVE,HOST_CLAIM,host_controller,CONDITIONAL,controller claim window open; no information privilege,UNVERIFIED — no DB/API matrix ran
+ACTIVE,END,host_controller,ALLOW,current controller; terminal action idempotent,UNVERIFIED — no DB/API matrix ran
+ACTIVE,READ_RESULT,host_controller,REJECT,match is not terminal,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CREATE_LOBBY,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,JOIN,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_TEAM,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_READY,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,START,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SYNC,active_hunter,ALLOW,participant status allowed; role-specific payload only,UNVERIFIED — no DB/API matrix ran
+ACTIVE,UPDATE_LOCATION,active_hunter,ALLOW,own fix only; server validates membership/state,UNVERIFIED — no DB/API matrix ran
+ACTIVE,ISSUE_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SCAN_QR,active_hunter,ALLOW,active Hunter only; valid unused match-bound QR,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CONFIRM_TAG,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,LEAVE,active_hunter,ALLOW,active player explicitly leaves; server evaluates win rule,UNVERIFIED — no DB/API matrix ran
+ACTIVE,HOST_CLAIM,active_hunter,CONDITIONAL,controller claim window open; no information privilege,UNVERIFIED — no DB/API matrix ran
+ACTIVE,END,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,READ_RESULT,active_hunter,REJECT,match is not terminal,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CREATE_LOBBY,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,JOIN,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_TEAM,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_READY,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,START,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SYNC,active_runner,ALLOW,participant status allowed; role-specific payload only,UNVERIFIED — no DB/API matrix ran
+ACTIVE,UPDATE_LOCATION,active_runner,ALLOW,own fix only; server validates membership/state,UNVERIFIED — no DB/API matrix ran
+ACTIVE,ISSUE_QR,active_runner,ALLOW,active Runner only; opaque short-lived token,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SCAN_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CONFIRM_TAG,active_runner,ALLOW,active Runner fallback; single serialized tag,UNVERIFIED — no DB/API matrix ran
+ACTIVE,LEAVE,active_runner,ALLOW,active player explicitly leaves; server evaluates win rule,UNVERIFIED — no DB/API matrix ran
+ACTIVE,HOST_CLAIM,active_runner,CONDITIONAL,controller claim window open; no information privilege,UNVERIFIED — no DB/API matrix ran
+ACTIVE,END,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,READ_RESULT,active_runner,REJECT,match is not terminal,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CREATE_LOBBY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,JOIN,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_TEAM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_READY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,START,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SYNC,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,UPDATE_LOCATION,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,ISSUE_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SCAN_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CONFIRM_TAG,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,LEAVE,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,HOST_CLAIM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,END,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,READ_RESULT,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CREATE_LOBBY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,JOIN,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_TEAM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_READY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,START,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SYNC,tagged_runner,ALLOW,participant status allowed; role-specific payload only,UNVERIFIED — no DB/API matrix ran
+ACTIVE,UPDATE_LOCATION,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,ISSUE_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SCAN_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CONFIRM_TAG,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,LEAVE,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,HOST_CLAIM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,END,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,READ_RESULT,tagged_runner,REJECT,match is not terminal,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CREATE_LOBBY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,JOIN,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_TEAM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_READY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,START,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SYNC,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,UPDATE_LOCATION,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,ISSUE_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SCAN_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CONFIRM_TAG,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,LEAVE,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,HOST_CLAIM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,END,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,READ_RESULT,left_player,REJECT,match is not terminal,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CREATE_LOBBY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,JOIN,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_TEAM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SET_READY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,START,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SYNC,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,UPDATE_LOCATION,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,ISSUE_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,SCAN_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,CONFIRM_TAG,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,LEAVE,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,HOST_CLAIM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,END,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ACTIVE,READ_RESULT,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CREATE_LOBBY,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,JOIN,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_TEAM,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_READY,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,START,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SYNC,host_controller,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+ENDED,UPDATE_LOCATION,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,ISSUE_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SCAN_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CONFIRM_TAG,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,LEAVE,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,HOST_CLAIM,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,END,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,READ_RESULT,host_controller,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+ENDED,CREATE_LOBBY,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,JOIN,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_TEAM,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_READY,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,START,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SYNC,active_hunter,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+ENDED,UPDATE_LOCATION,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,ISSUE_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SCAN_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CONFIRM_TAG,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,LEAVE,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,HOST_CLAIM,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,END,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,READ_RESULT,active_hunter,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+ENDED,CREATE_LOBBY,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,JOIN,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_TEAM,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_READY,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,START,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SYNC,active_runner,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+ENDED,UPDATE_LOCATION,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,ISSUE_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SCAN_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CONFIRM_TAG,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,LEAVE,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,HOST_CLAIM,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,END,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,READ_RESULT,active_runner,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+ENDED,CREATE_LOBBY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,JOIN,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_TEAM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_READY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,START,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SYNC,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,UPDATE_LOCATION,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,ISSUE_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SCAN_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CONFIRM_TAG,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,LEAVE,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,HOST_CLAIM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,END,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,READ_RESULT,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CREATE_LOBBY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,JOIN,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_TEAM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_READY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,START,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SYNC,tagged_runner,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+ENDED,UPDATE_LOCATION,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,ISSUE_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SCAN_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CONFIRM_TAG,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,LEAVE,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,HOST_CLAIM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,END,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,READ_RESULT,tagged_runner,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+ENDED,CREATE_LOBBY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,JOIN,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_TEAM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_READY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,START,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SYNC,left_player,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+ENDED,UPDATE_LOCATION,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,ISSUE_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SCAN_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CONFIRM_TAG,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,LEAVE,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,HOST_CLAIM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,END,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,READ_RESULT,left_player,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+ENDED,CREATE_LOBBY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,JOIN,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_TEAM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SET_READY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,START,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SYNC,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,UPDATE_LOCATION,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,ISSUE_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,SCAN_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,CONFIRM_TAG,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,LEAVE,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,HOST_CLAIM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,END,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+ENDED,READ_RESULT,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CREATE_LOBBY,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,JOIN,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_TEAM,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_READY,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,START,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SYNC,host_controller,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+CANCELLED,UPDATE_LOCATION,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,ISSUE_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SCAN_QR,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CONFIRM_TAG,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,LEAVE,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,HOST_CLAIM,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,END,host_controller,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,READ_RESULT,host_controller,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CREATE_LOBBY,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,JOIN,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_TEAM,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_READY,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,START,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SYNC,active_hunter,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+CANCELLED,UPDATE_LOCATION,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,ISSUE_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SCAN_QR,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CONFIRM_TAG,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,LEAVE,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,HOST_CLAIM,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,END,active_hunter,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,READ_RESULT,active_hunter,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CREATE_LOBBY,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,JOIN,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_TEAM,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_READY,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,START,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SYNC,active_runner,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+CANCELLED,UPDATE_LOCATION,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,ISSUE_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SCAN_QR,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CONFIRM_TAG,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,LEAVE,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,HOST_CLAIM,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,END,active_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,READ_RESULT,active_runner,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CREATE_LOBBY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,JOIN,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_TEAM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_READY,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,START,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SYNC,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,UPDATE_LOCATION,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,ISSUE_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SCAN_QR,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CONFIRM_TAG,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,LEAVE,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,HOST_CLAIM,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,END,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,READ_RESULT,non_member,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CREATE_LOBBY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,JOIN,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_TEAM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_READY,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,START,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SYNC,tagged_runner,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+CANCELLED,UPDATE_LOCATION,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,ISSUE_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SCAN_QR,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CONFIRM_TAG,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,LEAVE,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,HOST_CLAIM,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,END,tagged_runner,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,READ_RESULT,tagged_runner,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CREATE_LOBBY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,JOIN,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_TEAM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_READY,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,START,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SYNC,left_player,CONDITIONAL,only if the API returns terminal state/result; no location,UNVERIFIED — no DB/API matrix ran
+CANCELLED,UPDATE_LOCATION,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,ISSUE_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SCAN_QR,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CONFIRM_TAG,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,LEAVE,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,HOST_CLAIM,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,END,left_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,READ_RESULT,left_player,CONDITIONAL,authenticated participant; result exists and contains no route history,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CREATE_LOBBY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,JOIN,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_TEAM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SET_READY,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,START,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SYNC,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,UPDATE_LOCATION,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,ISSUE_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,SCAN_QR,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,CONFIRM_TAG,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,LEAVE,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,HOST_CLAIM,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,END,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
+CANCELLED,READ_RESULT,removed_player,REJECT,transition/action is not allowed by section 22,UNVERIFIED — no DB/API matrix ran
