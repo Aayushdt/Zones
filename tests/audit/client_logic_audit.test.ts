@@ -43,6 +43,12 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
     expect(withNewer?.own_team_positions[0]?.lat).toBe(25)
     expect(gate.accept(newer)).toBe(false)
     expect(gate.accept(stale)).toBe(false)
+    const staleNotice = { event_id: 'stale-2', match_id: 'match-1', revision: 2, server_at: 't', type: 'location.stale',
+      data: { player_id: 'runner-peer', is_stale: true } }
+    expect(gate.accept(staleNotice)).toBe(true)
+    const withStaleNotice = applyMatchRealtimeEvent(withNewer!, staleNotice)
+    expect(withStaleNotice?.own_team_positions[0]?.is_stale).toBe(true)
+    expect(gate.accept(staleNotice)).toBe(false)
     const tagged = applyMatchRealtimeEvent(withNewer, { event_id: 'tag-3', match_id: 'match-1', revision: 3, server_at: 't', type: 'tag.accepted', data: { runner_id: 'runner-self', status: 'TAGGED', method: 'QR', accepted_at: 't' } })
     expect(tagged?.own_status).toBe('TAGGED')
   })

@@ -472,6 +472,16 @@ export async function handleRequest(request: Request): Promise<Response> {
           data: position,
         })
         if (projected) events.push(projected)
+        if (position.is_stale === true && typeof position.captured_at === 'string') {
+          const staleEvent = projectEventForRole(role, {
+            // A fix becomes stale once; keying the event to its capture time lets clients
+            // deduplicate repeated syncs without retaining or broadcasting its coordinates.
+            event_id: `match:${syncMatch[1]}:team:${position.player_id}:stale:${position.captured_at}`,
+            match_id: syncMatch[1], revision, server_at: serverNow, type: 'location.stale',
+            data: { team_role: role, player_id: position.player_id, is_stale: true },
+          })
+          if (staleEvent) events.push(staleEvent)
+        }
       }
 
       if (role === 'HUNTER' && Array.isArray(result.due_pings)) {
@@ -497,7 +507,11 @@ export async function handleRequest(request: Request): Promise<Response> {
         if (notice) events.push(notice)
       }
 
-      await publishRoleEvents(syncMatch[1], events.filter((event) => event.type !== 'team.location_live'))
+      const broadcastableEvents = events.filter((event) => event.type !== 'team.location_live' && event.type !== 'location.stale')
+      await publishRoleEvents(syncMatch[1], broadcastableEvents)
+      // Staleness applies only to the syncing player's own team; unlike match-wide
+      // events it must never be fanned out to the opposing role.
+      await publishRoleEvents(syncMatch[1], events.filter((event) => event.type === 'location.stale'), [role])
       return ok({
         role,
         state: matchState,

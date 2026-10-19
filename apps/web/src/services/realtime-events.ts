@@ -46,6 +46,16 @@ export function applyMatchRealtimeEvent(view: RoleSafeMatchView, raw: unknown): 
         is_stale: typeof data.is_stale === 'boolean' ? data.is_stale : false }
       return { ...view, own_team_positions: [...view.own_team_positions.filter((item) => item.player_id !== id), point] }
     }
+    case 'location.stale': {
+      const id = data.player_id
+      if (typeof id !== 'string' || typeof data.is_stale !== 'boolean') return null
+      const own_team_positions = view.own_team_positions.map((point) => point.player_id === id
+        ? { ...point, is_stale: data.is_stale as boolean }
+        : point)
+      return own_team_positions.some((point) => point.player_id === id)
+        ? { ...view, own_team_positions }
+        : null
+    }
     case 'hunter.runner_ping':
       if (view.role !== 'HUNTER') return null
       return { ...view, runner_snapshots: mergeLatestPings(view.runner_snapshots, [data as unknown as HunterMatchView['runner_snapshots'][number]]) }
