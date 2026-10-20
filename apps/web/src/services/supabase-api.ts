@@ -266,6 +266,10 @@ class SupabaseGameApi implements GameApi {
     return this.post<ChatMessage>(`/matches/${encodeURIComponent(id)}/chat/send`, { body })
   }
 
+  async submitBugReport(report: string): Promise<Result<{ accepted: boolean }>> {
+    return this.post<{ accepted: boolean }>('/bug-reports', { report })
+  }
+
   async getLobby(id: string): Promise<Result<LobbyView>> {
     const result = await this.post<ApiLobbySyncResponse>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: 0 })
     if (!result.ok) return result

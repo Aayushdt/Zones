@@ -74,7 +74,9 @@ export const HIDE_AND_SEEK_CONFIG = {
     pollSeconds: { default: 5, min: 5, max: 30 }, // UNSPECIFIED-IN-REFERENCE
   },
   bugReport: {
+    maxCharacters: { default: 2000, min: 1, max: 5000 }, // UNSPECIFIED-IN-REFERENCE
     minimumIntervalSeconds: { default: 3600, min: 60, max: 86_400 }, // UNSPECIFIED-IN-REFERENCE
+    limitPerWindow: { default: 1, min: 1, max: 10 }, // UNSPECIFIED-IN-REFERENCE
   },
   items: {
     enabledByDefault: false,

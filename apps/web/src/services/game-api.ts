@@ -157,6 +157,7 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   findRejoinableMatch(): Promise<Result<RejoinableMatch | null>>
   listChat(id: string): Promise<Result<{ messages: ChatMessage[] }>>
   sendChat(id: string, body: string): Promise<Result<ChatMessage>>
+  submitBugReport(report: string): Promise<Result<{ accepted: boolean }>>
   reportVisibility(id: string, hidden: boolean): Promise<Result<{ accepted: boolean; hidden: boolean }>>
   updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>>
   issueQr(id: string): Promise<Result<QrChallenge>>

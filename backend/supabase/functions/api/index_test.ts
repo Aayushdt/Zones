@@ -629,3 +629,36 @@ Deno.test('chat send applies server limits and list/send delegate authorization 
     assert(listed.status === 200 && calls[1]?.rpc === 'xzones_list_chat', 'chat history should be read through role-authorized SQL')
   } finally { globalThis.fetch = originalFetch }
 })
+
+Deno.test('bug reports submit only bounded user text and an HMAC rate key', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  Deno.env.set('RATE_LIMIT_HASH_SECRET', 'test-secret-that-is-long-enough')
+  const originalFetch = globalThis.fetch
+  let captured: Record<string, unknown> | null = null
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_submit_bug_report')) {
+      captured = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({ accepted: true })
+    }
+    throw new Error(`Unexpected URL: ${url}`)
+  }
+  const request = (report: string) => new Request('http://localhost/functions/v1/api/bug-reports', {
+    method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: JSON.stringify({ report }),
+  })
+  try {
+    const invalid = await handleRequest(request('  '))
+    assert(invalid.status === 400 && captured === null, 'blank report should be rejected before RPC')
+    const response = await handleRequest(request('  Map stopped responding  '))
+    const result = await response.json()
+    assert(response.status === 200 && result.accepted === true, 'valid report should be accepted')
+    const rpc = captured as Record<string, unknown> | null
+    assert(rpc?.p_report === 'Map stopped responding' && rpc?.p_max_characters === 2000
+      && rpc?.p_window_seconds === 3600 && rpc?.p_limit === 1, 'RPC should receive trimmed text and configured limits')
+    assert(typeof rpc?.p_bucket_key === 'string' && rpc.p_bucket_key !== '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc',
+      'rate-limit key should be a bytea HMAC, not the user ID')
+  } finally { globalThis.fetch = originalFetch }
+})

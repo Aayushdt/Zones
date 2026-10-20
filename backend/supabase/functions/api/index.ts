@@ -309,6 +309,21 @@ export async function handleRequest(request: Request): Promise<Response> {
       }))
     }
 
+    if (path === '/bug-reports') {
+      if (typeof body.report !== 'string' || body.report.trim().length < 1
+        || [...body.report.trim()].length > HIDE_AND_SEEK_CONFIG.bugReport.maxCharacters.default) {
+        return fail(400, 'INVALID_INPUT', `Bug reports must contain 1 to ${HIDE_AND_SEEK_CONFIG.bugReport.maxCharacters.default} characters.`)
+      }
+      const bucket = await hmac(requiredEnv('RATE_LIMIT_HASH_SECRET'), `bug-report:${user.id}`)
+      return rpcResponse(await callRpc('xzones_submit_bug_report', {
+        p_bucket_key: bytea(bucket),
+        p_report: body.report.trim(),
+        p_max_characters: HIDE_AND_SEEK_CONFIG.bugReport.maxCharacters.default,
+        p_window_seconds: HIDE_AND_SEEK_CONFIG.bugReport.minimumIntervalSeconds.default,
+        p_limit: HIDE_AND_SEEK_CONFIG.bugReport.limitPerWindow.default,
+      }))
+    }
+
     if (path === '/rejoinable') {
       const match = await callRpc('xzones_find_rejoinable_match', { p_auth_user_id: user.id })
       if (typeof match.error === 'string') return rpcResponse(match)

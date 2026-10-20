@@ -44,6 +44,10 @@ export const router = createBrowserRouter([
         const { GuidePage } = await import('../pages/GuidePage')
         return { Component: GuidePage }
       } },
+      { path: '/bug-report', lazy: async () => {
+        const { BugReportPage } = await import('../pages/BugReportPage')
+        return { Component: BugReportPage }
+      } },
       ...(import.meta.env.DEV
         ? [{
             path: '/dev/sim',

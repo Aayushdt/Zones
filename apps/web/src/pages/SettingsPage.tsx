@@ -61,6 +61,7 @@ export function SettingsPage() {
           <li>Keep your phone with you, use the Runner confirmation if needed, and end the match when anyone asks.</li></ul>
       </section>
       <Link className="welcome__secondary" to="/guide">Hide & Seek rules and guide</Link>
+      <Link className="welcome__secondary" to="/bug-report">Report a bug</Link>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       {notice ? <p className="field-help" role="status">{notice}</p> : null}
       <p className="field-help">XZones Phase A · version 0.1.0</p>

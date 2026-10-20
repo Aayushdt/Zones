@@ -287,3 +287,7 @@
 
 - Added a dedicated Hide & Seek rules and safe-play page linked from both the active lobby and settings. It explains server tag decisions, scheduled-only Hunter snapshots, zone and stationary behavior, timers, and outdoor safety.
 - Validation: guide route Playwright PASS; typecheck/build PASS; lint PASS with existing warnings; `git diff --check` PASS.
+# Hide & Seek implementation — Step 5.4 bug reports
+
+- Added a minimal report form, authenticated Edge route, HMAC-keyed throttling, and insert-only database access. No identity, coordinates, device metadata, or diagnostic bundle is stored.
+- Validation: `pnpm test:all` PASS (31 unit, 27 audit, 29 API/hostile, payload and simulator, Playwright, database suite); typecheck/build and lint PASS with existing warnings; `git diff --check` PASS.
