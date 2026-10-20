@@ -42,3 +42,17 @@ test('offline state is announced and match data is explicitly not cached', async
   await context.setOffline(false)
   await expect(page.getByRole('status')).toHaveCount(0)
 })
+
+test('PWA manifest serves installable 192px and 512px PNG icons', async ({ page }) => {
+  await page.goto('/')
+  const manifestResponse = await page.request.get('/manifest.webmanifest')
+  expect(manifestResponse.ok()).toBeTruthy()
+  const manifest = await manifestResponse.json() as { icons: Array<{ src: string; sizes: string; type: string }> }
+  for (const size of ['192x192', '512x512']) {
+    const icon = manifest.icons.find((candidate) => candidate.sizes === size && candidate.type === 'image/png')
+    expect(icon, `manifest should include ${size} PNG`).toBeTruthy()
+    const response = await page.request.get(icon!.src)
+    expect(response.ok()).toBeTruthy()
+    expect(response.headers()['content-type']).toContain('image/png')
+  }
+})

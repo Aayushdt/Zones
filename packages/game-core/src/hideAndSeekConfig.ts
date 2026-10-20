@@ -66,6 +66,7 @@ export const HIDE_AND_SEEK_CONFIG = {
   },
   map: {
     ownMarkerSmoothingMs: { default: 250, min: 0, max: 2000 }, // UNSPECIFIED-IN-REFERENCE
+    tileCacheEntries: { default: 200, min: 50, max: 500 }, // UNSPECIFIED-IN-REFERENCE
   },
   chat: {
     maxCharacters: { default: 280, min: 1, max: 280 },

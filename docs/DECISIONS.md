@@ -255,3 +255,7 @@
 # Hide & Seek implementation — Step 4.6 own-marker smoothing
 
 - Smooth only the local map marker over 250 ms with eased interpolation. Keep network payloads and teammate/opponent positions unchanged; configure animation duration centrally for tuning.
+
+# Hide & Seek implementation — Step 4.7 offline map tiles and icons
+
+- Use stale-while-revalidate only for OpenFreeMap vector/raster tile paths and bound the tile cache by a configurable 200 entries, evicting oldest entries first. Serve 192px and 512px PNG install icons alongside the existing SVG icon.
