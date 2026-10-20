@@ -273,3 +273,5 @@
 - Add a dedicated Hide & Seek guide, linked from the lobby and settings, to explain role visibility, server-controlled GPS/QR tags, zones, stationary reveals, timers, and safe-play boundaries in one place.
 # Bug report privacy and limits
 - Bug reports store only trimmed user-entered text and creation time; the authenticated user ID is HMAC-derived solely as a one-per-hour rate-limit key. A free-text limit of 2,000 characters and one report per hour are conservative defaults because the reference does not specify these values.
+# Item economy defaults
+- Items are disabled by default and their activation state is private to server-side functions; each role-specific item begins with one use, matching the brief's default economy until playtesting changes it.

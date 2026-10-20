@@ -662,3 +662,34 @@ Deno.test('bug reports submit only bounded user text and an HMAC rate key', asyn
       'rate-limit key should be a bytea HMAC, not the user ID')
   } finally { globalThis.fetch = originalFetch }
 })
+
+Deno.test('item routes pass only authenticated identity and validated enable/action fields to RPCs', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = []
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    const name = url.split('/rpc/')[1]
+    if (!name) throw new Error(`Unexpected URL: ${url}`)
+    const args = JSON.parse(String(init?.body)) as Record<string, unknown>
+    calls.push({ name, args })
+    return Response.json(name === 'xzones_set_items_enabled' ? { items_enabled: args.p_enabled ?? false } : { accepted: true, uses_remaining: 0 })
+  }
+  const match = '63adbd40-4fc6-4d7c-b7a8-1f18f97496a3'
+  const request = (path: string, body: Record<string, unknown>) => new Request(`http://localhost/functions/v1/api${path}`, {
+    method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: JSON.stringify(body),
+  })
+  try {
+    const invalid = await handleRequest(request(`/matches/${match}/items/enabled`, { enabled: 'yes' }))
+    assert(invalid.status === 400 && calls.length === 0, 'invalid toggle must be rejected before RPC')
+    const read = await handleRequest(request(`/matches/${match}/items/enabled`, {}))
+    assert(read.status === 200 && calls[0]?.args.p_enabled === null, 'state lookup should delegate to the authorized RPC')
+    const enabled = await handleRequest(request(`/matches/${match}/items/enabled`, { enabled: true }))
+    assert(enabled.status === 200 && calls[1]?.args.p_auth_user_id === '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc', 'toggle must use authenticated identity')
+    const activate = await handleRequest(request(`/matches/${match}/items`, { item_key: 'HUNTER_SCAN' }))
+    assert(activate.status === 200 && calls[2]?.name === 'xzones_activate_item' && calls[2]?.args.p_item_key === 'HUNTER_SCAN', 'item activation should delegate to server checks')
+  } finally { globalThis.fetch = originalFetch }
+})

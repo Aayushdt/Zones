@@ -98,6 +98,8 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
     async listChat() { return { ok: true, data: { messages: [] } } },
     async sendChat() { return notImplemented() },
     async submitBugReport() { return notImplemented() },
+    async setItemsEnabled(_id, enabled) { return { ok: true, data: { items_enabled: enabled ?? false } } },
+    async activateItem() { return { ok: true, data: { accepted: true, uses_remaining: 0 } } },
     async reportVisibility(_id, hidden) { return { ok: true, data: { accepted: true, hidden } } },
     async updateLocation() { return notImplemented() },
     async issueQr() { return notImplemented() },

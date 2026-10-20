@@ -20,6 +20,7 @@ export function LobbyPage() {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const [hunterCount, setHunterCount] = useState(1)
+  const [itemsEnabled, setItemsEnabled] = useState(false)
   const enableLocation = useLocationStore((state) => state.enable)
   const clearLocation = useLocationStore((state) => state.clearMatch)
 
@@ -30,6 +31,8 @@ export function LobbyPage() {
     if (!result.ok) { setError(result.error.message); return }
     setError('')
     setLobby(result.data)
+    const items = await supabaseGameApi.setItemsEnabled(matchId, null)
+    if (items.ok) setItemsEnabled(items.data.items_enabled)
     setHunterCount(Math.min(Math.max(Math.ceil(result.data.players.length / HIDE_AND_SEEK_CONFIG.players.hunterCountDivisor.default), 1), Math.floor(result.data.players.length / 2)))
   }, [matchId])
 
@@ -85,6 +88,14 @@ export function LobbyPage() {
     setPending(false)
     if (!result.ok) { setError(result.error.message); return }
     await refresh()
+  }
+
+  async function toggleItems(enabled: boolean) {
+    setPending(true)
+    const result = await supabaseGameApi.setItemsEnabled(matchId, enabled)
+    setPending(false)
+    if (!result.ok) { setError(result.error.message); return }
+    setItemsEnabled(result.data.items_enabled)
   }
 
   async function start() {
@@ -145,6 +156,7 @@ export function LobbyPage() {
             Assign teams
           </button>
         </div> : null}
+        {isController ? <label className="check-field"><input type="checkbox" checked={itemsEnabled} disabled={pending} onChange={(event) => void toggleItems(event.currentTarget.checked)} /><span>Items on/off (experimental)</span></label> : <p className="field-help">Items are {itemsEnabled ? 'on' : 'off'} for this lobby.</p>}
         <Roster title="Runners" players={runners} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
         <Roster title="Hunters" players={hunters} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
         {unassigned.length ? <Roster title="Choose a team" players={unassigned} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} /> : null}

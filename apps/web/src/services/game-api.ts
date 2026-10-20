@@ -158,6 +158,8 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   listChat(id: string): Promise<Result<{ messages: ChatMessage[] }>>
   sendChat(id: string, body: string): Promise<Result<ChatMessage>>
   submitBugReport(report: string): Promise<Result<{ accepted: boolean }>>
+  setItemsEnabled(id: string, enabled: boolean | null): Promise<Result<{ items_enabled: boolean }>>
+  activateItem(id: string, itemKey: string): Promise<Result<{ accepted: boolean; uses_remaining: number }>>
   reportVisibility(id: string, hidden: boolean): Promise<Result<{ accepted: boolean; hidden: boolean }>>
   updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>>
   issueQr(id: string): Promise<Result<QrChallenge>>

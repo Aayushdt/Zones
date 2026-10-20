@@ -324,6 +324,20 @@ export async function handleRequest(request: Request): Promise<Response> {
       }))
     }
 
+    const itemsPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/items(?:\/(enabled))?$/i)
+    if (itemsPath) {
+      if (itemsPath[2] === 'enabled') {
+        if (body.enabled !== undefined && typeof body.enabled !== 'boolean') return fail(400, 'INVALID_INPUT', 'enabled must be a boolean.')
+        return rpcResponse(await callRpc('xzones_set_items_enabled', {
+          p_auth_user_id: user.id, p_match_id: itemsPath[1], p_enabled: body.enabled ?? null,
+        }))
+      }
+      if (typeof body.item_key !== 'string') return fail(400, 'INVALID_INPUT', 'Choose an available item.')
+      return rpcResponse(await callRpc('xzones_activate_item', {
+        p_auth_user_id: user.id, p_match_id: itemsPath[1], p_item_key: body.item_key,
+      }))
+    }
+
     if (path === '/rejoinable') {
       const match = await callRpc('xzones_find_rejoinable_match', { p_auth_user_id: user.id })
       if (typeof match.error === 'string') return rpcResponse(match)
