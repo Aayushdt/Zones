@@ -112,3 +112,6 @@
 - **Full-suite check:** `corepack pnpm test:all` passed with local test-server/database permission: game-core unit 23, audit 25, Edge 12, hostile API 11, payload 2, simulator 1, Playwright 4, and 14/14 SQL audit scenarios. Playwright printed a Vite dependency-optimizer ENOENT warning for the Supabase package path, but all four browser cases passed.
 - **Status:** R-01 is fixed and locally verified. The real Supabase integration job is still required to verify hosted Realtime delivery, as already recorded for F-02.
 - **Commit:** `4a90745` (`fix(realtime): emit team-scoped stale events`); verification artifacts: `c26565c` (`test(review): preserve phase-three verification artifacts`).
+# Hide & Seek implementation baseline — 2026-10-20
+
+- Step 0.1 baseline gates pass. The frozen install required writable local process access for pnpm's operation lock; E2E required local Vite server access. No source fixes were needed. Full results: `docs/verification/baseline.md`.
