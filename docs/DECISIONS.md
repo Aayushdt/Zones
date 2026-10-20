@@ -267,3 +267,7 @@
 # Hide & Seek implementation — Step 5.2 host presets
 
 - Store named host settings presets locally on the create-game form, including timer, head start, ping, zone shrink settings, and optional center. Guard every storage read/write and validate parsed data before applying; a preset never changes an existing match.
+
+# Hide & Seek implementation — Step 5.3 rules guide
+
+- Add a dedicated Hide & Seek guide, linked from the lobby and settings, to explain role visibility, server-controlled GPS/QR tags, zones, stationary reveals, timers, and safe-play boundaries in one place.

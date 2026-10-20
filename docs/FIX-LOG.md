@@ -282,3 +282,8 @@
 
 - Added safe local preset CRUD for host match settings from the create-game form. Storage reads/writes are wrapped in try/catch, and parsed preset data is range/type validated before loading.
 - Validation: Playwright preset CRUD workflow PASS (6/6 e2e suite); typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 5.3 rules guide
+
+- Added a dedicated Hide & Seek rules and safe-play page linked from both the active lobby and settings. It explains server tag decisions, scheduled-only Hunter snapshots, zone and stationary behavior, timers, and outdoor safety.
+- Validation: guide route Playwright PASS; typecheck/build PASS; lint PASS with existing warnings; `git diff --check` PASS.

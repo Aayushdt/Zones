@@ -40,6 +40,10 @@ export const router = createBrowserRouter([
         const { SettingsPage } = await import('../pages/SettingsPage')
         return { Component: SettingsPage }
       } },
+      { path: '/guide', lazy: async () => {
+        const { GuidePage } = await import('../pages/GuidePage')
+        return { Component: GuidePage }
+      } },
       ...(import.meta.env.DEV
         ? [{
             path: '/dev/sim',

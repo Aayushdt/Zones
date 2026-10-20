@@ -60,6 +60,7 @@ export function SettingsPage() {
           <li>Walk, keep aware of people around you, and stop if a player or bystander feels unsafe.</li>
           <li>Keep your phone with you, use the Runner confirmation if needed, and end the match when anyone asks.</li></ul>
       </section>
+      <Link className="welcome__secondary" to="/guide">Hide & Seek rules and guide</Link>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       {notice ? <p className="field-help" role="status">{notice}</p> : null}
       <p className="field-help">XZones Phase A · version 0.1.0</p>

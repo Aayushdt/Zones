@@ -71,3 +71,11 @@ test('host settings presets save, load, and delete using browser storage', async
   await page.getByRole('button', { name: 'Delete preset' }).click()
   await expect(presets.locator('option', { hasText: 'Weekend round' })).toHaveCount(0)
 })
+
+test('Hide & Seek rules guide is reachable from settings and explains safe mechanics', async ({ page }) => {
+  await page.goto('/settings')
+  await page.getByRole('link', { name: 'Hide & Seek rules and guide' }).click()
+  await expect(page.getByRole('heading', { name: 'How to play' })).toBeVisible()
+  await expect(page.getByText(/Runners never see Hunter locations/)).toBeVisible()
+  await expect(page.getByText(/it does not itself eliminate them/)).toBeVisible()
+})

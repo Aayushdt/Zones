@@ -125,6 +125,7 @@ export function LobbyPage() {
         <p className="welcome__eyebrow">Private lobby · {lobby.players.length}/{HIDE_AND_SEEK_CONFIG.players.max.default}</p>
         <h1>Lobby</h1>
         <p className="welcome__copy">Choose a team, mark ready, then the host starts the server-timed round.</p>
+        <Link className="welcome__secondary" to="/guide">Read Hide & Seek rules</Link>
       </div>
       <section className="state-panel lobby-panel" aria-label="Lobby players">
         <p className="field-help">Readying checks your GPS permission. During the round, your live location is shared with your teammates; Runner locations reach Hunters only in scheduled ping snapshots. GPS does not tag anyone.</p>
