@@ -263,3 +263,7 @@
 # Hide & Seek implementation — Step 5.1 chat
 
 - Poll role-filtered server history every five seconds. Lobby chat is visible to every active lobby member and is purged on match start; during HEAD_START/ACTIVE, reads return only same-role messages; all chat is purged on match end. This makes chat visibility server-enforced even when clients miss updates.
+
+# Hide & Seek implementation — Step 5.2 host presets
+
+- Store named host settings presets locally on the create-game form, including timer, head start, ping, zone shrink settings, and optional center. Guard every storage read/write and validate parsed data before applying; a preset never changes an existing match.

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useAppStore } from '../stores/app-store'
 import { ZonePicker } from '../components/ZonePicker'
+import { readHostPresets, writeHostPresets, type HostPreset } from '../services/host-presets'
 
 const durations = [30, 45, 60] as const
 const pingOptions = [3, 5, 10, 15] as const
@@ -23,8 +24,43 @@ export function CreatePage() {
   const [finalRadius, setFinalRadius] = useState(50)
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
+  const [presets, setPresets] = useState<HostPreset[]>(readHostPresets)
+  const [presetName, setPresetName] = useState('')
+  const [selectedPresetId, setSelectedPresetId] = useState('')
+  const [presetNotice, setPresetNotice] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+
+  function savePreset() {
+    const trimmedPresetName = presetName.trim()
+    if (!trimmedPresetName || trimmedPresetName.length > 32) { setPresetNotice('Name the preset using 1 to 32 characters.'); return }
+    const preset: HostPreset = {
+      id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: trimmedPresetName,
+      timerEnabled, durationMinutes: duration, pingMinutes, headStartSeconds: headStart, fixedZone,
+      diameter, shrinkStages, shrinkIntervalMinutes, finalRadius, latitude, longitude,
+    }
+    const updated = [...presets, preset]
+    if (!writeHostPresets(updated)) { setPresetNotice('Could not save presets in this browser. Check its storage settings.'); return }
+    setPresets(updated); setSelectedPresetId(preset.id); setPresetName(''); setPresetNotice('Preset saved on this device.')
+  }
+
+  function loadPreset() {
+    const preset = presets.find((item) => item.id === selectedPresetId)
+    if (!preset) return
+    setTimerEnabled(preset.timerEnabled); setDuration(preset.durationMinutes); setPingMinutes(preset.pingMinutes)
+    setHeadStart(preset.headStartSeconds); setFixedZone(preset.fixedZone); setDiameter(preset.diameter)
+    setShrinkStages(preset.shrinkStages); setShrinkIntervalMinutes(preset.shrinkIntervalMinutes)
+    setFinalRadius(preset.finalRadius); setLatitude(preset.latitude); setLongitude(preset.longitude)
+    setPresetNotice(`Loaded “${preset.name}”.`)
+  }
+
+  function deletePreset() {
+    const updated = presets.filter((item) => item.id !== selectedPresetId)
+    if (updated.length === presets.length) return
+    if (!writeHostPresets(updated)) { setPresetNotice('Could not update presets in this browser.'); return }
+    setPresets(updated); setSelectedPresetId(''); setPresetNotice('Preset deleted from this device.')
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -79,6 +115,24 @@ export function CreatePage() {
           <span>Guest name</span>
           <input className="form-control" maxLength={24} onChange={(event) => setName(event.currentTarget.value)} required value={name} />
         </label>
+
+        <fieldset className="field-set">
+          <legend>Host presets</legend>
+          <div className="settings-row">
+            <label className="field"><span>New preset name</span><input className="form-control" maxLength={32} value={presetName}
+              onChange={(event) => setPresetName(event.currentTarget.value)} /></label>
+            <button className="welcome__secondary" disabled={!presetName.trim()} onClick={savePreset} type="button">Save current settings</button>
+          </div>
+          <label className="field"><span>Saved presets</span><select className="form-control" value={selectedPresetId}
+            onChange={(event) => setSelectedPresetId(event.currentTarget.value)}>
+            <option value="">Choose a preset</option>{presets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+          </select></label>
+          <div className="settings-row">
+            <button className="welcome__secondary" disabled={!selectedPresetId} onClick={loadPreset} type="button">Load preset</button>
+            <button className="welcome__secondary" disabled={!selectedPresetId} onClick={deletePreset} type="button">Delete preset</button>
+          </div>
+          {presetNotice && <p className="field-help" role="status">{presetNotice}</p>}
+        </fieldset>
 
         <fieldset className="field-set">
           <legend>Game duration</legend>

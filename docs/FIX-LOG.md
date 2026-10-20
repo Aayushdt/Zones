@@ -277,3 +277,8 @@
 
 - Added server-validated chat with 280-character and per-player rate limits, lobby-wide access, same-role-only match reads, and a polling UI. Lobby messages are cleared when the round starts; all remaining chat is deleted when the match ends.
 - Validation: Edge API tests PASS (17/17); DB scope/rate/purge smoke PASS; full disposable DB suite PASS; typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 5.2 host presets
+
+- Added safe local preset CRUD for host match settings from the create-game form. Storage reads/writes are wrapped in try/catch, and parsed preset data is range/type validated before loading.
+- Validation: Playwright preset CRUD workflow PASS (6/6 e2e suite); typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.

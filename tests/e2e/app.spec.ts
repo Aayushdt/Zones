@@ -56,3 +56,18 @@ test('PWA manifest serves installable 192px and 512px PNG icons', async ({ page 
     expect(response.headers()['content-type']).toContain('image/png')
   }
 })
+
+test('host settings presets save, load, and delete using browser storage', async ({ page }) => {
+  await page.goto('/create')
+  await page.getByLabel('New preset name').fill('Weekend round')
+  await page.getByRole('button', { name: 'Save current settings' }).click()
+  await expect(page.getByRole('status')).toContainText('Preset saved')
+  const presets = page.getByLabel('Saved presets')
+  await expect(presets.locator('option', { hasText: 'Weekend round' })).toHaveCount(1)
+  await page.getByRole('button', { name: '30 min' }).click()
+  await presets.selectOption({ label: 'Weekend round' })
+  await page.getByRole('button', { name: 'Load preset' }).click()
+  await expect(page.getByRole('button', { name: '45 min' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Delete preset' }).click()
+  await expect(presets.locator('option', { hasText: 'Weekend round' })).toHaveCount(0)
+})
