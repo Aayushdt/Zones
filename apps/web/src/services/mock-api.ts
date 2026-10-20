@@ -97,6 +97,7 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
     async updateLocation() { return notImplemented() },
     async issueQr() { return notImplemented() },
     async scanQr() { return notImplemented() },
+    async gpsTag() { return notImplemented() },
     async confirmTag() { return notImplemented() },
     async leaveMatch() { return { ok: true, data: { accepted: true, state: 'LOBBY' as const } } },
     async claimController() { return notImplemented() },

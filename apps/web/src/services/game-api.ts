@@ -126,7 +126,7 @@ export interface LocationInput {
 export interface LocationAck { accepted: boolean; server_now: string; player_id?: string; stale: boolean; reason?: string; zone_warning?: boolean; zone_revealed?: boolean; zone_eliminated?: boolean }
 export interface ZoneView { center: { lat: number; lon: number }; radius: number; stage: number; nextShrinkAt: string | null; nextRadius: number | null }
 export interface QrChallenge { token: string; expires_at: string; server_now: string }
-export interface TagResult { accepted: boolean; state: MatchState; winner?: Role }
+export interface TagResult { accepted: boolean; state: MatchState; winner?: Role; reason?: 'NOTHING_IN_RANGE' }
 export interface MatchResult {
   winner: Role | null
   end_reason: string
@@ -155,6 +155,7 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>>
   issueQr(id: string): Promise<Result<QrChallenge>>
   scanQr(id: string, token: string): Promise<Result<TagResult>>
+  gpsTag(id: string, fix: Omit<LocationInput, 'sequence'>): Promise<Result<TagResult>>
   confirmTag(id: string): Promise<Result<TagResult>>
   leaveMatch(id: string): Promise<Result<LeaveResult>>
   claimController(id: string): Promise<Result<{ accepted: boolean; controller_player_id: string }>>

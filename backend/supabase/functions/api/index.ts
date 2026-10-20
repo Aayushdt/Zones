@@ -238,6 +238,7 @@ function rpcResponse(result: JsonObject): Response {
   if (error === 'CLAIM_UNAVAILABLE' || error === 'CLAIM_EXPIRED' || error === 'CLAIM_TAKEN') return fail(409, error, 'Host controls are no longer available to claim.')
   if (error === 'NOT_ENDED') return fail(409, error, 'This match has no final result yet.')
   if (error === 'INVALID_FIX') return fail(400, error, 'The location fix is invalid or too old to accept.')
+  if (error === 'INVALID_HUNTER_FIX') return fail(400, error, 'A fresh, accurate Hunter location is required.')
   if (error === 'OLD_SEQUENCE') return fail(409, error, 'A newer location update was already received.')
   return fail(503, 'INTERNAL', 'The game service could not complete this request.')
 }
@@ -607,6 +608,22 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_auth_user_id: user.id, p_match_id: scanMatch[1], p_token_hash: bytea(await sha256(tokenBytes)),
       })
       if (!result.error) await publishTagResult(scanMatch[1], result)
+      return rpcResponse(result)
+    }
+
+    const gpsTagMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/tag\/gps$/i)
+    if (gpsTagMatch) {
+      if (!finiteIn(body.lat, -90, 90) || !finiteIn(body.lon, -180, 180)
+        || !finiteIn(body.accuracy_m, 0, 50) || typeof body.captured_at !== 'string'
+        || !Number.isFinite(Date.parse(body.captured_at))) {
+        return fail(400, 'INVALID_HUNTER_FIX', 'A fresh, accurate Hunter location is required.')
+      }
+      const bucket = await hmac(requiredEnv('RATE_LIMIT_HASH_SECRET'), `gps-tag:${gpsTagMatch[1]}:${user.id}`)
+      const result = await callRpc('xzones_gps_tag', {
+        p_auth_user_id: user.id, p_match_id: gpsTagMatch[1], p_bucket_key: bytea(bucket),
+        p_lat: body.lat, p_lon: body.lon, p_accuracy_m: body.accuracy_m, p_captured_at: body.captured_at,
+      })
+      if (!result.error) await publishTagResult(gpsTagMatch[1], result)
       return rpcResponse(result)
     }
 

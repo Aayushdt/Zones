@@ -381,6 +381,40 @@ Deno.test('QR scan hashes the presented token and rejects malformed tokens befor
   } finally { globalThis.fetch = originalFetch }
 })
 
+Deno.test('GPS Tag hashes a per-Hunter cooldown key and exposes only a generic miss', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  Deno.env.set('RATE_LIMIT_HASH_SECRET', 'test-rate-secret')
+  const originalFetch = globalThis.fetch
+  const captured: { args?: Record<string, unknown> } = {}
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_gps_tag')) {
+      captured.args = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({ accepted: false, state: 'ACTIVE', reason: 'NOTHING_IN_RANGE' })
+    }
+    throw new Error(`Unexpected test URL: ${url}`)
+  }
+  const path = 'http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/tag/gps'
+  const request = (accuracy_m: number) => new Request(path, {
+    method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ lat: 25.6, lon: 85.1, accuracy_m, captured_at: '2026-10-18T13:00:00Z' }),
+  })
+  try {
+    const invalid = await handleRequest(request(51))
+    assert(invalid.status === 400 && captured.args === undefined, 'inaccurate GPS tag fix must be rejected before RPC')
+    const response = await handleRequest(request(5))
+    const result = await response.json()
+    assert(response.status === 200 && result.reason === 'NOTHING_IN_RANGE', 'GPS miss should use a generic result')
+    assert(result.runner_id === undefined && result.distance === undefined, 'GPS miss must not reveal a candidate or distance')
+    const args = captured.args as Record<string, unknown> | undefined
+    assert(typeof args?.p_bucket_key === 'string' && args.p_bucket_key !== '23b8b0de-4fc6-4d7c-b7a8-1f18f97496a3', 'cooldown key should be hashed')
+    assert(args?.p_lat === 25.6 && args?.p_accuracy_m === 5, 'server should receive the submitted Hunter fix')
+  } finally { globalThis.fetch = originalFetch }
+})
+
 Deno.test('Runner fallback calls the tag-confirm RPC and exposes only its result', async () => {
   Deno.env.set('SUPABASE_URL', 'https://unit.test')
   Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')

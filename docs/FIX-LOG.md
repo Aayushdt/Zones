@@ -215,3 +215,9 @@
 - Added a private suspicious-event log with no raw coordinate payload and a host-authorized result projection. The results UI displays event reason, player name, and time only to the host; other participants receive an empty event list.
 - The project documentation states plainly that browser GPS cannot be attested and these checks are deterrence, not proof of physical location.
 - Validation: DB plausibility smoke and audit PASS; Edge/hostile API 23/23 PASS; typecheck/build PASS; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 3.2 GPS Tag
+
+- Added a Hunter GPS Tag action backed by a service-role RPC. The server validates a fresh ≤5-second/≤50-meter Hunter fix, selects the nearest fresh Runner in the formula-derived range, serializes and records the tag, and rate-limits attempts to one per two seconds per Hunter.
+- Misses return only `NOTHING_IN_RANGE`; no runner identifier or distance is present. QR remains available as an independent fallback.
+- Validation: DB GPS tag smoke PASS; Edge/hostile API 24/24 PASS; typecheck/build PASS; `git diff --check` PASS.

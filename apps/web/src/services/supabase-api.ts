@@ -372,6 +372,10 @@ class SupabaseGameApi implements GameApi {
     return this.post<TagResult>(`/matches/${encodeURIComponent(id)}/qr/scan`, { token })
   }
 
+  async gpsTag(id: string, fix: Omit<LocationInput, 'sequence'>): Promise<Result<TagResult>> {
+    return this.post<TagResult>(`/matches/${encodeURIComponent(id)}/tag/gps`, fix)
+  }
+
   async confirmTag(id: string): Promise<Result<TagResult>> {
     return this.post<TagResult>(`/matches/${encodeURIComponent(id)}/tag/confirm`, {})
   }

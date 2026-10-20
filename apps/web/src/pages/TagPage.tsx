@@ -20,6 +20,7 @@ export function TagPage() {
   const [seconds, setSeconds] = useState(0)
   const [anchor, setAnchor] = useState<{ serverNow: number; monotonic: number } | null>(null)
   const stopSharing = useLocationStore((state) => state.stopSharing)
+  const currentFix = useLocationStore((state) => state.ownFix)
 
   const sync = useCallback(async () => {
     const result = await supabaseGameApi.syncMatch(matchId)
@@ -61,7 +62,7 @@ export function TagPage() {
 
   function handleTagged(result: TagResult) {
     setChallenge(null); setQrDataUrl('')
-    setStatus(result.accepted ? 'Tag confirmed by the server.' : 'No tag was recorded.')
+    setStatus(result.accepted ? 'Tag confirmed by the server.' : result.reason === 'NOTHING_IN_RANGE' ? 'Nothing in range.' : 'No tag was recorded.')
     if (result.state === 'ENDED') navigate(`/match/${matchId}/results`, { replace: true })
     else void sync()
   }
@@ -74,12 +75,27 @@ export function TagPage() {
     handleTagged(result.data)
   }
 
+  const gpsTag = async () => {
+    const fixAgeMs = currentFix ? Date.now() - Date.parse(currentFix.captured_at) : Infinity
+    if (!currentFix || !Number.isFinite(fixAgeMs) || fixAgeMs < 0 || fixAgeMs > 5_000 || currentFix.accuracy_m > 50) {
+      setStatus('Waiting for a fresh GPS fix with accuracy of 50 m or better.')
+      return
+    }
+    setBusy(true); setError(''); setStatus('Checking the nearest Runner on the server…')
+    const result = await supabaseGameApi.gpsTag(matchId, {
+      lat: currentFix.lat, lon: currentFix.lon, accuracy_m: currentFix.accuracy_m, captured_at: currentFix.captured_at,
+    })
+    setBusy(false)
+    if (!result.ok) { setError(result.error.message); return }
+    handleTagged(result.data)
+  }
+
   const role = view?.role
   return <main className="route-shell tag-page">
     <div className="route-shell__heading">
       <p className="welcome__eyebrow">Match tagging</p>
       <h1>{role === 'RUNNER' ? 'Show your tag QR' : role === 'HUNTER' ? 'Scan a Runner' : 'Connecting…'}</h1>
-      <p className="welcome__copy">Tags are confirmed by a single-use QR or by the Runner confirming they were tagged. GPS proximity never tags a player.</p>
+      <p className="welcome__copy">Hunters can tag the nearest eligible Runner with a fresh GPS fix or use the QR fallback. The server decides every tag; a miss reveals no Runner identity or distance.</p>
     </div>
     <section className="state-panel tag-panel" aria-label="Tag controls">
       {role === 'RUNNER' && <>
@@ -90,7 +106,8 @@ export function TagPage() {
         </>}
       </>}
       {role === 'HUNTER' && <>
-        <p role="status">{status || 'Scan the QR shown by the Runner to record a tag.'}</p>
+        <p role="status">{status || 'Use GPS Tag for the nearest Runner in range, or scan the Runner’s QR as a fallback.'}</p>
+        <button className="welcome__action" disabled={busy || !currentFix} onClick={() => void gpsTag()} type="button">{busy ? 'Checking…' : 'GPS Tag'}</button>
         {!scannerOpen ? <button className="welcome__action" disabled={busy} onClick={() => setScannerOpen(true)} type="button">{busy ? 'Checking…' : 'Open camera scanner'}</button> : <Suspense fallback={<p>Loading scanner…</p>}><CameraScanner onToken={(token) => void scan(token)} onClose={() => setScannerOpen(false)} /></Suspense>}
       </>}
       {!role && <p role="status">Loading your role from the match service…</p>}
