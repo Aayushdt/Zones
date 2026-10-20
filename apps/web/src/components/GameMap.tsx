@@ -21,7 +21,7 @@ export type GameMapData =
       runner_id: string; status: 'OK' | 'NO_FIX' | 'STALE'; lat?: number; lon?: number; age_seconds: number; ping_index: number
     }> }
 
-export interface GameZone { lat: number; lon: number; radius_m: number }
+export interface GameZone { lat: number; lon: number; radius_m: number; next_radius_m?: number }
 
 function syncZoneLayer(map: import('maplibre-gl').Map, zone: GameZone | undefined) {
   const source = map.getSource('xzones-boundary') as import('maplibre-gl').GeoJSONSource | undefined
@@ -29,15 +29,30 @@ function syncZoneLayer(map: import('maplibre-gl').Map, zone: GameZone | undefine
     if (map.getLayer('xzones-boundary-ring')) map.removeLayer('xzones-boundary-ring')
     if (map.getLayer('xzones-boundary-fill')) map.removeLayer('xzones-boundary-fill')
     if (source) map.removeSource('xzones-boundary')
+    for (const id of ['xzones-next-boundary-line', 'xzones-next-boundary-fill']) if (map.getLayer(id)) map.removeLayer(id)
+    if (map.getSource('xzones-next-boundary')) map.removeSource('xzones-next-boundary')
     return
   }
-  if (source) {
-    source.setData(circleGeoJson(zone))
-    return
+  if (source) source.setData(circleGeoJson(zone))
+  else {
+    map.addSource('xzones-boundary', { type: 'geojson', data: circleGeoJson(zone) })
+    map.addLayer({ id: 'xzones-boundary-fill', type: 'fill', source: 'xzones-boundary', paint: { 'fill-color': '#9a72ff', 'fill-opacity': 0.09 } })
+    map.addLayer({ id: 'xzones-boundary-ring', type: 'line', source: 'xzones-boundary', paint: { 'line-color': '#a581ff', 'line-width': 2, 'line-opacity': 0.9, 'line-dasharray': [3, 2] } })
   }
-  map.addSource('xzones-boundary', { type: 'geojson', data: circleGeoJson(zone) })
-  map.addLayer({ id: 'xzones-boundary-fill', type: 'fill', source: 'xzones-boundary', paint: { 'fill-color': '#9a72ff', 'fill-opacity': 0.09 } })
-  map.addLayer({ id: 'xzones-boundary-ring', type: 'line', source: 'xzones-boundary', paint: { 'line-color': '#a581ff', 'line-width': 2, 'line-opacity': 0.9, 'line-dasharray': [3, 2] } })
+  const nextSource = map.getSource('xzones-next-boundary') as import('maplibre-gl').GeoJSONSource | undefined
+  if (zone.next_radius_m !== undefined) {
+    const nextZone = { ...zone, radius_m: zone.next_radius_m }
+    if (nextSource) nextSource.setData(circleGeoJson(nextZone))
+    else {
+      map.addSource('xzones-next-boundary', { type: 'geojson', data: circleGeoJson(nextZone) })
+      map.addLayer({ id: 'xzones-next-boundary-fill', type: 'fill', source: 'xzones-next-boundary', paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.025 } })
+      map.addLayer({ id: 'xzones-next-boundary-line', type: 'line', source: 'xzones-next-boundary', paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-dasharray': [1, 2] } })
+    }
+  } else {
+    if (map.getLayer('xzones-next-boundary-line')) map.removeLayer('xzones-next-boundary-line')
+    if (map.getLayer('xzones-next-boundary-fill')) map.removeLayer('xzones-next-boundary-fill')
+    if (nextSource) map.removeSource('xzones-next-boundary')
+  }
 }
 
 function pointElement(kind: 'you' | 'teammate' | 'snapshot', label: string, accuracyPixels?: number): HTMLElement {
@@ -73,6 +88,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const zoneLat = zone?.lat
   const zoneLon = zone?.lon
   const zoneRadius = zone?.radius_m
+  const nextZoneRadius = zone?.next_radius_m
   const initial = data.own_position ?? data.own_team_positions[0]
   const [localPosition, setLocalPosition] = useState<MapPlayerPoint | null>(null)
   const [center, setCenter] = useState<[number, number] | null>(initial ? [initial.lon, initial.lat] : null)
@@ -139,10 +155,10 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   useEffect(() => {
     const map = mapRef.current
     const currentZone = zoneLat !== undefined && zoneLon !== undefined && zoneRadius !== undefined
-      ? { lat: zoneLat, lon: zoneLon, radius_m: zoneRadius } : undefined
+      ? { lat: zoneLat, lon: zoneLon, radius_m: zoneRadius, ...(nextZoneRadius !== undefined ? { next_radius_m: nextZoneRadius } : {}) } : undefined
     zoneRef.current = currentZone
     if (map && mapLoaded) syncZoneLayer(map, currentZone)
-  }, [mapLoaded, zoneLat, zoneLon, zoneRadius])
+  }, [mapLoaded, zoneLat, zoneLon, zoneRadius, nextZoneRadius])
 
   useEffect(() => {
     const map = mapRef.current

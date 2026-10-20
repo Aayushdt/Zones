@@ -191,3 +191,8 @@
 - Added the service-role-only `xzones_zone_at` SQL projection using match start, head start, interval, and stage count. Match sync and location handling now retrieve the server schedule; boundary smoke covers pre-stage, exact stage, and final radius. The same helper is available to resolution.
 - This step provides one server-side source of truth; outside-sample classification and elimination wiring remain for Step 2.6.
 - Validation: DB audit 14/14 plus zone schedule smoke PASS; Edge and hostile API 23/23 PASS; typecheck/build PASS.
+
+# Hide & Seek implementation — Step 2.5 zone preview and countdown
+
+- Typed and parsed the server-projected zone in the role-safe match response. The map updates current and next-stage circle overlays in place; the HUD reports stage, current radius, and countdown to the next shrink.
+- Validation: game-core 29/29 PASS, web build PASS, lint PASS with existing effect warnings, and `git diff --check` PASS.

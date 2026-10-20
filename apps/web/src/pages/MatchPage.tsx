@@ -21,6 +21,7 @@ export function MatchPage() {
   const [view, setView] = useState<RoleSafeMatchView | null>(null)
   const [clock, setClock] = useState<ClockView | null>(null)
   const [seconds, setSeconds] = useState<number | null>(null)
+  const [zoneSeconds, setZoneSeconds] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
@@ -84,6 +85,14 @@ export function MatchPage() {
     }, 250)
     return () => window.clearInterval(timer)
   }, [clock])
+  useEffect(() => {
+    const nextShrinkAt = view?.zone?.nextShrinkAt
+    if (!nextShrinkAt) { setZoneSeconds(null); return }
+    const update = () => setZoneSeconds(Math.max(0, Math.ceil((Date.parse(nextShrinkAt) - Date.now()) / 1000)))
+    update()
+    const timer = window.setInterval(update, 1000)
+    return () => window.clearInterval(timer)
+  }, [view?.zone?.nextShrinkAt])
   useEffect(() => startFallbackSync(() => sync()), [sync])
   useEffect(() => {
     if (!view || view.state !== 'ACTIVE') return
@@ -114,7 +123,10 @@ export function MatchPage() {
         <div className="match-counts"><span className="runner-count">{view.active_counts.runners} Runners</span><span className="hunter-count">{view.active_counts.hunters} Hunters</span></div>
       </header>
       <section className="match-map-area">
-        <GameMap data={mapData} />
+        <GameMap data={mapData} zone={view.zone ? {
+          lat: view.zone.center.lat, lon: view.zone.center.lon, radius_m: view.zone.radius,
+          ...(view.zone.nextRadius !== null ? { next_radius_m: view.zone.nextRadius } : {}),
+        } : undefined} />
         <div className="match-status-card" role="status" aria-live="polite">
           <div><strong>You are a {roleLabel}</strong><p>{view.role === 'RUNNER'
             ? view.own_status === 'TAGGED' ? 'You are tagged. Location sharing has stopped; your map displays active teammates only.' : 'Stay hidden. Your map displays your own team only.'
@@ -145,6 +157,7 @@ export function MatchPage() {
       </section>
       {error ? <p className="form-error match-error" role="alert">{error}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. {liveStatus} The map never displays opponent distances or directions.</p>
+      {view.zone ? <p className="match-text-status" role="status">Zone stage {view.zone.stage} · radius {Math.round(view.zone.radius)} m{view.zone.nextRadius !== null && zoneSeconds !== null ? ` · next shrink in ${Math.floor(zoneSeconds / 60)}:${String(zoneSeconds % 60).padStart(2, '0')} to ${Math.round(view.zone.nextRadius)} m` : ''}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">{locationStatus}</p>
     </main>
   )

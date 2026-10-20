@@ -90,6 +90,7 @@ interface MatchViewBase {
   own_player_id: string
   own_status: 'ACTIVE' | 'TAGGED'
   next_ping_at: string | null
+  zone: ZoneView | null
   own_team_positions: Array<{ player_id: string; display_name: string; lat: number; lon: number; accuracy_m: number; captured_at: string; age_seconds: number; is_stale: boolean }>
 }
 
@@ -123,6 +124,7 @@ export interface LocationInput {
 }
 
 export interface LocationAck { accepted: boolean; server_now: string; player_id?: string; stale: boolean; reason?: string }
+export interface ZoneView { center: { lat: number; lon: number }; radius: number; stage: number; nextShrinkAt: string | null; nextRadius: number | null }
 export interface QrChallenge { token: string; expires_at: string; server_now: string }
 export interface TagResult { accepted: boolean; state: MatchState; winner?: Role }
 export interface MatchResult { winner: Role | null; end_reason: string; ended_at: string; duration_seconds: number; tag_count: number }

@@ -302,6 +302,7 @@ class SupabaseGameApi implements GameApi {
       own_status?: 'ACTIVE' | 'TAGGED'
       revision: number
       next_ping_at?: string | null
+      zone?: { enabled?: boolean; center?: { lat?: number; lon?: number }; radius?: number; stage?: number; nextShrinkAt?: string | null; nextRadius?: number | null }
       events: Array<{ type?: unknown; data?: unknown }>
     }>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: revision })
     if (!result.ok) return result
@@ -317,6 +318,16 @@ class SupabaseGameApi implements GameApi {
       own_status: ownStatus,
       revision: result.data.revision,
       next_ping_at: typeof result.data.next_ping_at === 'string' ? result.data.next_ping_at : null,
+      zone: result.data.zone?.enabled === true && typeof result.data.zone.center?.lat === 'number'
+        && typeof result.data.zone.center.lon === 'number' && typeof result.data.zone.radius === 'number'
+        && typeof result.data.zone.stage === 'number'
+        ? {
+          center: { lat: result.data.zone.center.lat, lon: result.data.zone.center.lon },
+          radius: result.data.zone.radius,
+          stage: result.data.zone.stage,
+          nextShrinkAt: typeof result.data.zone.nextShrinkAt === 'string' ? result.data.zone.nextShrinkAt : null,
+          nextRadius: typeof result.data.zone.nextRadius === 'number' ? result.data.zone.nextRadius : null,
+        } : null,
       own_team_positions: result.data.events.flatMap((event) => {
         if (event.type !== 'team.location_live' || !event.data || typeof event.data !== 'object') return []
         const data = event.data as Record<string, unknown>
