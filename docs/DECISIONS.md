@@ -239,3 +239,7 @@
 # Hide & Seek implementation — Step 4.2 stealth screen
 
 - Keep the existing active-match Wake Lock active under the near-black stealth overlay. Require a 1.5-second hold to exit, with its bounds centralized in the mode config; explicitly warn that a wake-locked screen uses extra battery.
+
+# Hide & Seek implementation — Step 4.3 host visibility
+
+- Record controller tab visibility through an authenticated API call and server-side timestamp. While the last report is hidden, do not release host controls; a visible report resets the inactivity baseline. A visible host becomes claimable after the configured 180-second threshold.

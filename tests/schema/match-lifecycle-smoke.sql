@@ -59,13 +59,13 @@ begin
   update public.matches set host_player_id = v_timer_hunter, controller_player_id = v_timer_hunter where id = v_match_timer;
 
   insert into public.players(match_id, auth_user_id, display_name, role, session_cap_hash, last_seen_at)
-    values (v_match_stale_host, v_host_auth, 'Stale Host', 'HUNTER', decode(repeat('a1', 32), 'hex'), v_now - interval '2 minutes') returning id into v_stale_host;
+    values (v_match_stale_host, v_host_auth, 'Stale Host', 'HUNTER', decode(repeat('a1', 32), 'hex'), v_now - interval '181 seconds') returning id into v_stale_host;
   insert into public.players(match_id, auth_user_id, display_name, role, session_cap_hash)
     values (v_match_stale_host, v_hunter_b_auth, 'Available Hunter', 'HUNTER', decode(repeat('a2', 32), 'hex')) returning id into v_stale_hunter;
   insert into public.players(match_id, auth_user_id, display_name, role, session_cap_hash)
     values (v_match_stale_host, v_runner_a_auth, 'Stale Runner', 'RUNNER', decode(repeat('a3', 32), 'hex')) returning id into v_stale_runner;
   update public.matches set host_player_id = v_stale_host, controller_player_id = v_stale_host where id = v_match_stale_host;
-  update public.players set last_seen_at = v_now - interval '2 minutes' where id = v_stale_host;
+  update public.players set last_seen_at = v_now - interval '181 seconds' where id = v_stale_host;
 
   insert into public.latest_fix(match_id, player_id, lat, lon, accuracy_m, captured_at, sequence)
     values (v_match_host, v_runner_a, 25.61, 85.14, 8, v_now, 1),

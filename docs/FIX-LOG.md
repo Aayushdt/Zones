@@ -247,3 +247,8 @@
 
 - Added a near-black active-match overlay that keeps the existing Wake Lock running, explains battery cost, and exits only after a configurable 1.5-second press-and-hold.
 - Validation: typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 4.3 host inactivity
+
+- Added an authenticated visibility heartbeat restricted to the current active controller. Match resolution now ignores hidden controller time, resumes the baseline on visibility return, and opens the claim window after 180 seconds of visible inactivity.
+- Validation: Edge API tests PASS (15/15); host visibility DB smoke PASS; complete disposable DB audit/race suite PASS; typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.

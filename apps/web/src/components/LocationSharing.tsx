@@ -33,7 +33,10 @@ export function LocationSharing() {
     let retryAfterAt = 0
     const sendState = createLocationSendState()
     const syncOnResume = () => {
-      if (document.visibilityState === 'visible' && navigator.onLine) void supabaseGameApi.syncMatch(matchId)
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        void supabaseGameApi.reportVisibility(matchId, false)
+        void supabaseGameApi.syncMatch(matchId)
+      }
     }
     const upload = async (fix: GeolocationPosition) => {
       const coords = fix.coords
@@ -99,16 +102,20 @@ export function LocationSharing() {
     const onOnline = () => { setStatus('Connection restored; syncing match.'); syncOnResume() }
     const onOffline = () => setStatus('Offline; location uploads paused and match data is not cached.')
     const onPageShow = () => { syncOnResume() }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') void supabaseGameApi.reportVisibility(matchId, true)
+      else syncOnResume()
+    }
     window.addEventListener('online', onOnline)
     window.addEventListener('offline', onOffline)
-    document.addEventListener('visibilitychange', syncOnResume)
+    document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('pageshow', onPageShow)
     return () => {
       disposed = true
       stopWatching()
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
-      document.removeEventListener('visibilitychange', syncOnResume)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener('pageshow', onPageShow)
     }
   }, [matchId, enabledMatchId, clearMatch, setFix, setStatus])

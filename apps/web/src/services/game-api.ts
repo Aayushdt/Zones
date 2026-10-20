@@ -152,6 +152,7 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   startMatch(id: string, expectedRevision?: number): Promise<Result<ClockView>>
   syncClock(id: string): Promise<Result<ClockView>>
   syncMatch(id: string, revision?: number): Promise<Result<RoleSafeMatchView>>
+  reportVisibility(id: string, hidden: boolean): Promise<Result<{ accepted: boolean; hidden: boolean }>>
   updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>>
   issueQr(id: string): Promise<Result<QrChallenge>>
   scanQr(id: string, token: string): Promise<Result<TagResult>>

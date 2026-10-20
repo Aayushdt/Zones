@@ -291,6 +291,14 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (!body) return fail(400, 'INVALID_JSON', 'Send a JSON object no larger than 16 KB.')
 
   try {
+    const visibilityPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/visibility$/i)
+    if (visibilityPath) {
+      if (typeof body.hidden !== 'boolean') return fail(400, 'INVALID_INPUT', 'hidden must be a boolean.')
+      return rpcResponse(await callRpc('xzones_report_controller_visibility', {
+        p_auth_user_id: user.id, p_match_id: visibilityPath[1], p_hidden: body.hidden,
+      }))
+    }
+
     const syncPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/sync$/i)
     if (path === '/lobbies' || path === '/lobbies/join' || syncPath || /\/matches\/[0-9a-f-]+\/result$/i.test(path)) {
       await callRpc('xzones_cleanup', {}).catch(() => ({ error: 'INTERNAL' }))

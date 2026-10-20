@@ -360,6 +360,10 @@ class SupabaseGameApi implements GameApi {
     return { ok: true, data: { ...common, role: 'HUNTER', runner_snapshots: snapshots } }
   }
 
+  async reportVisibility(id: string, hidden: boolean): Promise<Result<{ accepted: boolean; hidden: boolean }>> {
+    return this.post<{ accepted: boolean; hidden: boolean }>(`/matches/${encodeURIComponent(id)}/visibility`, { hidden })
+  }
+
   async updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>> {
     return this.post<LocationAck>(`/matches/${encodeURIComponent(id)}/location`, fix)
   }

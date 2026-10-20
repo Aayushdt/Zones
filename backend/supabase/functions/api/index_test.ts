@@ -539,3 +539,32 @@ Deno.test('location route validates before RPC, stores through the server, and n
     assert((broadcasts[0].event.data as Record<string, unknown>).sequence === 7, 'location event should include sequence for dedupe')
   } finally { globalThis.fetch = originalFetch }
 })
+
+Deno.test('visibility heartbeat validates hidden state and delegates controller authorization to SQL', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  const rpcBodies: Record<string, unknown>[] = []
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_report_controller_visibility')) {
+      const rpcBody = JSON.parse(String(init?.body)) as Record<string, unknown>
+      rpcBodies.push(rpcBody)
+      return Response.json({ accepted: true, hidden: rpcBody.p_hidden })
+    }
+    throw new Error(`Unexpected URL: ${url}`)
+  }
+  const request = (body: Record<string, unknown>) => new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/visibility', {
+    method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: JSON.stringify(body),
+  })
+  try {
+    const invalid = await handleRequest(request({ hidden: 'yes' }))
+    assert(invalid.status === 400 && rpcBodies.length === 0, 'invalid visibility must be rejected before RPC')
+    const response = await handleRequest(request({ hidden: true }))
+    const result = await response.json()
+    assert(response.status === 200 && result.accepted === true && rpcBodies[0]?.p_hidden === true,
+      'valid visibility must reach the authenticated controller RPC')
+  } finally { globalThis.fetch = originalFetch }
+})
