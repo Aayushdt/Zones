@@ -85,6 +85,7 @@ export const HIDE_AND_SEEK_CONFIG = {
     hunterScanCooldownSeconds: { default: 0, min: 0, max: 0 },
     hunterAlarmRadiusM: { default: 100, min: 10, max: 500 }, // UNSPECIFIED-IN-REFERENCE
     hunterAlarmSeconds: { default: 300, min: 30, max: 1800 }, // UNSPECIFIED-IN-REFERENCE
+    hunterAlarmPollSeconds: { default: 5, min: 5, max: 30 }, // UNSPECIFIED-IN-REFERENCE
     hunterAlarmCooldownSeconds: { default: 0, min: 0, max: 0 },
     hunterZoneMoveMaxM: { default: 200, min: 10, max: 1000 }, // UNSPECIFIED-IN-REFERENCE
     hunterZoneMoveCooldownSeconds: { default: 0, min: 0, max: 0 },

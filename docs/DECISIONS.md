@@ -276,3 +276,4 @@
 # Item economy defaults
 - Items are disabled by default and their activation state is private to server-side functions; each role-specific item begins with one use, matching the brief's default economy until playtesting changes it.
 - Hunter Scan snapshots only fresh Runner fixes at activation and returns them only to the authenticated Hunter who activated it; the configured duration controls the temporary display, not a continuous tracking feed.
+- Proximity alarms use the placing Hunter's latest fresh server-stored fix. A Runner location upload triggers a server-side distance check; the alert response contains only an event label/time and is readable only by its placer.

@@ -278,6 +278,10 @@ class SupabaseGameApi implements GameApi {
     return this.post(`/matches/${encodeURIComponent(id)}/items`, { item_key: itemKey })
   }
 
+  async listItemAlerts(id: string): Promise<Result<{ alerts: Array<{ alert_key: string; created_at: string }> }>> {
+    return this.post(`/matches/${encodeURIComponent(id)}/items/alerts`, {})
+  }
+
   async getLobby(id: string): Promise<Result<LobbyView>> {
     const result = await this.post<ApiLobbySyncResponse>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: 0 })
     if (!result.ok) return result

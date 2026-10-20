@@ -31,6 +31,9 @@ export function MatchPage() {
   const [scanPositions, setScanPositions] = useState<Array<{ runner_id: string; lat: number; lon: number; age_seconds: number; ping_index: number }>>([])
   const [scanExpiry, setScanExpiry] = useState<number | null>(null)
   const [scanAvailable, setScanAvailable] = useState(true)
+  const [alarmAvailable, setAlarmAvailable] = useState(true)
+  const [alarmNotice, setAlarmNotice] = useState('')
+  const [alarmExpiresAt, setAlarmExpiresAt] = useState<number | null>(null)
   const [stealth, setStealth] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
   const anchor = useRef(0)
@@ -111,6 +114,19 @@ export function MatchPage() {
     return () => window.clearTimeout(timer)
   }, [scanExpiry])
   useEffect(() => {
+    if (!itemsEnabled || view?.role !== 'HUNTER' || alarmExpiresAt === null) return
+    let active = true
+    const check = async () => {
+      const result = await supabaseGameApi.listItemAlerts(matchId)
+      if (!active || !result.ok || result.data.alerts.length === 0) return
+      setAlarmNotice('A Runner entered your proximity alarm range.')
+    }
+    void check()
+    const timer = window.setInterval(() => void check(), HIDE_AND_SEEK_CONFIG.items.hunterAlarmPollSeconds.default * 1000)
+    const expiryTimer = window.setTimeout(() => setAlarmExpiresAt(null), Math.max(0, alarmExpiresAt - Date.now()))
+    return () => { active = false; window.clearInterval(timer); window.clearTimeout(expiryTimer) }
+  }, [alarmExpiresAt, itemsEnabled, matchId, view?.role])
+  useEffect(() => {
     if (!view || view.state !== 'ACTIVE') return
     const wakeLockApi = (navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ released: boolean; release: () => Promise<void> }> } }).wakeLock
     return maintainScreenWakeLock(true, wakeLockApi, document)
@@ -135,6 +151,16 @@ export function MatchPage() {
     setScanPositions(positions.map((position) => ({ ...position, ping_index: -1 })))
     setScanExpiry(Date.now() + HIDE_AND_SEEK_CONFIG.items.hunterScanSeconds.default * 1000)
     setError(positions.length ? `Scan reveals ${positions.length} fresh Runner fix${positions.length === 1 ? '' : 'es'} temporarily.` : 'Scan found no fresh Runner fixes.')
+  }
+
+  async function placeAlarm() {
+    setBusy(true)
+    const result = await supabaseGameApi.activateItem(matchId, 'HUNTER_ALARM')
+    setBusy(false)
+    if (!result.ok) { setError(result.error.message); return }
+    setAlarmAvailable(false)
+    setAlarmExpiresAt(result.data.active_until ? Date.parse(result.data.active_until) : Date.now() + HIDE_AND_SEEK_CONFIG.items.hunterAlarmSeconds.default * 1000)
+    setError('Proximity alarm placed at your latest server-accepted location.')
   }
 
   const cancelStealthExit = () => {
@@ -175,6 +201,7 @@ export function MatchPage() {
           <div className="match-status-actions">
             {view.role === 'HUNTER' ? <Link className="welcome__secondary" to={`/match/${matchId}/pings`}>Pings</Link> : null}
             {view.role === 'HUNTER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !scanAvailable} onClick={() => void activateScan()} type="button">{scanAvailable ? 'Hunter Scan' : 'Hunter Scan used'}</button> : null}
+            {view.role === 'HUNTER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !alarmAvailable} onClick={() => void placeAlarm()} type="button">{alarmAvailable ? 'Place proximity alarm' : 'Alarm placed'}</button> : null}
             {view.can_end ? <button className="welcome__secondary" onClick={() => {
               if (window.confirm('End the match for everyone? This cannot be undone.')) {
                 void supabaseGameApi.endMatch(matchId, 'HOST_END').then((result) => {
@@ -198,6 +225,7 @@ export function MatchPage() {
         </div>
       </section>
       {error ? <p className="form-error match-error" role="alert">{error}</p> : null}
+      {alarmNotice ? <p className="match-text-status" role="alert">{alarmNotice}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. {liveStatus} The map never displays opponent distances or directions.</p>
       {view.zone ? <p className="match-text-status" role="status">Zone stage {view.zone.stage} · radius {Math.round(view.zone.radius)} m{view.zone.nextRadius !== null && zoneSeconds !== null ? ` · next shrink in ${Math.floor(zoneSeconds / 60)}:${String(zoneSeconds % 60).padStart(2, '0')} to ${Math.round(view.zone.nextRadius)} m` : ''}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">{locationStatus}</p>

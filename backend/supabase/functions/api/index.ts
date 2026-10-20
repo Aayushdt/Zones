@@ -325,6 +325,10 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
 
     const itemsPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/items(?:\/(enabled))?$/i)
+    const itemAlertsPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/items\/alerts$/i)
+    if (itemAlertsPath) return rpcResponse(await callRpc('xzones_list_item_alerts', {
+      p_auth_user_id: user.id, p_match_id: itemAlertsPath[1],
+    }))
     if (itemsPath) {
       if (itemsPath[2] === 'enabled') {
         if (body.enabled !== undefined && typeof body.enabled !== 'boolean') return fail(400, 'INVALID_INPUT', 'enabled must be a boolean.')
@@ -337,6 +341,9 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_auth_user_id: user.id, p_match_id: itemsPath[1], p_item_key: body.item_key,
         p_scan_seconds: HIDE_AND_SEEK_CONFIG.items.hunterScanSeconds.default,
         p_max_fix_age_seconds: HIDE_AND_SEEK_CONFIG.location.maxFixAgeSeconds.default,
+        p_alarm_radius_m: HIDE_AND_SEEK_CONFIG.items.hunterAlarmRadiusM.default,
+        p_alarm_seconds: HIDE_AND_SEEK_CONFIG.items.hunterAlarmSeconds.default,
+        p_hunter_fix_max_age_seconds: HIDE_AND_SEEK_CONFIG.tag.hunterFixMaxAgeSeconds.default,
       }))
     }
 

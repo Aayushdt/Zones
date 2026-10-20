@@ -300,3 +300,8 @@
 
 - Added a one-use server-authorized Hunter Scan returning only active Runners' fresh stored fixes to the activating Hunter. The client removes the temporary map markers after the configured Scan duration; no Realtime broadcast or client-supplied coordinates are involved.
 - Validation: DB scan smoke verifies fresh-fix selection, Hunter-only access, one-use consumption and expiry; full `pnpm test:all`, typecheck/build, lint, and `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 6.3 Hunter Proximity Alarm
+
+- Added server placement at the Hunter's fresh stored fix, location-upload-triggered distance evaluation, single-use alert storage, and placer-only polling. Client polling ends at the configured alarm expiry.
+- Validation: DB smoke verifies outside/inside transitions, one-time alert, and that another Hunter cannot read it; full `pnpm test:all`, typecheck/build, lint, and `git diff --check` PASS.

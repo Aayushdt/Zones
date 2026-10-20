@@ -691,7 +691,12 @@ Deno.test('item routes pass only authenticated identity and validated enable/act
     assert(enabled.status === 200 && calls[1]?.args.p_auth_user_id === '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc', 'toggle must use authenticated identity')
     const activate = await handleRequest(request(`/matches/${match}/items`, { item_key: 'HUNTER_SCAN' }))
     assert(activate.status === 200 && calls[2]?.name === 'xzones_activate_item' && calls[2]?.args.p_item_key === 'HUNTER_SCAN'
-      && calls[2]?.args.p_scan_seconds === 30 && calls[2]?.args.p_max_fix_age_seconds === 60,
+      && calls[2]?.args.p_scan_seconds === 30 && calls[2]?.args.p_max_fix_age_seconds === 60
+      && calls[2]?.args.p_alarm_radius_m === 100 && calls[2]?.args.p_alarm_seconds === 300,
       'item activation should delegate to server checks and config bounds')
+    const alerts = await handleRequest(request(`/matches/${match}/items/alerts`, {}))
+    assert(alerts.status === 200 && calls[3]?.name === 'xzones_list_item_alerts'
+      && calls[3]?.args.p_auth_user_id === '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc',
+      'alert reads should be scoped through the authenticated user RPC')
   } finally { globalThis.fetch = originalFetch }
 })
