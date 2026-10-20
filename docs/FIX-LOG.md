@@ -121,3 +121,6 @@
 # Hide & Seek implementation — client lifecycle audit
 
 - Step 0.3 verified persisted fields, GPS watcher lifecycle, and Wake Lock behavior. The active match identity is not persisted; guest auth is separately persisted. GPS watch is not reacquired after backgrounding or watcher errors. Existing Wake Lock lifecycle tests pass; Safari 16.4 introduced the API, with an installed Home Screen app fix noted in Safari 18.4. Device behavior remains unverified. See `docs/verification/client-lifecycle-audit.md`.
+# Hide & Seek implementation — centralized configuration and design
+
+- Step 0.4 added the isolated `HIDE_AND_SEEK` mode config, explicit bounds for numeric settings, tests for defaults/bounds, and the mode rules spec. Existing round/head-start/ping defaults and validation now source the central config. Values absent from the reference are marked `UNSPECIFIED-IN-REFERENCE`; their initial assumptions are recorded in `docs/DECISIONS.md`.

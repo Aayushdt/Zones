@@ -1,3 +1,5 @@
+import { HIDE_AND_SEEK_CONFIG } from './hideAndSeekConfig.ts'
+
 export interface MatchConfig {
   roundSeconds: number
   headStartSeconds: number
@@ -5,17 +7,20 @@ export interface MatchConfig {
 }
 
 export const DEFAULT_MATCH_CONFIG: MatchConfig = {
-  roundSeconds: 2700,
-  headStartSeconds: 180,
-  pingSeconds: 300,
+  roundSeconds: HIDE_AND_SEEK_CONFIG.match.roundSeconds.default,
+  headStartSeconds: HIDE_AND_SEEK_CONFIG.match.headStartSeconds.default,
+  pingSeconds: HIDE_AND_SEEK_CONFIG.match.pingSeconds.default,
 }
 
 export function isValidMatchConfig(config: MatchConfig): boolean {
   const { roundSeconds, headStartSeconds, pingSeconds } = config
-  if (!Number.isInteger(roundSeconds) || roundSeconds < 600 || roundSeconds > 10_800
-    || !Number.isInteger(headStartSeconds) || headStartSeconds < 0 || headStartSeconds > 900
-    || roundSeconds - headStartSeconds < 300) return false
+  if (!Number.isInteger(roundSeconds) || roundSeconds < HIDE_AND_SEEK_CONFIG.match.roundSeconds.min
+    || roundSeconds > HIDE_AND_SEEK_CONFIG.match.roundSeconds.max
+    || !Number.isInteger(headStartSeconds) || headStartSeconds < HIDE_AND_SEEK_CONFIG.match.headStartSeconds.min
+    || headStartSeconds > HIDE_AND_SEEK_CONFIG.match.headStartSeconds.max
+    || roundSeconds - headStartSeconds < HIDE_AND_SEEK_CONFIG.match.minimumActiveSeconds.default) return false
   return pingSeconds === null || (Number.isInteger(pingSeconds)
-    && pingSeconds >= 60 && pingSeconds <= 1800
+    && pingSeconds >= HIDE_AND_SEEK_CONFIG.match.pingSeconds.min
+    && pingSeconds <= HIDE_AND_SEEK_CONFIG.match.pingSeconds.max
     && pingSeconds <= roundSeconds - headStartSeconds)
 }

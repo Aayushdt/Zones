@@ -183,3 +183,8 @@
 # Hide & Seek implementation — client lifecycle audit
 
 - Treat stored guest auth credentials and active match identity as separate state: localStorage retains the former, while route/session-based active-match rejoin is not implemented. For Safari, report Screen Wake Lock as API-supported from 16.4 while explicitly requiring installed-PWA/device verification for older iOS releases.
+# Hide & Seek implementation — initial unspecified defaults
+
+- Use zero zone-shrink stages by default to preserve the existing optional/static zone behavior; use a 300-second shrink interval if the host enables stages. Use 5-second/50-meter Hunter tag-fix limits, a 30-second QR freshness window, and a 2-second tag-attempt cooldown pending reference testing.
+- For items, start with one charge each, items off, cooldown zero, and conservative provisional durations/radii: Scan 30 seconds, Alarm 100 meters/300 seconds, Zone Mover 200 meters, Decoy 50-meter offset, Shield 120 seconds, and Camouflage 30 seconds. These are tunable playtest assumptions, not values established by the reference.
+- Use a 2-second chat interval and one bug report per hour per session as initial server rate limits; both values are unspecified in the reference.
