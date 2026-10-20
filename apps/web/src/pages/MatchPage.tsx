@@ -6,6 +6,7 @@ import { GameMap, type GameMapData } from '../components/GameMap'
 import { useLocationStore } from '../stores/location-store'
 import { maintainScreenWakeLock } from '../services/device-lifecycle'
 import { applyMatchRealtimeEvent, createRealtimeEventGate } from '../services/realtime-events'
+import { startFallbackSync } from '../services/fallback-sync'
 
 function timeLeft(clock: ClockView, anchor: number): number {
   const deadline = Date.parse(clock.ends_at)
@@ -70,10 +71,10 @@ export function MatchPage() {
       .then((stop) => {
         if (!active) { stop(); return }
         unsubscribe = stop
-        setLiveStatus('Private team channel connected. Reconnecting sync runs every 15 seconds.')
+        setLiveStatus('Private team channel connected. Role-safe fallback sync runs every 30–45 seconds.')
       })
       .catch(() => {
-        if (active) setLiveStatus('Private channel unavailable; role-safe sync will retry every 15 seconds.')
+        if (active) setLiveStatus('Private channel unavailable; role-safe sync retries every 30–45 seconds.')
       })
     return () => { active = false; unsubscribe?.() }
   }, [matchId, navigate, stopSharing, view?.role, view?.own_status])
@@ -81,9 +82,9 @@ export function MatchPage() {
     const timer = window.setInterval(() => {
       if (clock) setSeconds(timeLeft(clock, anchor.current))
     }, 250)
-    const polling = window.setInterval(() => { void sync() }, 15_000)
-    return () => { window.clearInterval(timer); window.clearInterval(polling) }
-  }, [clock, sync])
+    return () => window.clearInterval(timer)
+  }, [clock])
+  useEffect(() => startFallbackSync(() => sync()), [sync])
   useEffect(() => {
     if (!view || view.state !== 'ACTIVE') return
     const wakeLockApi = (navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ released: boolean; release: () => Promise<void> }> } }).wakeLock

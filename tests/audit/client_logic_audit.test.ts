@@ -1,10 +1,19 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mergeLatestPings } from '../../packages/game-core/src/index.ts'
 import { createMockApi } from '../../apps/web/src/services/mock-api.ts'
 import { useLocationStore } from '../../apps/web/src/stores/location-store.ts'
 import { maintainScreenWakeLock, watchDeviceLocation } from '../../apps/web/src/services/device-lifecycle.ts'
 import { createRealtimeEventGate, applyMatchRealtimeEvent } from '../../apps/web/src/services/realtime-events.ts'
 import { parseApiError } from '../../apps/web/src/services/supabase-api.ts'
+import { fallbackSyncDelay, startFallbackSync } from '../../apps/web/src/services/fallback-sync.ts'
+
+class TestVisibility {
+  hidden = false
+  private listeners = new Set<() => void>()
+  addEventListener(_type: 'visibilitychange', listener: () => void) { this.listeners.add(listener) }
+  removeEventListener(_type: 'visibilitychange', listener: () => void) { this.listeners.delete(listener) }
+  change(hidden: boolean) { this.hidden = hidden; for (const listener of this.listeners) listener() }
+}
 
 function timeLeft(clock: { ends_at: string; server_now: string }, anchor: number): number {
   const deadline = Date.parse(clock.ends_at)
@@ -27,6 +36,25 @@ function ageText(seconds: number): string {
 }
 
 describe('AUDIT CHECKLIST I: Client game logic', () => {
+  it('uses jittered 30–45 second fallback sync and pauses while hidden', async () => {
+    expect(fallbackSyncDelay(() => 0)).toBe(30_000)
+    expect(fallbackSyncDelay(() => 0.999)).toBe(44_985)
+    vi.useFakeTimers()
+    const visibility = new TestVisibility()
+    const sync = vi.fn()
+    const stop = startFallbackSync(sync, visibility, () => 0)
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(sync).toHaveBeenCalledTimes(1)
+    visibility.change(true)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(sync).toHaveBeenCalledTimes(1)
+    visibility.change(false)
+    await Promise.resolve()
+    expect(sync).toHaveBeenCalledTimes(2)
+    stop()
+    vi.useRealTimers()
+  })
+
   it('F02: Realtime events dedupe IDs, ignore stale location sequences, and update the role-safe view', () => {
     const gate = createRealtimeEventGate('RUNNER')
     const initial = {

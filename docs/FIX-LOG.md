@@ -143,3 +143,8 @@
 
 - No `pg_cron` extension or scheduling configuration exists in the migration chain. Added private singleton cleanup state plus an advisory transaction lock. `xzones_cleanup` returns immediately when locked or called within 60 seconds; actual cleanup records its timestamp and performs the existing delete set at most once per minute.
 - Kept the existing opportunistic cleanup RPC call sites, but bounded database sweep work. Added a SQL boundary smoke test for first run, 59-second throttle, and exact 60-second eligibility. Temporary PostgreSQL migration/schema/lifecycle/audit harness passed, including all 14 audit scenarios.
+
+# Hide & Seek implementation — Step 1.4 Realtime-first fallback
+
+- Added a reusable visibility-aware fallback scheduler with random intervals in [30,000, 45,000) ms, no polling while hidden, immediate sync on resume, and no overlapping sync requests. Applied it to match and Hunter Pings views; Pings now also subscribes to role-safe Realtime events.
+- Added deterministic delay and visibility pause/resume coverage. Full suite passed: unit 25, audit 26, Edge 12, hostile API 11, payload 2, simulator 1, Playwright 4, DB audit 14; typecheck/build/lint passed with existing warnings.

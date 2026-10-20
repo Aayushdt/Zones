@@ -205,3 +205,7 @@
 # Hide & Seek implementation — Step 1.3 cleanup scheduling
 
 - Use a transactional advisory lock and a singleton `last_cleanup_at` row to throttle opportunistic cleanup to one execution per 60 seconds. No cron extension/configuration is present in the project, so the database RPC remains opportunistically invoked while expensive delete work is rate-limited.
+
+# Hide & Seek implementation — Step 1.4 fallback polling
+
+- Use Realtime as the primary update path in both the active map and Hunter Pings views. Keep role-safe sync as a jittered fallback between 30 and 45 seconds, pause timers when the document is hidden, and sync once on resume to reconcile missed events.

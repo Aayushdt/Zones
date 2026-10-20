@@ -4,6 +4,8 @@ import { Link, useParams } from 'react-router-dom'
 import type { HunterMatchView, RoleSafeMatchView } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useAppStore } from '../stores/app-store'
+import { startFallbackSync } from '../services/fallback-sync'
+import { applyMatchRealtimeEvent, createRealtimeEventGate } from '../services/realtime-events'
 
 type SeenPing = HunterMatchView['runner_snapshots'][number] & { received_at_mono: number }
 
@@ -63,9 +65,34 @@ export function PingsPage() {
 
   useEffect(() => { void sync() }, [sync])
   useEffect(() => {
-    const poll = window.setInterval(() => { void sync() }, 15_000)
+    if (!view) return
+    let active = true
+    let unsubscribe: (() => void) | undefined
+    const gate = createRealtimeEventGate(view.role)
+    void supabaseGameApi.subscribe(matchId, view.role, { onEvent: (received) => {
+      if (!active || !gate.accept(received.payload)) return
+      const payload = received.payload as { type?: unknown; data?: { ping_index?: unknown } }
+      if (payload.type === 'hunter.runner_ping' && typeof payload.data?.ping_index === 'number') {
+        const receivedAt = performance.now()
+        setPings((current) => mergeLatestPings(current, [{
+          ...(payload.data as HunterMatchView['runner_snapshots'][number]), received_at_mono: receivedAt,
+        }]))
+        if (payload.data.ping_index > lastNotifiedPing.current) {
+          lastNotifiedPing.current = payload.data.ping_index
+          if (useAppStore.getState().hapticsEnabled) navigator.vibrate?.(45)
+        }
+      }
+      setView((current) => current ? applyMatchRealtimeEvent(current, received.payload) ?? current : current)
+    } }).then((stop) => {
+      if (active) unsubscribe = stop
+      else stop()
+    }).catch(() => undefined)
+    return () => { active = false; unsubscribe?.() }
+  }, [matchId, view?.role])
+  useEffect(() => {
+    const stopFallback = startFallbackSync(() => sync())
     const clock = window.setInterval(() => setNowMono(performance.now()), 1_000)
-    return () => { window.clearInterval(poll); window.clearInterval(clock) }
+    return () => { stopFallback(); window.clearInterval(clock) }
   }, [sync])
 
   if (!view) return (
