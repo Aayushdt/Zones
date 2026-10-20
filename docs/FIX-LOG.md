@@ -133,3 +133,8 @@
 - Changed the shared rules, readiness/start checks, lobby/join UI, and API lobby-full message to enforce and display 2–100 players. Added idempotent migration `202610200017_player_limits.sql`, including a serialized database trigger to prevent cap bypass via direct player inserts, plus min-player and hunter defaults in the lobby status RPC.
 - Updated rules/audit/API/E2E tests and added `tests/schema/player-limits-smoke.sql` for two-player start, 100-player limit, rejected 101st join, and direct-insert bypass. Preserved existing migrations.
 - Gates: typecheck, lint, production build, `test:all` and focused Playwright passed. The existing Vite optimizer emitted a Supabase dependency ENOENT warning, but all 4 browser tests passed. Lint emitted existing React-effect warnings.
+
+# Hide & Seek implementation — Step 1.2 flexible team balance (BLOCKED)
+
+- Added a host-only Hunter-count assignment RPC and lobby control; Random still uses the centralized `ceil(N/10)` default. Start validation now accepts any split with 1..floor(N/2) Hunters and at least one Runner; the database rejects over-limit Hunter counts.
+- Typecheck, build, lint, unit/audit/API/privacy/simulator/browser gates passed after updating the stale exhaustive unit expectation. The required full-suite retry then failed in `tests/audit/db_scenarios_audit.sql` F-07. The scenario was updated to test a custom valid split and an over-limit split, but the suite was not retried again, per the two-failure stop rule. Treat that SQL edit and migration as unverified; this step is BLOCKED pending user direction or a fresh explicit retry.

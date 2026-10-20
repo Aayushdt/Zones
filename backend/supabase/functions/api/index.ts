@@ -215,7 +215,7 @@ async function publishTagResult(matchId: string, tagResult: JsonObject) {
 function rpcResponse(result: JsonObject): Response {
   const error = result.error
   if (typeof error !== 'string') return ok(result)
-  if (error === 'INVALID_CONFIG' || error === 'INVALID_INPUT' || error === 'INVALID_ROLE') {
+  if (error === 'INVALID_CONFIG' || error === 'INVALID_INPUT' || error === 'INVALID_ROLE' || error === 'INVALID_HUNTER_COUNT') {
     return fail(400, error, 'Check the supplied lobby details and try again.')
   }
   if (error === 'INVALID_CODE') return fail(404, error, 'That private lobby code is invalid or expired.')
@@ -545,6 +545,15 @@ export async function handleRequest(request: Request): Promise<Response> {
           own_role: result.role, can_start: result.can_start === true,
         }, `teams:${String(result.role)}`)
       }
+      return rpcResponse(result)
+    }
+
+    const hunterCountMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/hunter-count$/i)
+    if (hunterCountMatch) {
+      if (!Number.isInteger(body.hunter_count)) return fail(400, 'INVALID_HUNTER_COUNT', 'Choose a valid Hunter count.')
+      const result = await callRpc('xzones_set_hunter_count', {
+        p_auth_user_id: user.id, p_match_id: hunterCountMatch[1], p_hunter_count: body.hunter_count,
+      })
       return rpcResponse(result)
     }
 

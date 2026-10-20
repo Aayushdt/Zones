@@ -18,6 +18,7 @@ export function LobbyPage() {
   const [lobby, setLobby] = useState<LobbyView | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const [hunterCount, setHunterCount] = useState(1)
   const enableLocation = useLocationStore((state) => state.enable)
   const clearLocation = useLocationStore((state) => state.clearMatch)
 
@@ -28,6 +29,7 @@ export function LobbyPage() {
     if (!result.ok) { setError(result.error.message); return }
     setError('')
     setLobby(result.data)
+    setHunterCount(Math.min(Math.max(Math.ceil(result.data.players.length / HIDE_AND_SEEK_CONFIG.players.hunterCountDivisor.default), 1), Math.floor(result.data.players.length / 2)))
   }, [matchId])
 
   useEffect(() => { void refresh() }, [refresh])
@@ -70,6 +72,15 @@ export function LobbyPage() {
     if (!lobby || lobby.you.id !== lobby.controller_player_id || playerId === lobby.you.id) return
     setPending(true)
     const result = await supabaseGameApi.removeLobbyPlayer(matchId, playerId)
+    setPending(false)
+    if (!result.ok) { setError(result.error.message); return }
+    await refresh()
+  }
+
+  async function applyHunterCount() {
+    if (!lobby || !isController) return
+    setPending(true)
+    const result = await supabaseGameApi.setHunterCount(matchId, hunterCount)
     setPending(false)
     if (!result.ok) { setError(result.error.message); return }
     await refresh()
@@ -124,6 +135,14 @@ export function LobbyPage() {
           <span className="team-count runner-count">{lobby.active_counts.runners} Runners</span>
           <span className="team-count hunter-count">{lobby.active_counts.hunters} Hunters</span>
         </div>
+        {isController ? <div className="field-row">
+          <label htmlFor="hunter-count">Hunter count (default {Math.min(Math.max(Math.ceil(lobby.players.length / HIDE_AND_SEEK_CONFIG.players.hunterCountDivisor.default), 1), Math.floor(lobby.players.length / 2))})</label>
+          <input id="hunter-count" type="number" min={1} max={Math.floor(lobby.players.length / 2)} value={hunterCount}
+            onChange={(event) => setHunterCount(Number(event.currentTarget.value))} disabled={pending || lobby.players.length < 2} />
+          <button className="welcome__secondary" type="button" disabled={pending || lobby.players.length < 2 || hunterCount < 1 || hunterCount > Math.floor(lobby.players.length / 2)} onClick={() => void applyHunterCount()}>
+            Assign teams
+          </button>
+        </div> : null}
         <Roster title="Runners" players={runners} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
         <Roster title="Hunters" players={hunters} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
         {unassigned.length ? <Roster title="Choose a team" players={unassigned} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} /> : null}

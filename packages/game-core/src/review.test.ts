@@ -29,7 +29,6 @@ describe('phase 3 exhaustive game-core review', () => {
     let assignments = 0
     for (let n = 3; n <= 12; n += 1) {
       const total = 3 ** n
-      const target = balanceTeams(n)!.hunters
       for (let encoded = 0; encoded < total; encoded += 1) {
         let digits = encoded
         let hunters = 0, runners = 0, unassigned = 0
@@ -44,7 +43,7 @@ describe('phase 3 exhaustive game-core review', () => {
           members.push({ role, status: 'ACTIVE', ready: true })
         }
         const result = canStartLobby(members)
-        expect(result.canStart).toBe(unassigned === 0 && hunters === target && runners > 0)
+        expect(result.canStart).toBe(unassigned === 0 && hunters >= 1 && hunters <= Math.floor(n / 2) && runners > 0)
         expect(result.activeCounts).toEqual({ hunters, runners })
         assignments += 1
       }

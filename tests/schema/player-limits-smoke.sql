@@ -11,6 +11,7 @@ declare
   v_full_match uuid;
   v_result jsonb;
   v_lobby jsonb;
+  v_assignment jsonb;
   v_revision bigint;
 begin
   insert into auth.users(id) values (v_host), (v_runner), (v_full_host), (v_overflow_user), (v_direct_overflow_user);
@@ -48,8 +49,12 @@ begin
   select v_full_match, id, 'Player ' || row_number() over (order by id), decode(repeat('a', 64), 'hex')
   from new_users;
 
+  v_assignment := public.xzones_set_hunter_count(v_full_host, v_full_match, 20);
+  if v_assignment->'counts'->>'hunters' <> '20' or v_assignment->'counts'->>'runners' <> '80' then
+    raise exception 'host-selected team count was not applied: %', v_assignment;
+  end if;
   v_lobby := public.xzones_lobby_status(v_full_match);
-  if v_lobby->>'player_count' <> '100' or v_lobby->>'block_reason' <> 'NEEDS_TEAMS' then
+  if v_lobby->>'player_count' <> '100' or v_lobby->'active_counts'->>'hunters' <> '20' or v_lobby->>'block_reason' <> 'WAITING_FOR_READY' then
     raise exception '100-player lobby should remain within bounds: %', v_lobby;
   end if;
   v_result := public.xzones_join_lobby(v_overflow_user, decode(repeat('b', 64), 'hex'), decode(repeat('c', 64), 'hex'),

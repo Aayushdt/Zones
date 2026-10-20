@@ -133,6 +133,7 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   getLobby(id: string): Promise<Result<Lobby>>
   removeLobbyPlayer(id: string, playerId: string): Promise<Result<RemovePlayerResult>>
   selectTeam(id: string, role: Role | 'RANDOM'): Promise<Result<TeamView>>
+  setHunterCount(id: string, count: number): Promise<Result<{ hunters: number; runners: number }>>
   setReady(id: string, ready: boolean): Promise<Result<ReadyView>>
   startMatch(id: string, expectedRevision?: number): Promise<Result<ClockView>>
   syncClock(id: string): Promise<Result<ClockView>>

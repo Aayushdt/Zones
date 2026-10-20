@@ -196,3 +196,8 @@
 
 - The explicit mode requirements of 2–100 players supersede old tests that asserted 3–12. Updated those expectations rather than preserving incompatible behavior.
 - Enforce the 100-player limit in both the join RPC and a match-row-serialized database trigger. The RPC alone would not protect other player insertion paths; trigger enforcement also serializes concurrent joins against one lobby.
+
+# Hide & Seek implementation — Step 1.2 flexible teams
+
+- Keep the centralized `ceil(N/10)` target as the Random-role default, while allowing a host to assign a chosen Hunter count from 1 through `floor(N/2)`. Starting a lobby validates this safe range rather than requiring the default count.
+- The 1.2 full-suite retry failed in the DB audit after the stale exact-count test was revised. Stop further retries and retain BLOCKED status until the updated SQL scenario and migration are verified.

@@ -732,7 +732,7 @@ end;
 $$;
 
 -- ==========================================================================
--- F-07: Exact Hunter target is enforced by the server lobby status/start gate
+-- F-07: Flexible Hunter count is bounded by one through floor(N / 2)
 -- ==========================================================================
 DO $$
 declare
@@ -762,18 +762,27 @@ begin
     from public.players where match_id = v_match_id
   )
   update public.players p set
-    role = case when o.position <= 5 then 'HUNTER'::public.player_role else 'RUNNER'::public.player_role end,
+    role = case when o.position <= 7 then 'HUNTER'::public.player_role else 'RUNNER'::public.player_role end,
     ready = true
   from ordered_players o where p.id = o.id;
 
   v_status := public.xzones_lobby_status(v_match_id);
-  v_start := public.xzones_start_match(v_auth_ids[1], v_match_id,
-    (select revision from public.matches where id = v_match_id));
-  if v_status->>'can_start' = 'false' and v_status->>'block_reason' = 'NEEDS_TEAMS'
-     and v_start->>'error' = 'NOT_READY' and v_start->>'block_reason' = 'NEEDS_TEAMS' then
-    insert into audit_results values ('F-07: exact Hunter target enforced by server', 'PASS', 'Five Hunters in a 12-player lobby cannot start; target is two');
+  if v_status->>'can_start' <> 'false' or v_status->>'block_reason' <> 'NEEDS_TEAMS' then
+    insert into audit_results values ('F-07: flexible Hunter count bounded by server', 'FAIL', 'Seven Hunters in a 12-player lobby must exceed floor(N/2)');
   else
-    insert into audit_results values ('F-07: exact Hunter target enforced by server', 'FAIL', 'Lobby status: ' || coalesce(v_status::text, 'null'));
+    update public.players p set
+      role = case when row_number_position.position <= 5 then 'HUNTER'::public.player_role else 'RUNNER'::public.player_role end
+    from (select id, row_number() over (order by joined_at, id) as position
+      from public.players where match_id = v_match_id) row_number_position
+    where p.id = row_number_position.id;
+    v_status := public.xzones_lobby_status(v_match_id);
+    v_start := public.xzones_start_match(v_auth_ids[1], v_match_id,
+      (select revision from public.matches where id = v_match_id));
+    if v_status->>'can_start' = 'true' and v_start->>'state' = 'HEAD_START' then
+      insert into audit_results values ('F-07: flexible Hunter count bounded by server', 'PASS', 'Five Hunters in a 12-player lobby can start; seven are rejected');
+    else
+      insert into audit_results values ('F-07: flexible Hunter count bounded by server', 'FAIL', 'Valid custom count did not start: ' || coalesce(v_status::text, 'null'));
+    end if;
   end if;
 end;
 $$;

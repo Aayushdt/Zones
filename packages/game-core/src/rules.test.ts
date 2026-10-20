@@ -21,10 +21,6 @@ describe('team balance and readiness', () => {
         role: index < targetHunters ? 'HUNTER' : 'RUNNER', status: 'ACTIVE', ready: true,
       }))
       expect(canStartLobby(players).canStart).toBe(true)
-      if (targetHunters < Math.floor(count / 2)) {
-        players[targetHunters] = { role: 'HUNTER', status: 'ACTIVE', ready: true }
-        expect(canStartLobby(players).blockReason).toBe('NEEDS_TEAMS')
-      }
     }
   })
 
@@ -67,6 +63,18 @@ describe('team balance and readiness', () => {
     expect(canStartLobby(players.slice(0, 2))).toEqual({ canStart: true, activeCounts: { hunters: 1, runners: 1 } })
     expect(canStartLobby(players.slice(0, 1)).blockReason).toBe('NEEDS_TWO_PLAYERS')
     expect(canStartLobby(players.map((player) => ({ ...player, role: 'RUNNER' as const }))).blockReason).toBe('NEEDS_TEAMS')
+    expect(canStartLobby([
+      { role: 'HUNTER', status: 'ACTIVE', ready: true },
+      { role: 'HUNTER', status: 'ACTIVE', ready: true },
+      { role: 'RUNNER', status: 'ACTIVE', ready: true },
+      { role: 'RUNNER', status: 'ACTIVE', ready: true },
+    ]).canStart).toBe(true)
+    expect(canStartLobby([
+      { role: 'HUNTER', status: 'ACTIVE', ready: true },
+      { role: 'HUNTER', status: 'ACTIVE', ready: true },
+      { role: 'HUNTER', status: 'ACTIVE', ready: true },
+      { role: 'RUNNER', status: 'ACTIVE', ready: true },
+    ]).blockReason).toBe('NEEDS_TEAMS')
     expect(canStartLobby(players.map((player, index) => index === 2 ? { ...player, ready: false } : player).map((player) => player)).blockReason)
       .toBe('WAITING_FOR_READY')
     expect(canStartLobby([...players, ...Array.from({ length: 98 }, () => players[2])]).blockReason).toBe('LOBBY_FULL')

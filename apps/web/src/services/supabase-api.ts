@@ -271,6 +271,12 @@ class SupabaseGameApi implements GameApi {
     } }
   }
 
+  async setHunterCount(id: string, count: number): Promise<Result<{ hunters: number; runners: number }>> {
+    return this.post<{ counts: { hunters: number; runners: number } }>(
+      `/matches/${encodeURIComponent(id)}/hunter-count`, { hunter_count: count },
+    ).then((result) => result.ok ? { ok: true, data: result.data.counts } : result)
+  }
+
   async setReady(id: string, ready: boolean): Promise<Result<ReadyView>> {
     return this.post<ReadyView>(`/matches/${encodeURIComponent(id)}/ready`, { ready })
   }

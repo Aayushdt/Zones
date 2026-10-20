@@ -80,6 +80,7 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
           }, can_start: check.canStart, block_reason: check.blockReason } }
         : notImplemented()
     },
+    async setHunterCount() { return notImplemented() },
     async setReady(_id, ready) {
       if (!lobby) return notImplemented()
       const players = lobby.players.map((player) => player.id === lobby?.you.id ? { ...player, ready } : player)
