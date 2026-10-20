@@ -71,7 +71,11 @@ export function LocationSharing() {
       if (!result.data.accepted) { setStatus(result.data.reason === 'POOR_ACCURACY' ? 'GPS accuracy is over 100 m; waiting for a clearer fix.' : 'The server rejected this stale location fix.'); return }
       sendState.sentAt = Date.now()
       sendState.sentFix = point
-      setStatus('Location shared with your team. Opposing Runner positions are only sent to Hunters on scheduled pings.')
+      setStatus(result.data.zone_eliminated
+        ? 'You were outside the active zone for too long and have been eliminated.'
+        : result.data.zone_warning
+          ? 'Zone warning: return inside the boundary now or you will be eliminated.'
+          : 'Location shared with your team. Opposing Runner positions are only sent to Hunters on scheduled pings.')
     }
     const onError = (error: GeolocationPositionError) => {
       if (error.code === error.PERMISSION_DENIED) {

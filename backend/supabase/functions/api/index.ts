@@ -694,6 +694,17 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_auth_user_id: user.id, p_match_id: locationMatch[1], p_lat: body.lat, p_lon: body.lon,
         p_accuracy_m: body.accuracy_m, p_captured_at: body.captured_at, p_sequence: body.sequence,
       })
+      if (!result.error && result.accepted === true) {
+        const zoneStatus = await callRpc('xzones_zone_status', { p_auth_user_id: user.id, p_match_id: locationMatch[1] })
+        if (typeof zoneStatus.error === 'string') return rpcResponse(zoneStatus)
+        if (zoneStatus.eliminated === true) {
+          const resolved = await callRpc('xzones_resolve_match', { p_auth_user_id: user.id, p_match_id: locationMatch[1] })
+          if (typeof resolved.error === 'string') return rpcResponse(resolved)
+        }
+        result.zone_warning = zoneStatus.warning === true
+        result.zone_revealed = zoneStatus.revealed === true
+        result.zone_eliminated = zoneStatus.eliminated === true
+      }
       if (!result.error && result.accepted === true && typeof result.player_id === 'string' && typeof result.server_now === 'string') {
         await publishLatestLocation(locationMatch[1], result.player_id, result.server_now)
       }

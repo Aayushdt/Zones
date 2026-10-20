@@ -154,6 +154,7 @@ Deno.test('F-10: Location uploads return 429 and Retry-After when the DB throttl
     if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({})
     if (url.endsWith('/rest/v1/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
     if (url.endsWith('/rest/v1/rpc/xzones_zone_at')) return Response.json({ enabled: false })
+    if (url.endsWith('/rest/v1/rpc/xzones_zone_status')) return Response.json({ warning: false, revealed: false, eliminated: false })
     if (url.endsWith('/rest/v1/rpc/xzones_update_location')) {
       rpcCalls += 1
       return rpcCalls === 1

@@ -456,6 +456,7 @@ Deno.test('location route validates before RPC, stores through the server, and n
     }
     if (url.endsWith('/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
     if (url.endsWith('/rpc/xzones_zone_at')) return Response.json({ enabled: false })
+    if (url.endsWith('/rpc/xzones_zone_status')) return Response.json({ warning: false, revealed: false, eliminated: false })
     if (url.endsWith('/rpc/xzones_update_location')) {
       captured.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
       return Response.json({ accepted: true, stale: false, player_id: 'player-1', server_now: '2026-10-18T13:00:00Z' })
