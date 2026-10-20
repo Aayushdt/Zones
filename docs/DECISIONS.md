@@ -195,6 +195,7 @@
 - GPS Tag uses fresh Hunter fixes (≤5 seconds, ≤50 m accuracy), the nearest fresh Runner fix, and the specified `20 m + min(accH + accR, 25 m) + 3 m/s × min(runnerFixAge, 30 s)` threshold. The database serializes tag attempts, applies a 1-per-2-second Hunter cooldown, and returns only `NOTHING_IN_RANGE` on a miss.
 - QR remains usable as a poor-GPS fallback. Reject it as possible relay only when both server-stored fixes are fresh (≤30 seconds) and more than 100 m apart; blocked challenges are not consumed.
 - Tag/QR/surrender/end mutations serialize on the match row and retain the unique `(match_id, runner_id)` tag constraint. A four-session PostgreSQL race test guards the cross-action winner and single-final-result behavior.
+- Stationary Runner detection anchors the latest confirmed position and resets only after at least 15 m of movement. It warns at 240 seconds and reveals at 300 seconds through the normal scheduled Hunter-ping path; stationary behavior never eliminates.
 - For items, start with one charge each, items off, cooldown zero, and conservative provisional durations/radii: Scan 30 seconds, Alarm 100 meters/300 seconds, Zone Mover 200 meters, Decoy 50-meter offset, Shield 120 seconds, and Camouflage 30 seconds. These are tunable playtest assumptions, not values established by the reference.
 - Use a 2-second chat interval and one bug report per hour per session as initial server rate limits; both values are unspecified in the reference.
 # Hide & Seek implementation — existence inventory

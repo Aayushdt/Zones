@@ -725,7 +725,8 @@ export async function handleRequest(request: Request): Promise<Response> {
           const resolved = await callRpc('xzones_resolve_match', { p_auth_user_id: user.id, p_match_id: locationMatch[1] })
           if (typeof resolved.error === 'string') return rpcResponse(resolved)
         }
-        result.zone_warning = zoneStatus.warning === true
+        result.zone_warning = zoneStatus.zone_warning === true
+        result.stationary_warning = zoneStatus.stationary_warning === true
         result.zone_revealed = zoneStatus.revealed === true
         result.zone_eliminated = zoneStatus.eliminated === true
       }

@@ -232,3 +232,8 @@
 - Added a disposable-database harness that launches GPS Tag, QR scan, Runner surrender, and host-end operations from four concurrent PostgreSQL sessions against the same Runner/match.
 - Assertions require a terminal match result and at most one accepted tag; the unique runner-tag constraint and match-row locks serialize outcomes.
 - Validation: race harness PASS (`state=ENDED`, `tags=0` in the host-end-winning run, exactly one result); full database audit PASS; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 3.5 stationary Runner reveal
+
+- Added server-side stationary anchors for active Runners. Movement of at least 15 m resets the timer; at 240 seconds the API warns the Runner, and at 300 seconds the server records a reveal for the next scheduled Hunter ping. It does not alter player status or eliminate.
+- Validation: DB smoke covers both thresholds, no-elimination behavior, and movement reset; DB audit PASS; Edge/hostile API 25/25 PASS; typecheck/build PASS.

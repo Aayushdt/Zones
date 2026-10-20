@@ -80,7 +80,10 @@ export function LocationSharing() {
         ? 'You were outside the active zone for too long and have been eliminated.'
         : result.data.zone_warning
           ? 'Zone warning: return inside the boundary now or you will be eliminated.'
-          : 'Location shared with your team. Opposing Runner positions are only sent to Hunters on scheduled pings.')
+          : result.data.stationary_warning
+            ? 'Stationary warning: keep moving or you will be revealed to Hunters.'
+            : result.data.zone_revealed ? 'You have been revealed to Hunters on the scheduled ping.'
+              : 'Location shared with your team. Opposing Runner positions are only sent to Hunters on scheduled pings.')
     }
     const onError = (error: GeolocationPositionError) => {
       if (error.code === error.PERMISSION_DENIED) {

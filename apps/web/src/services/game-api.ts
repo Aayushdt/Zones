@@ -123,7 +123,7 @@ export interface LocationInput {
   sequence: number
 }
 
-export interface LocationAck { accepted: boolean; server_now: string; player_id?: string; stale: boolean; reason?: string; zone_warning?: boolean; zone_revealed?: boolean; zone_eliminated?: boolean }
+export interface LocationAck { accepted: boolean; server_now: string; player_id?: string; stale: boolean; reason?: string; zone_warning?: boolean; stationary_warning?: boolean; zone_revealed?: boolean; zone_eliminated?: boolean }
 export interface ZoneView { center: { lat: number; lon: number }; radius: number; stage: number; nextShrinkAt: string | null; nextRadius: number | null }
 export interface QrChallenge { token: string; expires_at: string; server_now: string }
 export interface TagResult { accepted: boolean; state: MatchState; winner?: Role; reason?: 'NOTHING_IN_RANGE' }
