@@ -3,7 +3,7 @@ import { useLocation, useParams } from 'react-router-dom'
 import { haversineDistanceMeters } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useLocationStore } from '../stores/location-store'
-import { watchDeviceLocation } from '../services/device-lifecycle'
+import { maintainDeviceLocation } from '../services/device-lifecycle'
 import { createLocationSendState } from '../services/location-send-state'
 
 export function LocationSharing() {
@@ -90,20 +90,26 @@ export function LocationSharing() {
         setStatus('Location permission was denied. Sharing stopped; allow location in browser settings and ready again.')
         clearMatch(matchId)
         void supabaseGameApi.setReady(matchId, false)
-      } else setStatus('Waiting for GPS. Move outdoors or retry after the signal improves.')
+      } else setStatus('GPS paused; trying to reacquire your location. Move outdoors if the signal does not return.')
     }
-    const stopWatching = watchDeviceLocation(true, navigator.geolocation, (fix) => void upload(fix), onError)
+    const stopWatching = maintainDeviceLocation(true, navigator.geolocation, document, window,
+      (fix) => void upload(fix as GeolocationPosition), (error) => onError(error as GeolocationPositionError), () => {
+      setStatus('GPS paused while the app is hidden. Location uploads resume when you return.')
+    })
     const onOnline = () => { setStatus('Connection restored; syncing match.'); syncOnResume() }
     const onOffline = () => setStatus('Offline; location uploads paused and match data is not cached.')
+    const onPageShow = () => { syncOnResume() }
     window.addEventListener('online', onOnline)
     window.addEventListener('offline', onOffline)
     document.addEventListener('visibilitychange', syncOnResume)
+    window.addEventListener('pageshow', onPageShow)
     return () => {
       disposed = true
       stopWatching()
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
       document.removeEventListener('visibilitychange', syncOnResume)
+      window.removeEventListener('pageshow', onPageShow)
     }
   }, [matchId, enabledMatchId, clearMatch, setFix, setStatus])
   return null

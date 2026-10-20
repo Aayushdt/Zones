@@ -1,20 +1,99 @@
 export interface GeolocationWatchApi {
-  watchPosition: (success: (position: GeolocationPosition) => void, error: (error: GeolocationPositionError) => void,
-    options: PositionOptions) => number
+  watchPosition: (success: (position: DevicePosition) => void, error: (error: DevicePositionError) => void,
+    options: DevicePositionOptions) => number
   clearWatch: (watchId: number) => void
+}
+
+export interface DevicePosition {
+  coords: { latitude: number; longitude: number; accuracy: number }
+  timestamp: number
+}
+
+export interface DevicePositionError {
+  code: number
+  readonly PERMISSION_DENIED: number
+}
+
+export interface DevicePositionOptions {
+  enableHighAccuracy?: boolean
+  maximumAge?: number
+  timeout?: number
 }
 
 export function watchDeviceLocation(
   sharing: boolean,
   geolocation: GeolocationWatchApi,
-  onPosition: (position: GeolocationPosition) => void,
-  onError: (error: GeolocationPositionError) => void,
+  onPosition: (position: DevicePosition) => void,
+  onError: (error: DevicePositionError) => void,
 ): () => void {
   if (!sharing) return () => undefined
   const watchId = geolocation.watchPosition(onPosition, onError, {
     enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000,
   })
   return () => geolocation.clearWatch(watchId)
+}
+
+export interface LocationLifecycleTarget {
+  readonly visibilityState: 'hidden' | 'visible' | 'prerender'
+  addEventListener: (type: 'visibilitychange', listener: () => void) => void
+  removeEventListener: (type: 'visibilitychange', listener: () => void) => void
+}
+
+export interface PageLifecycleTarget {
+  addEventListener: (type: 'pageshow', listener: () => void) => void
+  removeEventListener: (type: 'pageshow', listener: () => void) => void
+}
+
+export function maintainDeviceLocation(
+  sharing: boolean,
+  geolocation: GeolocationWatchApi,
+  lifecycle: LocationLifecycleTarget,
+  pageLifecycle: PageLifecycleTarget,
+  onPosition: (position: DevicePosition) => void,
+  onError: (error: DevicePositionError) => void,
+  onPaused: () => void,
+): () => void {
+  if (!sharing) return () => undefined
+  let stopped = false
+  let watchId: number | undefined
+  let retryTimer: ReturnType<typeof setTimeout> | undefined
+  const start = () => {
+    if (stopped || lifecycle.visibilityState !== 'visible' || watchId !== undefined) return
+    watchId = geolocation.watchPosition(onPosition, (error) => {
+      if (watchId !== undefined) geolocation.clearWatch(watchId)
+      watchId = undefined
+      if (stopped) return
+      onError(error)
+      if (error.code !== error.PERMISSION_DENIED) retryTimer = setTimeout(start, 1_000)
+    }, { enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000 })
+  }
+  const pause = () => {
+    if (watchId !== undefined) geolocation.clearWatch(watchId)
+    watchId = undefined
+    onPaused()
+  }
+  const resume = () => {
+    if (lifecycle.visibilityState !== 'visible') return
+    if (retryTimer !== undefined) clearTimeout(retryTimer)
+    retryTimer = undefined
+    start()
+  }
+  const onPageShow = () => {
+    if (watchId !== undefined) geolocation.clearWatch(watchId)
+    watchId = undefined
+    resume()
+  }
+  const onVisibilityChange = () => lifecycle.visibilityState === 'visible' ? resume() : pause()
+  lifecycle.addEventListener('visibilitychange', onVisibilityChange)
+  pageLifecycle.addEventListener('pageshow', onPageShow)
+  start()
+  return () => {
+    stopped = true
+    if (retryTimer !== undefined) clearTimeout(retryTimer)
+    if (watchId !== undefined) geolocation.clearWatch(watchId)
+    lifecycle.removeEventListener('visibilitychange', onVisibilityChange)
+    pageLifecycle.removeEventListener('pageshow', onPageShow)
+  }
 }
 
 export interface ScreenWakeLockSentinel {
@@ -27,7 +106,7 @@ export interface ScreenWakeLockApi {
 }
 
 export interface VisibilityTarget {
-  visibilityState: DocumentVisibilityState
+  visibilityState: 'hidden' | 'visible' | 'prerender'
   addEventListener: (type: 'visibilitychange', listener: () => void) => void
   removeEventListener: (type: 'visibilitychange', listener: () => void) => void
 }

@@ -231,3 +231,7 @@
 # Hide & Seek implementation — Step 1.8 load measurement
 
 - Use a disposable native PostgreSQL instance plus the repository’s Supabase shim to measure the SQL RPC fan-out behind location and `/sync` routes. Treat it as local database load evidence only; do not infer hosted Supabase, Edge, Realtime, browser, or production capacity from it.
+
+# Hide & Seek implementation — Step 4.1 GPS lifecycle recovery
+
+- Pause and clear the active geolocation watch while the document is hidden; restart on visibility return and `pageshow`, and retry transient geolocation errors after one second. Permission denial still stops sharing and readiness. This avoids background battery use while recovering browsers that suspend location watches.

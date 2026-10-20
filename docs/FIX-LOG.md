@@ -237,3 +237,8 @@
 
 - Added server-side stationary anchors for active Runners. Movement of at least 15 m resets the timer; at 240 seconds the API warns the Runner, and at 300 seconds the server records a reveal for the next scheduled Hunter ping. It does not alter player status or eliminate.
 - Validation: DB smoke covers both thresholds, no-elimination behavior, and movement reset; DB audit PASS; Edge/hostile API 25/25 PASS; typecheck/build PASS.
+
+# Hide & Seek implementation — Step 4.1 GPS lifecycle recovery
+
+- Replaced the one-shot location watch with lifecycle-aware watch maintenance: pause while hidden, reacquire on visibility return and `pageshow`, and retry after transient geolocation errors. The match syncs immediately on return and the location status clearly reports when GPS is paused.
+- Validation: `deno test tests/audit/device_lifecycle_test.ts` PASS (2/2); typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
