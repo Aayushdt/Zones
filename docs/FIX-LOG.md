@@ -305,3 +305,8 @@
 
 - Added server placement at the Hunter's fresh stored fix, location-upload-triggered distance evaluation, single-use alert storage, and placer-only polling. Client polling ends at the configured alarm expiry.
 - Validation: DB smoke verifies outside/inside transitions, one-time alert, and that another Hunter cannot read it; full `pnpm test:all`, typecheck/build, lint, and `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 6.4 Hunter Zone Mover
+
+- Added a one-use server-generated zone-center shift, bounded by the 200m maximum and 50% overlap requirement. Both teams receive only the new public zone geometry and re-sync their maps.
+- Validation: SQL smoke checks displacement, radius preservation, and one-use guard; full `pnpm test:all`, typecheck/build, lint, and `git diff --check` PASS.

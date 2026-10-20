@@ -337,14 +337,22 @@ export async function handleRequest(request: Request): Promise<Response> {
         }))
       }
       if (typeof body.item_key !== 'string') return fail(400, 'INVALID_INPUT', 'Choose an available item.')
-      return rpcResponse(await callRpc('xzones_activate_item', {
+      const itemResult = await callRpc('xzones_activate_item', {
         p_auth_user_id: user.id, p_match_id: itemsPath[1], p_item_key: body.item_key,
         p_scan_seconds: HIDE_AND_SEEK_CONFIG.items.hunterScanSeconds.default,
         p_max_fix_age_seconds: HIDE_AND_SEEK_CONFIG.location.maxFixAgeSeconds.default,
         p_alarm_radius_m: HIDE_AND_SEEK_CONFIG.items.hunterAlarmRadiusM.default,
         p_alarm_seconds: HIDE_AND_SEEK_CONFIG.items.hunterAlarmSeconds.default,
         p_hunter_fix_max_age_seconds: HIDE_AND_SEEK_CONFIG.tag.hunterFixMaxAgeSeconds.default,
-      }))
+        p_zone_move_max_m: HIDE_AND_SEEK_CONFIG.items.hunterZoneMoveMaxM.default,
+        p_zone_move_overlap_percent: HIDE_AND_SEEK_CONFIG.items.hunterZoneMoveOverlapPercent.default,
+      })
+      if (itemResult.accepted === true && body.item_key === 'HUNTER_ZONE_MOVER') {
+        await publishActionEvent(itemsPath[1], 'zone.moved', {
+          center: itemResult.center, radius_m: itemResult.radius_m,
+        }, 'zone-moved')
+      }
+      return rpcResponse(itemResult)
     }
 
     if (path === '/rejoinable') {

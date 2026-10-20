@@ -67,6 +67,8 @@ export function applyMatchRealtimeEvent(view: RoleSafeMatchView, raw: unknown): 
     case 'match.ended':
       if (data.state !== 'ENDED' && data.state !== 'CANCELLED') return null
       return { ...view, state: data.state, revision: event.revision }
+    case 'zone.moved':
+      return view
     default:
       return null
   }

@@ -60,6 +60,15 @@ function projectData(role: RecipientRole, type: string, data: Data): Data | null
       return { ping_index: integer(data.ping_index), ping_at: text(data.ping_at) }
     case 'match.started':
       return { state: text(data.state), start_at: text(data.start_at), head_start_ends_at: text(data.head_start_ends_at), ends_at: text(data.ends_at), revision: integer(data.revision) }
+    case 'zone.moved': {
+      const center = data.center
+      if (!center || typeof center !== 'object' || Array.isArray(center)) return null
+      const point = center as Record<string, unknown>
+      if (finite(point.lat) === null || finite(point.lat)! < -90 || finite(point.lat)! > 90
+        || finite(point.lon) === null || finite(point.lon)! < -180 || finite(point.lon)! > 180
+        || finite(data.radius_m) === null || finite(data.radius_m)! <= 0) return null
+      return { center: { lat: point.lat, lon: point.lon }, radius_m: data.radius_m }
+    }
     case 'tag.accepted':
       return { runner_id: text(data.runner_id), status: data.status === 'TAGGED' ? 'TAGGED' : null,
         method: data.method === 'QR' || data.method === 'RUNNER_CONFIRM' ? data.method : null, accepted_at: text(data.accepted_at) }

@@ -34,6 +34,8 @@ export function MatchPage() {
   const [alarmAvailable, setAlarmAvailable] = useState(true)
   const [alarmNotice, setAlarmNotice] = useState('')
   const [alarmExpiresAt, setAlarmExpiresAt] = useState<number | null>(null)
+  const [zoneNotice, setZoneNotice] = useState('')
+  const [zoneMoverAvailable, setZoneMoverAvailable] = useState(true)
   const [stealth, setStealth] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
   const anchor = useRef(0)
@@ -73,6 +75,12 @@ export function MatchPage() {
     setLiveStatus('Connecting to your private team channel…')
     void supabaseGameApi.subscribe(matchId, view.role, { onEvent: (received) => {
       if (!gate.accept(received.payload)) return
+      const envelope = received.payload as { type?: unknown } | null
+      if (envelope && envelope.type === 'zone.moved') {
+        setZoneNotice('The Hunter moved the play zone. Updating your map.')
+        void sync()
+        return
+      }
       setView((current) => {
         if (!current) return current
         const updated = applyMatchRealtimeEvent(current, received.payload)
@@ -163,6 +171,16 @@ export function MatchPage() {
     setError('Proximity alarm placed at your latest server-accepted location.')
   }
 
+  async function moveZone() {
+    setBusy(true)
+    const result = await supabaseGameApi.activateItem(matchId, 'HUNTER_ZONE_MOVER')
+    setBusy(false)
+    if (!result.ok) { setError(result.error.message); return }
+    setZoneMoverAvailable(false)
+    setZoneNotice('The play zone moved. Updating your map.')
+    await sync()
+  }
+
   const cancelStealthExit = () => {
     if (stealthExitTimer.current !== null) window.clearTimeout(stealthExitTimer.current)
     stealthExitTimer.current = null
@@ -202,6 +220,7 @@ export function MatchPage() {
             {view.role === 'HUNTER' ? <Link className="welcome__secondary" to={`/match/${matchId}/pings`}>Pings</Link> : null}
             {view.role === 'HUNTER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !scanAvailable} onClick={() => void activateScan()} type="button">{scanAvailable ? 'Hunter Scan' : 'Hunter Scan used'}</button> : null}
             {view.role === 'HUNTER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !alarmAvailable} onClick={() => void placeAlarm()} type="button">{alarmAvailable ? 'Place proximity alarm' : 'Alarm placed'}</button> : null}
+            {view.role === 'HUNTER' && itemsEnabled && view.zone ? <button className="welcome__secondary" disabled={busy || !zoneMoverAvailable} onClick={() => void moveZone()} type="button">{zoneMoverAvailable ? 'Hunter Zone Mover' : 'Zone Mover used'}</button> : null}
             {view.can_end ? <button className="welcome__secondary" onClick={() => {
               if (window.confirm('End the match for everyone? This cannot be undone.')) {
                 void supabaseGameApi.endMatch(matchId, 'HOST_END').then((result) => {
@@ -226,6 +245,7 @@ export function MatchPage() {
       </section>
       {error ? <p className="form-error match-error" role="alert">{error}</p> : null}
       {alarmNotice ? <p className="match-text-status" role="alert">{alarmNotice}</p> : null}
+      {zoneNotice ? <p className="match-text-status" role="status">{zoneNotice}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. {liveStatus} The map never displays opponent distances or directions.</p>
       {view.zone ? <p className="match-text-status" role="status">Zone stage {view.zone.stage} · radius {Math.round(view.zone.radius)} m{view.zone.nextRadius !== null && zoneSeconds !== null ? ` · next shrink in ${Math.floor(zoneSeconds / 60)}:${String(zoneSeconds % 60).padStart(2, '0')} to ${Math.round(view.zone.nextRadius)} m` : ''}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">{locationStatus}</p>
