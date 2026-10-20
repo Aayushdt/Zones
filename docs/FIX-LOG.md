@@ -118,3 +118,6 @@
 # Hide & Seek implementation — audit triage
 
 - Step 0.2 cross-checked all 13 `error.md` findings against current known issues and the passing baseline. F-01 and F-03–F-13 are documented fixed; F-02's Realtime implementation exists, but real Supabase delivery remains unverified because the integration stack is unavailable. No source change is made from this evidence. See `docs/verification/audit-triage.md`.
+# Hide & Seek implementation — client lifecycle audit
+
+- Step 0.3 verified persisted fields, GPS watcher lifecycle, and Wake Lock behavior. The active match identity is not persisted; guest auth is separately persisted. GPS watch is not reacquired after backgrounding or watcher errors. Existing Wake Lock lifecycle tests pass; Safari 16.4 introduced the API, with an installed Home Screen app fix noted in Safari 18.4. Device behavior remains unverified. See `docs/verification/client-lifecycle-audit.md`.

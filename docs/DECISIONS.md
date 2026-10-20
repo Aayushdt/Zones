@@ -180,3 +180,6 @@
 # Hide & Seek implementation — audit triage
 
 - Keep F-02 open until the real Supabase Realtime integration job passes. Mock publisher, role projection, RLS, and SQL tests do not establish actual socket delivery or cached-subscription revocation; preserve the Realtime path while adjusting fallback polling.
+# Hide & Seek implementation — client lifecycle audit
+
+- Treat stored guest auth credentials and active match identity as separate state: localStorage retains the former, while route/session-based active-match rejoin is not implemented. For Safari, report Screen Wake Lock as API-supported from 16.4 while explicitly requiring installed-PWA/device verification for older iOS releases.
