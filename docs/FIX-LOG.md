@@ -185,3 +185,9 @@
 
 - Added a dedicated MapLibre picker to avoid coupling lobby setup to the live-match map. The host can click/drag the center, see the circle radius preview, use current location, or enter exact coordinates.
 - Validation: web build PASS; lint PASS with existing warnings in unrelated map/page effects; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 2.4 server zone schedule
+
+- Added the service-role-only `xzones_zone_at` SQL projection using match start, head start, interval, and stage count. Match sync and location handling now retrieve the server schedule; boundary smoke covers pre-stage, exact stage, and final radius. The same helper is available to resolution.
+- This step provides one server-side source of truth; outside-sample classification and elimination wiring remain for Step 2.6.
+- Validation: DB audit 14/14 plus zone schedule smoke PASS; Edge and hostile API 23/23 PASS; typecheck/build PASS.

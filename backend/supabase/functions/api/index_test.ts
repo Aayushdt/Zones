@@ -152,6 +152,7 @@ Deno.test('sync returns role-projected snapshots and generic Runner notices only
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
     if (url.endsWith('/rest/v1/rpc/xzones_cleanup')) return Response.json({ deleted_matches: 0 })
     if (url.endsWith('/rest/v1/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
+    if (url.endsWith('/rest/v1/rpc/xzones_zone_at')) return Response.json({ enabled: false })
     if (url.endsWith('/rest/v1/rpc/xzones_match_controls')) return Response.json({ can_end: false, can_claim: false })
     if (url.endsWith('/rest/v1/rpc/xzones_team_positions')) {
       teamPositionsCalled = true
@@ -454,6 +455,7 @@ Deno.test('location route validates before RPC, stores through the server, and n
       return new Response(null, { status: 202 })
     }
     if (url.endsWith('/rpc/xzones_resolve_match')) return Response.json({ state: 'ACTIVE' })
+    if (url.endsWith('/rpc/xzones_zone_at')) return Response.json({ enabled: false })
     if (url.endsWith('/rpc/xzones_update_location')) {
       captured.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
       return Response.json({ accepted: true, stale: false, player_id: 'player-1', server_now: '2026-10-18T13:00:00Z' })

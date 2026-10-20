@@ -428,6 +428,8 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_last_revision: lastRevision,
       })
       if (typeof result.error === 'string') return rpcResponse(result)
+      const zone = await callRpc('xzones_zone_at', { p_match_id: syncMatch[1], p_now: result.server_now })
+      if (typeof zone.error === 'string') return rpcResponse(zone)
       const controls = await callRpc('xzones_match_controls', {
         p_auth_user_id: user.id, p_match_id: syncMatch[1],
       })
@@ -533,6 +535,7 @@ export async function handleRequest(request: Request): Promise<Response> {
         can_claim: controls.can_claim === true,
         claim_expires_at: typeof controls.claim_expires_at === 'string' ? controls.claim_expires_at : null,
         own_player_id: typeof team.own_player_id === 'string' ? team.own_player_id : null,
+        zone: zone,
         own_status: ownStatus,
         revision,
         events,
@@ -683,6 +686,8 @@ export async function handleRequest(request: Request): Promise<Response> {
         || !Number.isFinite(Date.parse(body.captured_at)) || !numberIn(body.sequence, 0, Number.MAX_SAFE_INTEGER)) {
         return fail(400, 'INVALID_FIX', 'Send valid coordinates, accuracy, capture time, and sequence.')
       }
+      const zone = await callRpc('xzones_zone_at', { p_match_id: locationMatch[1] })
+      if (typeof zone.error === 'string') return rpcResponse(zone)
       const outcome = await callRpc('xzones_resolve_match', { p_auth_user_id: user.id, p_match_id: locationMatch[1] })
       if (typeof outcome.error === 'string') return rpcResponse(outcome)
       const result = await callRpc('xzones_update_location', {
