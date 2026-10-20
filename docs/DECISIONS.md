@@ -209,3 +209,7 @@
 # Hide & Seek implementation — Step 1.4 fallback polling
 
 - Use Realtime as the primary update path in both the active map and Hunter Pings views. Keep role-safe sync as a jittered fallback between 30 and 45 seconds, pause timers when the document is hidden, and sync once on resume to reconcile missed events.
+
+# Hide & Seek implementation — Step 1.6 map lifecycle
+
+- Keep one MapLibre instance per mounted map. Update marker DOM/coordinates and the existing zone source rather than recreating overlays; call `setStyle` on theme changes and rebuild the style-dependent zone source/layers after style load.

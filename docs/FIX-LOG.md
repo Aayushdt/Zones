@@ -134,7 +134,7 @@
 - Updated rules/audit/API/E2E tests and added `tests/schema/player-limits-smoke.sql` for two-player start, 100-player limit, rejected 101st join, and direct-insert bypass. Preserved existing migrations.
 - Gates: typecheck, lint, production build, `test:all` and focused Playwright passed. The existing Vite optimizer emitted a Supabase dependency ENOENT warning, but all 4 browser tests passed. Lint emitted existing React-effect warnings.
 
-# Hide & Seek implementation — Step 1.2 flexible team balance (BLOCKED)
+# Hide & Seek implementation — Step 1.2 flexible team balance
 
 - Added a host-only Hunter-count assignment RPC and lobby control; Random still uses the centralized `ceil(N/10)` default. Start validation now accepts any split with 1..floor(N/2) Hunters and at least one Runner; the database rejects over-limit Hunter counts.
 - Initial gate runs exposed stale exact-default expectations in the exhaustive unit and F-07 database tests. After updating both, isolated PostgreSQL audit passed 14/14 and the complete suite, typecheck, lint, and production build passed. The Vite optimizer still prints its known Supabase dependency ENOENT warning; all four Playwright cases pass. Step 1.2 is verified DONE.
@@ -153,3 +153,8 @@
 
 - Documented per-player and 100-player-hour Edge request and database RPC estimates from current polling and GPS upload behavior, with stationary, moving, and Pings-view scenarios. Called out startup/reconnect/manual traffic exclusions, the duplicate `/sync` calls on the map, and the need for the separate Step 1.8 empirical load test.
 - Cross-checked the arithmetic against `startFallbackSync`, `LocationSharing`, `MatchPage.sync`, `/sync` RPC fan-out, and `/location` resolve/update calls. `git diff --check` passed.
+
+# Hide & Seek implementation — Step 1.6 in-place map updates
+
+- Kept the MapLibre instance stable across zone and theme changes. Zone edits update the GeoJSON source; marker reconciliation is keyed by self/team/Runner ID and updates positions and presentation in place, removing only departed markers. Style changes call `setStyle` and restore the zone layer after style load; centering continues through `easeTo`.
+- Full suite passed: unit 25, audit 26, Edge 12, hostile API 11, payload 2, simulator 1, Playwright 4, DB 14; typecheck/build/lint passed. Existing MapLibre bundle-size and unrelated React-effect warnings remain.

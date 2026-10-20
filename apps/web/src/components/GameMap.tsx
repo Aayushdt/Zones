@@ -23,6 +23,23 @@ export type GameMapData =
 
 export interface GameZone { lat: number; lon: number; radius_m: number }
 
+function syncZoneLayer(map: import('maplibre-gl').Map, zone: GameZone | undefined) {
+  const source = map.getSource('xzones-boundary') as import('maplibre-gl').GeoJSONSource | undefined
+  if (!zone) {
+    if (map.getLayer('xzones-boundary-ring')) map.removeLayer('xzones-boundary-ring')
+    if (map.getLayer('xzones-boundary-fill')) map.removeLayer('xzones-boundary-fill')
+    if (source) map.removeSource('xzones-boundary')
+    return
+  }
+  if (source) {
+    source.setData(circleGeoJson(zone))
+    return
+  }
+  map.addSource('xzones-boundary', { type: 'geojson', data: circleGeoJson(zone) })
+  map.addLayer({ id: 'xzones-boundary-fill', type: 'fill', source: 'xzones-boundary', paint: { 'fill-color': '#9a72ff', 'fill-opacity': 0.09 } })
+  map.addLayer({ id: 'xzones-boundary-ring', type: 'line', source: 'xzones-boundary', paint: { 'line-color': '#a581ff', 'line-width': 2, 'line-opacity': 0.9, 'line-dasharray': [3, 2] } })
+}
+
 function pointElement(kind: 'you' | 'teammate' | 'snapshot', label: string, accuracyPixels?: number): HTMLElement {
   const element = document.createElement('div')
   element.className = `game-marker game-marker--${kind}`
@@ -52,6 +69,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const styleOverride = import.meta.env.VITE_MAP_STYLE_URL?.trim()
   const resolvedMapStyle = mapStyle === 'auto' ? theme : mapStyle
   const styleUrl = styleOverride || `https://tiles.openfreemap.org/styles/${resolvedMapStyle === 'dusk' ? 'dark' : 'bright'}`
+  const styleUrlRef = useRef(styleUrl)
   const zoneLat = zone?.lat
   const zoneLon = zone?.lon
   const zoneRadius = zone?.radius_m
@@ -62,7 +80,8 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const [mapLoaded, setMapLoaded] = useState(false)
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
-  const markersRef = useRef<import('maplibre-gl').Marker[]>([])
+  const markersRef = useRef(new Map<string, import('maplibre-gl').Marker>())
+  const zoneRef = useRef(zone)
   useEffect(() => {
     const fix = data.own_position ?? data.own_team_positions[0]
     if (fix) setCenter((current) => current ?? [fix.lon, fix.lat])
@@ -79,6 +98,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
     if (!mapContainer.current || !center) return
     let disposed = false
     let map: import('maplibre-gl').Map | null = null
+    const markers = markersRef.current
     void (async () => {
       try {
         const maplibre = await import('maplibre-gl')
@@ -86,16 +106,14 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
         if (disposed || !mapContainer.current) return
         maplibre.setWorkerUrl(workerUrl)
         map = new maplibre.Map({
-          container: mapContainer.current, style: styleUrl, center, zoom: 15,
+          container: mapContainer.current, style: styleUrlRef.current, center, zoom: 15,
           attributionControl: { compact: true }, cooperativeGestures: true,
         })
         map.on('load', () => {
           setMapLoaded(true)
-          if (!map || zoneLat === undefined || zoneLon === undefined || zoneRadius === undefined) return
-          map.addSource('xzones-boundary', { type: 'geojson', data: circleGeoJson({ lat: zoneLat, lon: zoneLon, radius_m: zoneRadius }) })
-          map.addLayer({ id: 'xzones-boundary-fill', type: 'fill', source: 'xzones-boundary', paint: { 'fill-color': '#9a72ff', 'fill-opacity': 0.09 } })
-          map.addLayer({ id: 'xzones-boundary-ring', type: 'line', source: 'xzones-boundary', paint: { 'line-color': '#a581ff', 'line-width': 2, 'line-opacity': 0.9, 'line-dasharray': [3, 2] } })
+          if (map) syncZoneLayer(map, zoneRef.current)
         })
+        map.on('style.load', () => { if (map && !disposed) syncZoneLayer(map, zoneRef.current) })
         map.on('error', () => setMapError('Map tiles could not load. Check the connection or map style URL.'))
         mapRef.current = map
       } catch {
@@ -104,41 +122,64 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
     })()
     return () => {
       disposed = true
-      for (const marker of markersRef.current) marker.remove()
-      markersRef.current = []
+      for (const marker of markers.values()) marker.remove()
+      markers.clear()
       map?.remove()
       mapRef.current = null
       setMapLoaded(false)
     }
-  }, [center, styleUrl, zoneLat, zoneLon, zoneRadius])
+  }, [center])
+
+  useEffect(() => {
+    const map = mapRef.current
+    styleUrlRef.current = styleUrl
+    if (map) map.setStyle(styleUrl)
+  }, [styleUrl])
+
+  useEffect(() => {
+    const map = mapRef.current
+    const currentZone = zoneLat !== undefined && zoneLon !== undefined && zoneRadius !== undefined
+      ? { lat: zoneLat, lon: zoneLon, radius_m: zoneRadius } : undefined
+    zoneRef.current = currentZone
+    if (map && mapLoaded) syncZoneLayer(map, currentZone)
+  }, [mapLoaded, zoneLat, zoneLon, zoneRadius])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !mapLoaded) return
-    for (const marker of markersRef.current) marker.remove()
-    markersRef.current = []
     void import('maplibre-gl').then(({ Marker }) => {
       if (mapRef.current !== map) return
+      const points = new Map<string, { kind: 'you' | 'teammate' | 'snapshot'; label: string; coordinates: [number, number]; opacity?: number; accuracyPixels?: number }>()
       if (markerPoints.own) {
         const metersPerPixel = 40_075_016.686 * Math.cos(markerPoints.own.lat * Math.PI / 180)
           / (512 * 2 ** map.getZoom())
         const accuracyPixels = Math.max(6, Math.min(96, markerPoints.own.accuracy_m / Math.max(0.01, metersPerPixel)))
-        const marker = new Marker({ element: pointElement('you', `You, accuracy ±${Math.round(markerPoints.own.accuracy_m)} metres`, accuracyPixels), anchor: 'center' })
-          .setLngLat([markerPoints.own.lon, markerPoints.own.lat]).addTo(map)
-        markersRef.current.push(marker)
+        points.set('you', { kind: 'you', label: `You, accuracy ±${Math.round(markerPoints.own.accuracy_m)} metres`, coordinates: [markerPoints.own.lon, markerPoints.own.lat], accuracyPixels })
       }
       for (const point of markerPoints.teammates) {
-        const marker = new Marker({ element: pointElement('teammate', `Teammate ${point.display_name}, ${point.is_stale ? 'stale' : `${point.age_seconds ?? 0} seconds old`}`), anchor: 'center' })
-          .setLngLat([point.lon, point.lat]).addTo(map)
-        if (point.is_stale) marker.getElement().style.opacity = '0.4'
-        markersRef.current.push(marker)
+        points.set(`team:${point.player_id}`, { kind: 'teammate', label: `Teammate ${point.display_name}, ${point.is_stale ? 'stale' : `${point.age_seconds ?? 0} seconds old`}`, coordinates: [point.lon, point.lat], opacity: point.is_stale ? 0.4 : 1 })
       }
       for (const snapshot of markerPoints.snapshots) {
         if (typeof snapshot.lat !== 'number' || typeof snapshot.lon !== 'number') continue
-        const marker = new Marker({ element: pointElement('snapshot', `Runner ping snapshot, ${snapshot.age_seconds} seconds old`), anchor: 'center' })
-          .setLngLat([snapshot.lon, snapshot.lat]).addTo(map)
-        marker.getElement().style.opacity = String(Math.max(0.3, 1 - snapshot.age_seconds / 1800))
-        markersRef.current.push(marker)
+        points.set(`snapshot:${snapshot.runner_id}`, { kind: 'snapshot', label: `Runner ping snapshot, ${snapshot.age_seconds} seconds old`, coordinates: [snapshot.lon, snapshot.lat], opacity: Math.max(0.3, 1 - snapshot.age_seconds / 1800) })
+      }
+      for (const [key, marker] of markersRef.current) {
+        if (!points.has(key)) { marker.remove(); markersRef.current.delete(key) }
+      }
+      for (const [key, point] of points) {
+        let marker = markersRef.current.get(key)
+        if (!marker) {
+          marker = new Marker({ element: pointElement(point.kind, point.label, point.accuracyPixels), anchor: 'center' }).addTo(map)
+          markersRef.current.set(key, marker)
+        }
+        marker.setLngLat(point.coordinates)
+        const element = marker.getElement()
+        element.className = `game-marker game-marker--${point.kind}`
+        element.setAttribute('aria-label', point.label)
+        element.textContent = point.kind === 'snapshot' ? '⌖' : point.kind === 'you' ? '●' : '✦'
+        element.style.opacity = point.opacity === undefined || point.opacity === 1 ? '' : String(point.opacity)
+        if (point.accuracyPixels === undefined) element.style.removeProperty('--accuracy-px')
+        else element.style.setProperty('--accuracy-px', `${point.accuracyPixels}px`)
       }
     })
   }, [mapLoaded, markerPoints])

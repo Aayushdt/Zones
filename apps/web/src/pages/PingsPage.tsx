@@ -36,6 +36,7 @@ export function PingsPage() {
   const [clockAnchor, setClockAnchor] = useState(0)
   const revision = useRef(0)
   const lastNotifiedPing = useRef(-1)
+  const role = view?.role
 
   const sync = useCallback(async () => {
     setBusy(true)
@@ -65,11 +66,11 @@ export function PingsPage() {
 
   useEffect(() => { void sync() }, [sync])
   useEffect(() => {
-    if (!view) return
+    if (!role) return
     let active = true
     let unsubscribe: (() => void) | undefined
-    const gate = createRealtimeEventGate(view.role)
-    void supabaseGameApi.subscribe(matchId, view.role, { onEvent: (received) => {
+    const gate = createRealtimeEventGate(role)
+    void supabaseGameApi.subscribe(matchId, role, { onEvent: (received) => {
       if (!active || !gate.accept(received.payload)) return
       const payload = received.payload as { type?: unknown; data?: { ping_index?: unknown } }
       if (payload.type === 'hunter.runner_ping' && typeof payload.data?.ping_index === 'number') {
@@ -88,7 +89,7 @@ export function PingsPage() {
       else stop()
     }).catch(() => undefined)
     return () => { active = false; unsubscribe?.() }
-  }, [matchId, view?.role])
+  }, [matchId, role])
   useEffect(() => {
     const stopFallback = startFallbackSync(() => sync())
     const clock = window.setInterval(() => setNowMono(performance.now()), 1_000)
