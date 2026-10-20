@@ -148,3 +148,8 @@
 
 - Added a reusable visibility-aware fallback scheduler with random intervals in [30,000, 45,000) ms, no polling while hidden, immediate sync on resume, and no overlapping sync requests. Applied it to match and Hunter Pings views; Pings now also subscribes to role-safe Realtime events.
 - Added deterministic delay and visibility pause/resume coverage. Full suite passed: unit 25, audit 26, Edge 12, hostile API 11, payload 2, simulator 1, Playwright 4, DB audit 14; typecheck/build/lint passed with existing warnings.
+
+# Hide & Seek implementation — Step 1.5 request budget
+
+- Documented per-player and 100-player-hour Edge request and database RPC estimates from current polling and GPS upload behavior, with stationary, moving, and Pings-view scenarios. Called out startup/reconnect/manual traffic exclusions, the duplicate `/sync` calls on the map, and the need for the separate Step 1.8 empirical load test.
+- Cross-checked the arithmetic against `startFallbackSync`, `LocationSharing`, `MatchPage.sync`, `/sync` RPC fan-out, and `/location` resolve/update calls. `git diff --check` passed.
