@@ -158,3 +158,8 @@
 
 - Kept the MapLibre instance stable across zone and theme changes. Zone edits update the GeoJSON source; marker reconciliation is keyed by self/team/Runner ID and updates positions and presentation in place, removing only departed markers. Style changes call `setStyle` and restore the zone layer after style load; centering continues through `easeTo`.
 - Full suite passed: unit 25, audit 26, Edge 12, hostile API 11, payload 2, simulator 1, Playwright 4, DB 14; typecheck/build/lint passed. Existing MapLibre bundle-size and unrelated React-effect warnings remain.
+
+# Hide & Seek implementation — Step 1.7 location send state
+
+- Removed module-level sequence, last-send timestamp, and last-fix state from `LocationSharing`. Each watcher effect creates its own `LocationSendState`, so remounts/matches cannot share upload throttle or sequence state. Added an isolation test that mutating one watcher state leaves another pristine.
+- Full suite passed: unit 25, audit 27, Edge 12, hostile API 11, payload 2, simulator 1, Playwright 4, DB 14; typecheck/build/lint passed with the existing warning set.

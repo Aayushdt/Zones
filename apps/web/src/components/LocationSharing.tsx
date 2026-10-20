@@ -4,10 +4,7 @@ import { haversineDistanceMeters } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useLocationStore } from '../stores/location-store'
 import { watchDeviceLocation } from '../services/device-lifecycle'
-
-let lastSequence = 0
-let lastSentAt = 0
-let lastSentFix: { lat: number; lon: number } | null = null
+import { createLocationSendState } from '../services/location-send-state'
 
 export function LocationSharing() {
   const { matchId = '' } = useParams()
@@ -34,6 +31,7 @@ export function LocationSharing() {
     let disposed = false
     let sending = false
     let retryAfterAt = 0
+    const sendState = createLocationSendState()
     const syncOnResume = () => {
       if (document.visibilityState === 'visible' && navigator.onLine) void supabaseGameApi.syncMatch(matchId)
     }
@@ -51,11 +49,11 @@ export function LocationSharing() {
         setStatus(`Location update paced by the server; retrying in ${Math.ceil((retryAfterAt - Date.now()) / 1000)} seconds.`)
         return
       }
-      const moved = lastSentFix ? haversineDistanceMeters(lastSentFix.lat, lastSentFix.lon, point.lat, point.lon) ?? 0 : Infinity
-      if (sending || (lastSentAt && Date.now() - lastSentAt < 10_000 && moved < 10)) return
+      const moved = sendState.sentFix ? haversineDistanceMeters(sendState.sentFix.lat, sendState.sentFix.lon, point.lat, point.lon) ?? 0 : Infinity
+      if (sending || (sendState.sentAt && Date.now() - sendState.sentAt < 10_000 && moved < 10)) return
       sending = true
-      const sequence = Math.max(Date.now() * 1000, lastSequence + 1)
-      lastSequence = sequence
+      const sequence = Math.max(Date.now() * 1000, sendState.sequence + 1)
+      sendState.sequence = sequence
       const result = await supabaseGameApi.updateLocation(matchId, {
         ...point, accuracy_m: coords.accuracy, captured_at: new Date(fix.timestamp).toISOString(), sequence,
       })
@@ -71,8 +69,8 @@ export function LocationSharing() {
         setStatus(result.error.message); return
       }
       if (!result.data.accepted) { setStatus(result.data.reason === 'POOR_ACCURACY' ? 'GPS accuracy is over 100 m; waiting for a clearer fix.' : 'The server rejected this stale location fix.'); return }
-      lastSentAt = Date.now()
-      lastSentFix = point
+      sendState.sentAt = Date.now()
+      sendState.sentFix = point
       setStatus('Location shared with your team. Opposing Runner positions are only sent to Hunters on scheduled pings.')
     }
     const onError = (error: GeolocationPositionError) => {

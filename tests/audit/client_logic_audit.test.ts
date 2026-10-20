@@ -6,6 +6,7 @@ import { maintainScreenWakeLock, watchDeviceLocation } from '../../apps/web/src/
 import { createRealtimeEventGate, applyMatchRealtimeEvent } from '../../apps/web/src/services/realtime-events.ts'
 import { parseApiError } from '../../apps/web/src/services/supabase-api.ts'
 import { fallbackSyncDelay, startFallbackSync } from '../../apps/web/src/services/fallback-sync.ts'
+import { createLocationSendState } from '../../apps/web/src/services/location-send-state.ts'
 
 class TestVisibility {
   hidden = false
@@ -53,6 +54,15 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
     expect(sync).toHaveBeenCalledTimes(2)
     stop()
     vi.useRealTimers()
+  })
+
+  it('keeps location sequence and pacing state independent per match watcher', () => {
+    const first = createLocationSendState()
+    const second = createLocationSendState()
+    first.sequence = 123
+    first.sentAt = 456
+    first.sentFix = { lat: 1, lon: 2 }
+    expect(second).toEqual({ sequence: 0, sentAt: 0, sentFix: null })
   })
 
   it('F02: Realtime events dedupe IDs, ignore stale location sequences, and update the role-safe view', () => {

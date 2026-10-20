@@ -213,3 +213,7 @@
 # Hide & Seek implementation — Step 1.6 map lifecycle
 
 - Keep one MapLibre instance per mounted map. Update marker DOM/coordinates and the existing zone source rather than recreating overlays; call `setStyle` on theme changes and rebuild the style-dependent zone source/layers after style load.
+
+# Hide & Seek implementation — Step 1.7 location state ownership
+
+- Scope GPS sequence and upload-throttle state to the active `LocationSharing` effect, not the JavaScript module. Starting a new watcher/match receives a fresh state object; match IDs do not share sequence or displacement gates.
