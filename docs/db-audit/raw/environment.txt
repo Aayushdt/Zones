@@ -1,0 +1,12 @@
+Audit mode: FAST
+Audited source revision: a46b47f
+Audit branch revision at initialization: 8eb0b2d
+Supabase CLI (repository-pinned): 2.121.0
+Docker CLI: 29.9.1
+PostgreSQL client: 18.6
+Node.js: v24.19.0
+pnpm: 12.14.0
+Local Supabase status/start: UNVERIFIED (Docker socket access denied)
+Remote project linkage: none configured
+
+No credentials, connection strings, project references, or data were collected.
