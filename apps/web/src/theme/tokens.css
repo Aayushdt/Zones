@@ -1,69 +1,178 @@
 :root,
+:root[data-theme='dark'],
 :root[data-theme='dusk'] {
   color-scheme: dark;
-  --color-background: #0d0d18;
-  --color-surface: #161626;
-  --color-surface-raised: #232749;
-  --color-surface-tint: #1f252b;
-  --color-border: #353249;
-  --color-text: #f0e7d8;
-  --color-muted: #b7bab9;
-  --color-runner: #2dd4bf;
-  --color-runner-ink: #b8fff5;
-  --color-runner-tint: rgb(45 212 191 / 12%);
-  --color-hunter: #ff7a3d;
-  --color-hunter-ink: #ffd1bd;
-  --color-hunter-tint: rgb(255 122 61 / 12%);
-  --color-zone: #8b5cf6;
-  --color-zone-tint: rgb(139 92 246 / 12%);
-  --color-accent: #5b8cff;
-  --color-accent-tint: rgb(91 140 255 / 12%);
-  --color-success: #4ade80;
-  --color-success-tint: rgb(74 222 128 / 12%);
-  --color-warning: #f59e0b;
-  --color-danger: #f04438;
-  --color-primary: #f0e7d8;
-  --color-primary-text: #0d0d18;
-  --color-shadow: rgb(0 0 0 / 32%);
-  --color-map-marker-outline: #07131c;
-  --radius-card: 16px;
+
+  /* Base & Surfaces */
+  --color-bg: #000000;
+  --color-background: #000000;
+  --color-surface: #060606;
+  --color-surface-2: #121212;
+  --color-surface-raised: #121212;
+  --color-surface-tint: #0e0e0e;
+  --color-border: #1F1F1F;
+  --color-border-subtle: #181818;
+
+  /* Typography */
+  --color-text: #FFFFFF;
+  --color-text-inverse: #000000;
+  --color-muted: #A7A7AF;
+  --color-subtle: #75757F;
+
+  /* Green (Hider / Join / Ready / Success / Brand Focus) */
+  --color-green: #00FF89;
+  --color-green-ink: #00FF89;
+  --color-green-text: #000000;
+  --color-green-tint: #012614;
+  --color-green-ring: #024C29;
+  --color-green-glow: rgba(0, 255, 137, 0.35);
+
+  /* Red (Seeker / Tag / Host / Destructive) */
+  --color-red: #FF3B3C;
+  --color-red-ink: #FF3B3C;
+  --color-red-text: #000000;
+  --color-red-tint: rgba(255, 59, 60, 0.14);
+  --color-red-ring: #4D1214;
+  --color-red-glow: rgba(255, 59, 60, 0.35);
+
+  /* Amber (Warnings / Next shrink zone) */
+  --color-amber: #FFB020;
+  --color-amber-ink: #FFB020;
+  --color-amber-tint: rgba(255, 176, 32, 0.15);
+
+  /* Blue (Current zone boundary) */
+  --color-blue: #38BDF8;
+  --color-blue-ink: #38BDF8;
+  --color-blue-tint: rgba(56, 189, 248, 0.15);
+
+  /* Grey / Neutral / Disabled */
+  --color-grey: #242428;
+  --color-grey-muted: #4A4A52;
+  --color-grey-border: #33333C;
+
+  /* Aliases for game roles & elements */
+  --color-runner: var(--color-green);
+  --color-runner-ink: var(--color-green-ink);
+  --color-runner-tint: var(--color-green-tint);
+  --color-runner-ring: var(--color-green-ring);
+  --color-runner-glow: var(--color-green-glow);
+
+  --color-hunter: var(--color-red);
+  --color-hunter-ink: var(--color-red-ink);
+  --color-hunter-tint: var(--color-red-tint);
+  --color-hunter-ring: var(--color-red-ring);
+  --color-hunter-glow: var(--color-red-glow);
+
+  --color-zone: var(--color-blue);
+  --color-zone-tint: var(--color-blue-tint);
+  --color-zone-next: var(--color-amber);
+  --color-zone-next-tint: var(--color-amber-tint);
+
+  --color-focus-ring: var(--color-green);
+  --color-glow: 0 0 24px rgba(0, 255, 137, 0.35);
+  --color-shadow: rgba(0, 0, 0, 0.75);
+  --color-map-marker-outline: #000000;
+
+  /* Radii & Layout */
+  --radius-card: 14px;
   --radius-sheet: 20px;
-  --radius-control: 14px;
+  --radius-control: 12px;
   --radius-chip: 999px;
   --space-unit: 4px;
-  --shadow-card: 0 18px 44px var(--color-shadow);
-  --glow-runner: 0 0 16px rgb(45 212 191 / 28%);
-  --glow-hunter: 0 0 16px rgb(255 122 61 / 28%);
+
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-glow-green: 0 0 24px rgba(0, 255, 137, 0.35);
+  --shadow-glow-red: 0 0 24px rgba(255, 59, 60, 0.35);
+
+  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+:root[data-theme='light'],
 :root[data-theme='paper'] {
   color-scheme: light;
-  --color-background: #f0e7d8;
-  --color-surface: #faf3e9;
-  --color-surface-raised: #fffaf2;
-  --color-surface-tint: #e7dbcf;
-  --color-border: #d4d2cf;
-  --color-text: #141b2d;
-  --color-muted: #5b6578;
-  --color-runner: #0f8f80;
-  --color-runner-ink: #075c53;
-  --color-runner-tint: rgb(15 143 128 / 12%);
-  --color-hunter: #e5541b;
-  --color-hunter-ink: #932b0c;
-  --color-hunter-tint: rgb(229 84 27 / 12%);
-  --color-zone: #6d4ae0;
-  --color-zone-tint: rgb(109 74 224 / 12%);
-  --color-accent: #2554d9;
-  --color-accent-tint: rgb(37 84 217 / 12%);
-  --color-success: #15803d;
-  --color-success-tint: rgb(21 128 61 / 12%);
-  --color-warning: #a65d00;
-  --color-danger: #b42318;
-  --color-primary: #1b2440;
-  --color-primary-text: #f4efe4;
-  --color-shadow: rgb(47 37 23 / 14%);
-  --color-map-marker-outline: #fffaf2;
-  --shadow-card: 0 12px 28px var(--color-shadow);
-  --glow-runner: 0 8px 18px rgb(15 143 128 / 16%);
-  --glow-hunter: 0 8px 18px rgb(229 84 27 / 16%);
+
+  /* Base & Surfaces */
+  --color-bg: #F4F8F5;
+  --color-background: #F4F8F5;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #EAF1EC;
+  --color-surface-raised: #FFFFFF;
+  --color-surface-tint: #E2ECE5;
+  --color-border: #D3DFD7;
+  --color-border-subtle: #E2ECE5;
+
+  /* Typography (4.5:1 text, 3:1 UI parts AA compliant) */
+  --color-text: #06130C;
+  --color-text-inverse: #FFFFFF;
+  --color-muted: #4B5D52;
+  --color-subtle: #5B6C62;
+
+  /* Green (Hider / Join / Ready / Success / Brand Focus) */
+  --color-green: #00834A;
+  --color-green-ink: #007A43;
+  --color-green-text: #FFFFFF;
+  --color-green-tint: #DDF7E8;
+  --color-green-ring: #A7E5C3;
+  --color-green-glow: rgba(0, 131, 74, 0.25);
+
+  /* Red (Seeker / Tag / Host / Destructive) */
+  --color-red: #D91F26;
+  --color-red-ink: #B3141B;
+  --color-red-text: #FFFFFF;
+  --color-red-tint: #FDE3E3;
+  --color-red-ring: #F9B2B4;
+  --color-red-glow: rgba(217, 31, 38, 0.25);
+
+  /* Amber (Warnings / Next shrink zone) */
+  --color-amber: #8A5200;
+  --color-amber-ink: #8A5200;
+  --color-amber-tint: #FFF1D6;
+
+  /* Blue (Current zone boundary) */
+  --color-blue: #0B6FA8;
+  --color-blue-ink: #0B6FA8;
+  --color-blue-tint: #E0F1FB;
+
+  /* Grey / Neutral / Disabled */
+  --color-grey: #E5EDE8;
+  --color-grey-muted: #8E9E95;
+  --color-grey-border: #CCD9D1;
+
+  /* Aliases for game roles & elements */
+  --color-runner: var(--color-green);
+  --color-runner-ink: var(--color-green-ink);
+  --color-runner-tint: var(--color-green-tint);
+  --color-runner-ring: var(--color-green-ring);
+  --color-runner-glow: var(--color-green-glow);
+
+  --color-hunter: var(--color-red);
+  --color-hunter-ink: var(--color-red-ink);
+  --color-hunter-tint: var(--color-red-tint);
+  --color-hunter-ring: var(--color-red-ring);
+  --color-hunter-glow: var(--color-red-glow);
+
+  --color-zone: var(--color-blue);
+  --color-zone-tint: var(--color-blue-tint);
+  --color-zone-next: var(--color-amber);
+  --color-zone-next-tint: var(--color-amber-tint);
+
+  --color-focus-ring: var(--color-green-ink);
+  --color-glow: 0 0 20px rgba(0, 131, 74, 0.2);
+  --color-shadow: rgba(6, 19, 12, 0.08);
+  --color-map-marker-outline: #FFFFFF;
+
+  /* Radii & Layout */
+  --radius-card: 14px;
+  --radius-sheet: 20px;
+  --radius-control: 12px;
+  --radius-chip: 999px;
+  --space-unit: 4px;
+
+  --shadow-card: 0 4px 20px rgba(6, 19, 12, 0.06);
+  --shadow-glow-green: 0 0 20px rgba(0, 131, 74, 0.2);
+  --shadow-glow-red: 0 0 20px rgba(217, 31, 38, 0.2);
+
+  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
