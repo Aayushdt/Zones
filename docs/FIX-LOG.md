@@ -163,3 +163,8 @@
 
 - Removed module-level sequence, last-send timestamp, and last-fix state from `LocationSharing`. Each watcher effect creates its own `LocationSendState`, so remounts/matches cannot share upload throttle or sequence state. Added an isolation test that mutating one watcher state leaves another pristine.
 - Full suite passed: unit 25, audit 27, Edge 12, hostile API 11, payload 2, simulator 1, Playwright 4, DB 14; typecheck/build/lint passed with the existing warning set.
+
+# Hide & Seek implementation — Step 1.8 100-player load test
+
+- Added a repeatable temporary-PostgreSQL load harness with 100 concurrent pgbench clients, one simulated player per client, 10-second moving-location cadence, jittered 30–45-second sync cycles, and measured API/RPC fan-out. A short random endpoint prototype was discarded because it ignored client-side GPS pacing; the final benchmark models that throttle.
+- The 600-second run processed 9,055 simulated API requests and 27,380 RPC calls with zero errors. RPC p95 was 1.063 ms, max 7.414 ms; pgbench average transaction latency was 1.503 ms. Typecheck/build/lint and the full suite passed. Results and local-only caveats are in `docs/verification/load-test.md`.

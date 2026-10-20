@@ -217,3 +217,7 @@
 # Hide & Seek implementation — Step 1.7 location state ownership
 
 - Scope GPS sequence and upload-throttle state to the active `LocationSharing` effect, not the JavaScript module. Starting a new watcher/match receives a fresh state object; match IDs do not share sequence or displacement gates.
+
+# Hide & Seek implementation — Step 1.8 load measurement
+
+- Use a disposable native PostgreSQL instance plus the repository’s Supabase shim to measure the SQL RPC fan-out behind location and `/sync` routes. Treat it as local database load evidence only; do not infer hosted Supabase, Edge, Realtime, browser, or production capacity from it.
