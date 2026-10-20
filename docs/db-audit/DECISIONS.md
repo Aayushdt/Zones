@@ -4,3 +4,4 @@
 - Local Supabase/Docker access is treated as unavailable until a safe local stack command proves otherwise; remote projects will not be modified or queried beyond permitted read-only status checks.
 - No secrets, environment values, connection strings, or data-bearing dumps are included in audit artifacts.
 - The repository-pinned Supabase CLI (2.121.0) runs, but `status` and `start` cannot access the Docker socket. Local-stack-only checks, `db reset`, schema dump, schema diff, RLS exercise, and concurrency experiments remain UNVERIFIED rather than inferred.
+- Approved-fixes input remained a placeholder. Per the supplied default, only Critical and High findings are eligible. `REPORT.md` contains zero confirmed Critical or High findings, so no database, application, or deployment change is authorized. The fix branch is based on `audit/supabase-db`, which contains both product revision `a46b47f` and audit revision `792dfc9`.
