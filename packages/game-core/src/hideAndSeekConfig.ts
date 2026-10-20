@@ -64,6 +64,9 @@ export const HIDE_AND_SEEK_CONFIG = {
   stealth: {
     exitHoldMs: { default: 1500, min: 500, max: 5000 }, // UNSPECIFIED-IN-REFERENCE
   },
+  map: {
+    ownMarkerSmoothingMs: { default: 250, min: 0, max: 2000 }, // UNSPECIFIED-IN-REFERENCE
+  },
   chat: {
     maxCharacters: { default: 280, min: 1, max: 280 },
     minimumIntervalSeconds: { default: 2, min: 1, max: 60 }, // UNSPECIFIED-IN-REFERENCE

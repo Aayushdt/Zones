@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Feature, Polygon } from 'geojson'
+import { HIDE_AND_SEEK_CONFIG, interpolateMapCoordinate } from '@xzones/game-core'
 import { useAppStore } from '../stores/app-store'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './GameMap.css'
@@ -84,6 +85,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const styleOverride = import.meta.env.VITE_MAP_STYLE_URL?.trim()
   const resolvedMapStyle = mapStyle === 'auto' ? theme : mapStyle
   const styleUrl = styleOverride || `https://tiles.openfreemap.org/styles/${resolvedMapStyle === 'dusk' ? 'dark' : 'bright'}`
+  const ownMarkerSmoothingMs: number = HIDE_AND_SEEK_CONFIG.map.ownMarkerSmoothingMs.default
   const styleUrlRef = useRef(styleUrl)
   const zoneLat = zone?.lat
   const zoneLon = zone?.lon
@@ -97,6 +99,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
   const markersRef = useRef(new Map<string, import('maplibre-gl').Marker>())
+  const markerFramesRef = useRef(new Map<string, number>())
   const zoneRef = useRef(zone)
   useEffect(() => {
     const fix = data.own_position ?? data.own_team_positions[0]
@@ -163,6 +166,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   useEffect(() => {
     const map = mapRef.current
     if (!map || !mapLoaded) return
+    const markerFrames = markerFramesRef.current
     void import('maplibre-gl').then(({ Marker }) => {
       if (mapRef.current !== map) return
       const points = new Map<string, { kind: 'you' | 'teammate' | 'snapshot'; label: string; coordinates: [number, number]; opacity?: number; accuracyPixels?: number }>()
@@ -180,15 +184,38 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
         points.set(`snapshot:${snapshot.runner_id}`, { kind: 'snapshot', label: `Runner ping snapshot, ${snapshot.age_seconds} seconds old`, coordinates: [snapshot.lon, snapshot.lat], opacity: Math.max(0.3, 1 - snapshot.age_seconds / 1800) })
       }
       for (const [key, marker] of markersRef.current) {
-        if (!points.has(key)) { marker.remove(); markersRef.current.delete(key) }
+        if (!points.has(key)) {
+          const frame = markerFrames.get(key)
+          if (frame !== undefined) cancelAnimationFrame(frame)
+          markerFrames.delete(key)
+          marker.remove()
+          markersRef.current.delete(key)
+        }
       }
       for (const [key, point] of points) {
         let marker = markersRef.current.get(key)
+        const isNewMarker = !marker
         if (!marker) {
           marker = new Marker({ element: pointElement(point.kind, point.label, point.accuracyPixels), anchor: 'center' }).addTo(map)
           markersRef.current.set(key, marker)
         }
-        marker.setLngLat(point.coordinates)
+        const previousFrame = markerFrames.get(key)
+        if (previousFrame !== undefined) cancelAnimationFrame(previousFrame)
+        markerFrames.delete(key)
+        if (isNewMarker || point.kind !== 'you' || ownMarkerSmoothingMs === 0) {
+          marker.setLngLat(point.coordinates)
+        } else {
+          const startCoordinate = marker.getLngLat()
+          const from: [number, number] = [startCoordinate.lng, startCoordinate.lat]
+          const startedAt = performance.now()
+          const animate = (now: number) => {
+            const progress = (now - startedAt) / ownMarkerSmoothingMs
+            marker.setLngLat(interpolateMapCoordinate(from, point.coordinates, progress))
+            if (progress < 1) markerFrames.set(key, requestAnimationFrame(animate))
+            else markerFrames.delete(key)
+          }
+          markerFrames.set(key, requestAnimationFrame(animate))
+        }
         const element = marker.getElement()
         element.className = `game-marker game-marker--${point.kind}`
         element.setAttribute('aria-label', point.label)
@@ -198,7 +225,11 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
         else element.style.setProperty('--accuracy-px', `${point.accuracyPixels}px`)
       }
     })
-  }, [mapLoaded, markerPoints])
+    return () => {
+      for (const frame of markerFrames.values()) cancelAnimationFrame(frame)
+      markerFrames.clear()
+    }
+  }, [mapLoaded, markerPoints, ownMarkerSmoothingMs])
 
   function locate() {
     if (!navigator.geolocation) { setMapError('Location is unavailable in this browser.'); return }

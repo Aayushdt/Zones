@@ -262,3 +262,8 @@
 
 - Extended the additive finish RPC so match completion deletes `latest_fix`, all `ping_snapshots`, and stationary coordinate anchors; end results and non-coordinate audit reasons remain available.
 - Validation: `pnpm test:db` PASS, including the new finish-privacy smoke, tag-race harness, and 14-row DB audit; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 4.6 own-marker smoothing
+
+- Added eased interpolation for the local marker only. The marker is initialized at the current fix, then animated between display points; server location upload and other-player markers remain untouched.
+- Validation: game-core tests PASS (31/31); typecheck/build PASS; lint PASS with existing warnings; `git diff --check` PASS.

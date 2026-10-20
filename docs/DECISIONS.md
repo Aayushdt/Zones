@@ -251,3 +251,7 @@
 # Hide & Seek implementation — Step 4.5 finish-time privacy
 
 - Delete all stored player coordinates when a match finishes: latest fixes, Hunter ping snapshots, and stationary-anchor coordinates. Keep aggregate result metadata and non-coordinate suspicious-event reasons.
+
+# Hide & Seek implementation — Step 4.6 own-marker smoothing
+
+- Smooth only the local map marker over 250 ms with eased interpolation. Keep network payloads and teammate/opponent positions unchanged; configure animation duration centrally for tuning.
