@@ -138,3 +138,8 @@
 
 - Added a host-only Hunter-count assignment RPC and lobby control; Random still uses the centralized `ceil(N/10)` default. Start validation now accepts any split with 1..floor(N/2) Hunters and at least one Runner; the database rejects over-limit Hunter counts.
 - Initial gate runs exposed stale exact-default expectations in the exhaustive unit and F-07 database tests. After updating both, isolated PostgreSQL audit passed 14/14 and the complete suite, typecheck, lint, and production build passed. The Vite optimizer still prints its known Supabase dependency ENOENT warning; all four Playwright cases pass. Step 1.2 is verified DONE.
+
+# Hide & Seek implementation — Step 1.3 throttled cleanup
+
+- No `pg_cron` extension or scheduling configuration exists in the migration chain. Added private singleton cleanup state plus an advisory transaction lock. `xzones_cleanup` returns immediately when locked or called within 60 seconds; actual cleanup records its timestamp and performs the existing delete set at most once per minute.
+- Kept the existing opportunistic cleanup RPC call sites, but bounded database sweep work. Added a SQL boundary smoke test for first run, 59-second throttle, and exact 60-second eligibility. Temporary PostgreSQL migration/schema/lifecycle/audit harness passed, including all 14 audit scenarios.

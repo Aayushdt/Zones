@@ -201,3 +201,7 @@
 
 - Keep the centralized `ceil(N/10)` target as the Random-role default, while allowing a host to assign a chosen Hunter count from 1 through `floor(N/2)`. Starting a lobby validates this safe range rather than requiring the default count.
 - Verify flexible count bounds both in pure rules and the database audit. A valid custom 5/12 split starts, while 7/12 is rejected; host assignment is restricted to the current controller and resets readiness.
+
+# Hide & Seek implementation — Step 1.3 cleanup scheduling
+
+- Use a transactional advisory lock and a singleton `last_cleanup_at` row to throttle opportunistic cleanup to one execution per 60 seconds. No cron extension/configuration is present in the project, so the database RPC remains opportunistically invoked while expensive delete work is rate-limited.
