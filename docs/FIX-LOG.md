@@ -257,3 +257,8 @@
 
 - Added server-side discovery of active memberships for the current authenticated guest session and a Home screen rejoin entry. Creation/join stores only a local match hint; SQL still authorizes solely by `auth_user_id`. Explicitly left or ended matches are excluded, and a missing saved guest session explains that the host can remove the stale player entry.
 - Validation: Edge API tests PASS (16/16); rejoin DB smoke and full disposable DB suite PASS; typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 4.5 finish-time privacy
+
+- Extended the additive finish RPC so match completion deletes `latest_fix`, all `ping_snapshots`, and stationary coordinate anchors; end results and non-coordinate audit reasons remain available.
+- Validation: `pnpm test:db` PASS, including the new finish-privacy smoke, tag-race harness, and 14-row DB audit; `git diff --check` PASS.

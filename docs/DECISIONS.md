@@ -247,3 +247,7 @@
 # Hide & Seek implementation — Step 4.4 rejoin
 
 - Discover a rejoinable match only from the authenticated persisted guest identity; never accept a player name or lobby code as identity. Keep a local match ID only as a hint for explaining a missing session, not as an authorization credential. Explicitly left players and ended matches are not returned.
+
+# Hide & Seek implementation — Step 4.5 finish-time privacy
+
+- Delete all stored player coordinates when a match finishes: latest fixes, Hunter ping snapshots, and stationary-anchor coordinates. Keep aggregate result metadata and non-coordinate suspicious-event reasons.
