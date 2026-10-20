@@ -377,6 +377,22 @@
   border-radius: var(--radius-control);
 }
 
+.zone-picker__map {
+  min-height: 280px;
+  overflow: hidden;
+  border: 1px solid var(--line, rgba(255, 255, 255, .14));
+  border-radius: 16px;
+}
+
+.zone-picker__details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: .9rem;
+}
+
 .coordinate-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;

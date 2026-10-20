@@ -180,3 +180,8 @@
 - Added an additive migration for circle-zone stages, interval, and final radius; extended the service-role lobby-create RPC with matching bounds and persisted values. Existing RPC callers retain defaults.
 - The create route validates the same centralized limits; the lobby form exposes optional shrink controls when a circle is enabled. Configuration remains zero stages by default.
 - Validation: database audit 14/14 PASS, Edge and hostile API tests 23/23 PASS, game-core 29/29 PASS, typecheck/build PASS, `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 2.3 host zone picker
+
+- Added a dedicated MapLibre picker to avoid coupling lobby setup to the live-match map. The host can click/drag the center, see the circle radius preview, use current location, or enter exact coordinates.
+- Validation: web build PASS; lint PASS with existing warnings in unrelated map/page effects; `git diff --check` PASS.

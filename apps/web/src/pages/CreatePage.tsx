@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useAppStore } from '../stores/app-store'
+import { ZonePicker } from '../components/ZonePicker'
 
 const durations = [30, 45, 60] as const
 const pingOptions = [3, 5, 10, 15] as const
@@ -143,7 +144,13 @@ export function CreatePage() {
                 <input max={diameter / 2} min={50} onChange={(event) => setFinalRadius(Number(event.currentTarget.value))} step={10} type="range" value={Math.min(finalRadius, diameter / 2)} />
               </label>
             </> : null}
-            <p className="field-help">Enter a center now. Map selection will be available in the gameplay map step.</p>
+            <p className="field-help">Choose a circular boundary by selecting a center on the map or entering coordinates.</p>
+            <ZonePicker
+              center={latitude.trim() && longitude.trim() && Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude))
+                ? { lat: Number(latitude), lon: Number(longitude) } : null}
+              radiusM={diameter / 2}
+              onCenterChange={(point) => { setLatitude(String(point.lat)); setLongitude(String(point.lon)) }}
+            />
             <div className="coordinate-fields">
               <label className="field"><span>Center latitude</span><input className="form-control" inputMode="decimal" onChange={(event) => setLatitude(event.currentTarget.value)} placeholder="e.g. 25.61" value={latitude} /></label>
               <label className="field"><span>Center longitude</span><input className="form-control" inputMode="decimal" onChange={(event) => setLongitude(event.currentTarget.value)} placeholder="e.g. 85.14" value={longitude} /></label>
