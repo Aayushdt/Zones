@@ -8,6 +8,7 @@ const resultLabels: Record<string, string> = {
   ALL_RUNNERS_TAGGED_OR_LEFT: 'All Runners were tagged or left.',
   ALL_HUNTERS_LEFT: 'All Hunters left the match.',
   TIME_EXPIRED: 'Time expired with Runners still active.',
+  TIME_LIMIT: 'Time expired with Runners still active.',
   HOST_END: 'The host ended the match.',
   SAFETY_END: 'The match ended for safety.',
   HOST_LOST: 'No player claimed match controls after the host left.',

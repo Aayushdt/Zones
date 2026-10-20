@@ -8,7 +8,8 @@ import { maintainScreenWakeLock } from '../services/device-lifecycle'
 import { applyMatchRealtimeEvent, createRealtimeEventGate } from '../services/realtime-events'
 import { startFallbackSync } from '../services/fallback-sync'
 
-function timeLeft(clock: ClockView, anchor: number): number {
+function timeLeft(clock: ClockView, anchor: number): number | null {
+  if (clock.ends_at === null) return null
   const deadline = Date.parse(clock.ends_at)
   const serverAt = Date.parse(clock.server_now)
   return Number.isFinite(deadline) && Number.isFinite(serverAt)
@@ -119,7 +120,7 @@ export function MatchPage() {
       <header className="match-hud">
         <Link className="match-menu" aria-label="Back to lobby" to={`/lobby/${matchId}`}>☰</Link>
         <div><strong>Hide and Seek</strong><span>{roleLabel} · ACTIVE</span></div>
-        <div className="match-timer"><strong>{seconds === null ? '—:—' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`}</strong><span>Time left</span></div>
+        <div className="match-timer"><strong>{seconds === null ? 'No timer' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`}</strong><span>{seconds === null ? 'Until match outcome' : 'Time left'}</span></div>
         <div className="match-counts"><span className="runner-count">{view.active_counts.runners} Runners</span><span className="hunter-count">{view.active_counts.hunters} Hunters</span></div>
       </header>
       <section className="match-map-area">

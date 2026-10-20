@@ -86,6 +86,7 @@ describe('phase 3 exhaustive game-core review', () => {
     expect(didTagMeetDeadline(199, 200)).toBe(true)
     expect(didTagMeetDeadline(200, 200)).toBe(false)
     for (const bad of [NaN, Infinity, -Infinity]) expect(didTagMeetDeadline(bad, 200)).toBe(false)
+    expect(resolveActiveOutcome({ runnerTotal: 1, runnerActive: 1, hunterTotal: 1, hunterActive: 1 }, 10_000, null)).toBeNull()
   })
 
   it('checks ping-slot math across round, head-start and interval combinations', () => {
@@ -112,6 +113,8 @@ describe('phase 3 exhaustive game-core review', () => {
 
   it('checks config limits and deterministic geometry properties with seeded inputs', () => {
     expect(isValidMatchConfig(DEFAULT_MATCH_CONFIG)).toBe(true)
+    expect(isValidMatchConfig({ roundSeconds: null, headStartSeconds: 180, pingSeconds: 300 })).toBe(true)
+    expect(isValidMatchConfig({ roundSeconds: null, headStartSeconds: 900, pingSeconds: 1800 })).toBe(true)
     for (const roundSeconds of [599, 600, 10_800, 10_801]) {
       const valid = roundSeconds >= 600 && roundSeconds <= 10_800
       expect(isValidMatchConfig({ roundSeconds, headStartSeconds: 0, pingSeconds: null })).toBe(valid)

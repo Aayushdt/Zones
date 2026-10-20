@@ -143,7 +143,7 @@ export function didTagMeetDeadline(tagAcceptedAtMs: number, endsAtMs: number): b
 export function resolveActiveOutcome(
   counts: ActivePlayerCounts,
   nowMs: number,
-  endsAtMs: number,
+  endsAtMs: number | null,
 ): MatchOutcome {
   if (counts.runnerTotal > 0 && counts.runnerActive === 0) {
     return { winner: 'HUNTER', reason: 'ALL_RUNNERS_TAGGED_OR_LEFT' }
@@ -151,7 +151,7 @@ export function resolveActiveOutcome(
   if (counts.hunterTotal > 0 && counts.hunterActive === 0) {
     return { winner: 'RUNNER', reason: 'ALL_HUNTERS_LEFT' }
   }
-  if (Number.isFinite(nowMs) && Number.isFinite(endsAtMs) && nowMs >= endsAtMs) {
+  if (endsAtMs !== null && Number.isFinite(nowMs) && Number.isFinite(endsAtMs) && nowMs >= endsAtMs) {
     return { winner: 'RUNNER', reason: 'TIME_LIMIT' }
   }
   return null

@@ -46,7 +46,7 @@ export interface CreateInput {
   zone_shrink_stages?: number
   zone_shrink_interval_seconds?: number
   zone_final_radius_m?: number
-  round_seconds: number
+  round_seconds: number | null
   head_start_seconds: number
   ping_seconds: number | null
 }
@@ -76,7 +76,7 @@ export interface ClockView {
   server_now: string
   start_at: string
   head_start_ends_at: string
-  ends_at: string
+  ends_at: string | null
 }
 
 interface MatchViewBase {

@@ -13,6 +13,7 @@ export function CreatePage() {
   const setGuestName = useAppStore((state) => state.setGuestName)
   const [name, setName] = useState(savedName)
   const [duration, setDuration] = useState<(typeof durations)[number]>(45)
+  const [timerEnabled, setTimerEnabled] = useState(true)
   const [pingMinutes, setPingMinutes] = useState<(typeof pingOptions)[number] | null>(5)
   const [headStart, setHeadStart] = useState(180)
   const [fixedZone, setFixedZone] = useState(false)
@@ -45,7 +46,7 @@ export function CreatePage() {
     setGuestName(trimmedName)
     const result = await supabaseGameApi.createLobby({
       display_name: trimmedName,
-      round_seconds: duration * 60,
+      round_seconds: timerEnabled ? duration * 60 : null,
       head_start_seconds: headStart,
       ping_seconds: pingMinutes === null ? null : pingMinutes * 60,
       ...(fixedZone ? {
@@ -82,17 +83,19 @@ export function CreatePage() {
         <fieldset className="field-set">
           <legend>Game duration</legend>
           <div className="segmented-control">
+            <button aria-pressed={!timerEnabled} className={!timerEnabled ? 'segment is-selected' : 'segment'} onClick={() => setTimerEnabled(false)} type="button">No timer</button>
             {durations.map((minutes) => (
               <button
-                aria-pressed={duration === minutes}
-                className={duration === minutes ? 'segment is-selected' : 'segment'}
+                aria-pressed={timerEnabled && duration === minutes}
+                className={timerEnabled && duration === minutes ? 'segment is-selected' : 'segment'}
                 key={minutes}
-                onClick={() => setDuration(minutes)}
+                onClick={() => { setDuration(minutes); setTimerEnabled(true) }}
                 type="button"
               >{minutes} min</button>
             ))}
           </div>
         </fieldset>
+        {!timerEnabled ? <p className="field-help">No time limit. The match ends only when a team has no active players or the host ends it; Runners cannot win by waiting out a clock.</p> : null}
 
         <label className="field">
           <span>Head start <strong>{Math.floor(headStart / 60)}:{String(headStart % 60).padStart(2, '0')}</strong></span>

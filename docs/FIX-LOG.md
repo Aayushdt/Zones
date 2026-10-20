@@ -202,3 +202,9 @@
 - Added per-Runner outside streak/timing state and a database trigger that calls the authoritative zone schedule for each accepted fix. Only fixes whose uncertainty bound is wholly outside count; inside or ambiguous fixes reset the streak.
 - Two consecutive confirmed-outside fixes mark a Runner revealed; scheduled Hunter pings remain the only opposing-team location path. At 30 continuous seconds the API reports a warning; at 120 seconds the server marks the Runner `TAGGED`, removes the fix, and resolves match outcome.
 - Validation: DB audit and exact zone schedule/exit smoke tests PASS; Edge and hostile API tests 23/23 PASS; typecheck/build PASS.
+
+# Hide & Seek implementation — Step 2.7 timer off
+
+- Made round duration nullable through shared validation, lobby setup, database schema, start/sync/QR RPC behavior, and match clock display. Timer-off matches retain scheduled pings and do not resolve to a Runner time-limit win; elimination and host outcomes remain authoritative.
+- Added a disposable SQL scenario proving timer-off creation, no `ends_at`, no time-based resolution after elapsed time, and continuing pings.
+- Validation: full `pnpm test:all` PASS; typecheck/build/lint PASS; `git diff --check` PASS.

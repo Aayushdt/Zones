@@ -8,7 +8,7 @@ This document defines the one implemented mode, `HIDE_AND_SEEK`, for XZones. The
 - A match supports 2–100 active players. By default, Hunters are `ceil(playerCount / 10)`; the host can choose 1 through `floor(playerCount / 2)`. All remaining players are Runners.
 - The server owns role assignments, timers, tags, zone state, item activation, and outcomes. Requests may propose inputs but may not authoritatively set these values.
 - `roundSeconds: null` disables the timer. Runners cannot win by timeout when it is disabled; the match ends when all Runners are tagged or leave, or the host ends it.
-- The existing default round/head start/ping values remain 2700/180/300 seconds. Ping may be off.
+- The existing default round/head start/ping values remain 2700/180/300 seconds. Ping may be off. The round timer may also be off (`round_seconds = null`); then the match continues until a team has no active players or the host ends it, and Runners cannot win by time.
 
 ## Location and tags
 
