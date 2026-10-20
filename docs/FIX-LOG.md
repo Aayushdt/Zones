@@ -124,3 +124,6 @@
 # Hide & Seek implementation — centralized configuration and design
 
 - Step 0.4 added the isolated `HIDE_AND_SEEK` mode config, explicit bounds for numeric settings, tests for defaults/bounds, and the mode rules spec. Existing round/head-start/ping defaults and validation now source the central config. Values absent from the reference are marked `UNSPECIFIED-IN-REFERENCE`; their initial assumptions are recorded in `docs/DECISIONS.md`.
+# Hide & Seek implementation — existence inventory
+
+- Step 0.5 inspected reachable rules, UI, API, SQL RPCs/migrations, projections, service worker, simulator, tests, and local branch history for all 40 planned implementation steps. Initial classification: 24 PARTIAL, 16 ABSENT, 0 PRESENT, 0 PRESENT-BUT-DIFFERENT. Recheck each step immediately before implementation; `docs/verification/already-implemented.md` is only the starting inventory.

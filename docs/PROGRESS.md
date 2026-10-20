@@ -6,45 +6,45 @@
 | 0.2 | Triage error.md defects & fix open Critical/High | PARTIAL | DONE | `docs/verification/audit-triage.md`; `error.md`; `docs/KNOWN-ISSUES.md` | Baseline suite PASS; F-02 real Supabase integration remains unverified | - | Referenced `full_audit_report.md` is absent; F-02 implementation exists and must retain Realtime-first behavior |
 | 0.3 | Verify unverified audit claims (session, watchPosition, Wake Lock) | PARTIAL | DONE | `docs/verification/client-lifecycle-audit.md`; `apps/web/src/stores/app-store.ts:7-30`; `apps/web/src/components/LocationSharing.tsx:37-96`; `apps/web/src/services/device-lifecycle.ts:35-67` | `corepack pnpm test:audit`: PASS, 25/25 | - | GPS watcher resume and iOS installed-PWA behavior need Step 4.1/device verification; Safari support corrected from official notes |
 | 0.4 | Create hideAndSeekConfig.ts & hide-and-seek-spec.md | PARTIAL | DONE | `packages/game-core/src/hideAndSeekConfig.ts`; `packages/game-core/src/hideAndSeekConfig.test.ts`; `docs/design/hide-and-seek-spec.md` | game-core typecheck PASS; unit 25/25 PASS; lint PASS with existing warnings; `git diff --check` PASS | - | Legacy MatchConfig now reads its defaults and bounds from the central Hide & Seek config; other server/UI enforcement is staged for later steps |
-| 0.5 | Existence inventory (1.1–6.8 P0 checks) | ABSENT | TODO | - | - | - | docs/verification/already-implemented.md |
-| 1.1 | Player limits: MIN 2, MAX 100 in rules, RPCs, lobby, UI | TBD (0.5) | TODO | - | - | D01, A1, A2 | Foundation & scale |
-| 1.2 | Team balance: hunter count 1..floor(N/2), remove equality block | TBD (0.5) | TODO | - | - | - | Flexible team setup |
-| 1.3 | Throttled/scheduled xzones_cleanup (out of per-request path) | TBD (0.5) | TODO | - | - | - | Cleanup throttling |
-| 1.4 | Realtime-first sync & 30-45s jittered fallback | TBD (0.5) | TODO | - | - | - | Sync optimization |
-| 1.5 | Request budget documentation | TBD (0.5) | TODO | - | - | - | docs/design/request-budget.md |
-| 1.6 | GameMap: update markers/zone in place, easeTo/flyTo | TBD (0.5) | TODO | - | - | D15, D19 | Map rendering fix |
-| 1.7 | Fix module-level mutable state in LocationSharing | TBD (0.5) | TODO | - | - | D20 | Concurrency fix |
-| 1.8 | 100-player 10-minute load test & verification | TBD (0.5) | TODO | - | - | - | Simulator test |
-| 2.1 | Pure function zoneAt in game-core with unit tests | TBD (0.5) | TODO | - | - | - | Deterministic zone calculation |
-| 2.2 | Migration + lobby validation for shrink config | TBD (0.5) | TODO | - | - | - | Shrink parameters |
-| 2.3 | Host zone picker on map (drag/radius/use my location) | TBD (0.5) | TODO | - | - | D14 | Zone picker UI |
-| 2.4 | Server uses zoneAt for location uploads & resolution | TBD (0.5) | TODO | - | - | - | Server zone enforcement |
-| 2.5 | Client zone visualization (current, next preview, timer) | TBD (0.5) | TODO | - | - | - | Zone UI |
-| 2.6 | Accuracy-aware zone exit (2 samples -> reveal, 120s -> eliminate) | TBD (0.5) | TODO | - | - | - | Zone enforcement |
-| 2.7 | Timer-off option (roundSeconds = null) | TBD (0.5) | TODO | - | - | D07 | Unlimited match length |
-| 3.1 | Location plausibility checks & suspicious_events log | TBD (0.5) | TODO | - | - | - | Anti-cheat / GPS spoof deterrent |
-| 3.2 | Server GPS tag RPC with allowance & drift | TBD (0.5) | TODO | - | - | - | Core tag mechanic |
-| 3.3 | QR fallback max distance check (100m) & runner surrender | TBD (0.5) | TODO | - | - | - | QR anti-relay |
-| 3.4 | Concurrency & race tests for tags, surrender, timer | TBD (0.5) | TODO | - | - | - | Atomic tag tests |
-| 3.5 | Stationary hider detection (<15m for 300s -> reveal) | TBD (0.5) | TODO | - | - | - | Anti-camping rule |
-| 3.6 | Hunter Tag button UI with feedback & 3-phone test script | TBD (0.5) | TODO | - | - | - | Hunter UI + planned pause |
-| 4.1 | watchPosition re-acquisition on visibility/pageshow/error | TBD (0.5) | TODO | - | - | - | Web resilience |
-| 4.2 | Stealth screen with Wake Lock & long-press exit | TBD (0.5) | TODO | - | - | - | Stealth mode |
-| 4.3 | Host inactivity threshold (180s, ignore hidden tab) | TBD (0.5) | TODO | - | - | - | Host drop tolerance |
-| 4.4 | Session-based rejoin for active players | TBD (0.5) | TODO | - | - | - | Rejoin flow |
-| 4.5 | Delete ping_snapshots on match finish & privacy tests | TBD (0.5) | TODO | - | - | D10 | Privacy enforcement |
-| 4.6 | Display-only GPS smoothing for own marker | TBD (0.5) | TODO | - | - | - | Client GPS smoothing |
-| 4.7 | Service worker caching & PWA icons/manifest | TBD (0.5) | TODO | - | - | D16, D17 | PWA assets & caching |
-| 5.1 | Chat (lobby all, match team-only, 280 chars) | TBD (0.5) | TODO | - | - | - | In-game chat |
-| 5.2 | Presets: save/load/delete host settings in localStorage | TBD (0.5) | TODO | - | - | - | Host presets |
-| 5.3 | Rules/guide screen for Hide & Seek | TBD (0.5) | TODO | - | - | - | Guide UI |
-| 5.4 | Bug report entry table & edge function route | TBD (0.5) | TODO | - | - | - | Feedback mechanism |
-| 6.1 | Items framework: schema, toggle, activation skeleton | TBD (0.5) | TODO | - | - | - | Items engine |
-| 6.2 | Hunter Scan item | TBD (0.5) | TODO | - | - | - | Item: Scan |
-| 6.3 | Hunter Proximity Alarm item | TBD (0.5) | TODO | - | - | - | Item: Alarm |
-| 6.4 | Hunter Zone Mover item | TBD (0.5) | TODO | - | - | - | Item: Zone Mover |
-| 6.5 | Runner Decoy item | TBD (0.5) | TODO | - | - | - | Item: Decoy |
-| 6.6 | Runner Zone Shield item | TBD (0.5) | TODO | - | - | - | Item: Shield |
-| 6.7 | Runner Camouflage item | TBD (0.5) | TODO | - | - | - | Item: Camouflage |
-| 6.8 | Ghost Mode deferred documentation | TBD (0.5) | TODO | - | - | - | docs/design/ghost-mode-deferred.md |
+| 0.5 | Existence inventory (1.1–6.8 P0 checks) | PARTIAL | DONE | `docs/verification/already-implemented.md`; searched live UI/API/RPC/migrations/core/tests and local branch history | 40-step inventory PASS; `git diff --check` PASS | - | Starting estimates only; every implementation step repeats P0 |
+| 1.1 | Player limits: MIN 2, MAX 100 in rules, RPCs, lobby, UI | PARTIAL | TODO | `packages/game-core/src/rules.ts:10-12`; `backend/supabase/migrations/202610180002_lobby_rpcs.sql:142` | - | D01, A1, A2 | 3–12 limits; expand to 2–100 everywhere |
+| 1.2 | Team balance: hunter count 1..floor(N/2), remove equality block | PARTIAL | TODO | `packages/game-core/src/rules.ts:51-80`; `backend/supabase/migrations/202610180004_lobby_view_start.sql:25-31` | - | - | Default formula exists; host currently cannot select any valid count |
+| 1.3 | Throttled/scheduled xzones_cleanup (out of per-request path) | PARTIAL | TODO | `backend/supabase/functions/api/index.ts:290-294`; `backend/supabase/migrations/202610180008_results_leave_cleanup.sql:262-304` | - | - | Cleanup currently runs per create/join/sync/result request |
+| 1.4 | Realtime-first sync & 30-45s jittered fallback | PARTIAL | TODO | `apps/web/src/pages/MatchPage.tsx:56-86`; `backend/supabase/functions/api/broadcast.ts` | - | - | Realtime exists; fallback fixed at 15s |
+| 1.5 | Request budget documentation | ABSENT | TODO | No `docs/design/request-budget.md`; older estimate in `xzones.md:284-297` | - | - | Recompute after 1.4 |
+| 1.6 | GameMap: update markers/zone in place, easeTo/flyTo | PARTIAL | TODO | `apps/web/src/components/GameMap.tsx:70-160` | - | D15, D19 | Map/markers are recreated; existing `easeTo` is only for recenter |
+| 1.7 | Fix module-level mutable state in LocationSharing | PARTIAL | TODO | `apps/web/src/components/LocationSharing.tsx:6-9,54-75` | - | D20 | Sequence and send timestamps are module-scoped |
+| 1.8 | 100-player 10-minute load test & verification | ABSENT | TODO | `tools/simulator/scenario.ts`; `tools/simulator/scenario_test.ts` | - | - | Simulator has one 3-player scenario only |
+| 2.1 | Pure function zoneAt in game-core with unit tests | PARTIAL | TODO | `packages/game-core/src/rules.ts:23-49`; `tests/audit/rules_audit.test.ts` C1–C3 | - | - | Fixed-circle helpers exist; shrinking schedule does not |
+| 2.2 | Migration + lobby validation for shrink config | PARTIAL | TODO | `backend/supabase/migrations/202610180001_core.sql:22-38`; create RPC in `202610180002_lobby_rpcs.sql:42-80` | - | - | Only static center/radius is stored |
+| 2.3 | Host zone picker on map (drag/radius/use my location) | PARTIAL | TODO | `apps/web/src/pages/CreatePage.tsx:17-25,96-120`; `apps/web/src/components/GameMap.tsx:147-169` | - | D14 | Manual coordinates and diameter; no map picker |
+| 2.4 | Server uses zoneAt for location uploads & resolution | ABSENT | TODO | `backend/supabase/migrations/202610180009_live_location.sql:1-58`; no server zone helper call | - | - | Upload/resolve does not enforce zone rules |
+| 2.5 | Client zone visualization (current, next preview, timer) | PARTIAL | TODO | `apps/web/src/components/GameMap.tsx:20-24,87-94,172-183` | - | - | Static circle only |
+| 2.6 | Accuracy-aware zone exit (2 samples -> reveal, 120s -> eliminate) | PARTIAL | TODO | `packages/game-core/src/rules.ts:23-49`; `tests/audit/rules_audit.test.ts` C1–C3 | - | - | Logic is pure/client-side and unused by server |
+| 2.7 | Timer-off option (roundSeconds = null) | PARTIAL | TODO | `packages/game-core/src/config.ts:1-25`; `backend/supabase/migrations/202610180001_core.sql:19`; `202610180005_match_clock.sql` | - | D07 | Ping-off exists; round timer cannot be null |
+| 3.1 | Location plausibility checks & suspicious_events log | PARTIAL | TODO | `backend/supabase/migrations/202610180009_live_location.sql:20-49`; `backend/supabase/functions/api/index.ts:661-684` | - | - | Timestamp clamp exists; no speed/distance log or host results view |
+| 3.2 | Server GPS tag RPC with allowance & drift | ABSENT | TODO | QR-only RPCs in `backend/supabase/migrations/202610180007_qr_tagging.sql:1-185`; no GPS tag route | - | - | Add nearest-runner server calculation and generic miss |
+| 3.3 | QR fallback max distance check (100m) & runner surrender | PARTIAL | TODO | `backend/supabase/migrations/202610180007_qr_tagging.sql:36-107`; `tests/schema/qr-tagging-smoke.sql` | - | - | QR/surrender exist; no anti-relay distance check |
+| 3.4 | Concurrency & race tests for tags, surrender, timer | PARTIAL | TODO | `backend/supabase/migrations/202610180001_core.sql:105-122`; `tests/schema/qr-tagging-smoke.sql`; `tests/audit/db_scenarios_audit.sql` Scenario 1 | - | - | Existing QR atomicity; no cross-action race test/GPS RPC |
+| 3.5 | Stationary hider detection (<15m for 300s -> reveal) | ABSENT | TODO | No stationary state or detection in location upload/resolution paths | - | - | No confirmed movement timer or warning |
+| 3.6 | Hunter Tag button UI with feedback & 3-phone test script | PARTIAL | TODO | `apps/web/src/pages/TagPage.tsx:1-120`; `apps/web/src/services/game-api.ts` | - | - | Hunter camera QR only; no GPS action or phase-3 phone script |
+| 4.1 | watchPosition re-acquisition on visibility/pageshow/error | PARTIAL | TODO | `apps/web/src/components/LocationSharing.tsx:34-98`; `apps/web/src/services/device-lifecycle.ts:7-18` | - | - | Visibility sync only; no watcher restart |
+| 4.2 | Stealth screen with Wake Lock & long-press exit | PARTIAL | TODO | `apps/web/src/pages/MatchPage.tsx:87-91`; `apps/web/src/services/device-lifecycle.ts:20-67` | - | - | Wake Lock exists; stealth UI/hold gesture absent |
+| 4.3 | Host inactivity threshold (180s, ignore hidden tab) | PARTIAL | TODO | `backend/supabase/migrations/202610180008_results_leave_cleanup.sql:56-71`; `tests/schema/match-lifecycle-smoke.sql` Scenario 4 | - | - | Current threshold is 60s; hidden duration not tracked |
+| 4.4 | Session-based rejoin for active players | PARTIAL | TODO | `apps/web/src/services/supabase-api.ts:59-103`; `apps/web/src/app/router.tsx`; `202610180014_join_limits_and_removal.sql` | - | - | Guest auth persists but no active match identity or rejoin flow |
+| 4.5 | Delete ping_snapshots on match finish & privacy tests | PARTIAL | TODO | `backend/supabase/migrations/202610180008_results_leave_cleanup.sql:1-25,262-279`; `tests/schema/match-lifecycle-smoke.sql` | - | D10 | Live fixes deleted; coordinate snapshots retained seven days |
+| 4.6 | Display-only GPS smoothing for own marker | ABSENT | TODO | `apps/web/src/components/GameMap.tsx:115-160`; no smoothing helper/test | - | - | Own marker renders current raw fix |
+| 4.7 | Service worker caching & PWA icons/manifest | PARTIAL | TODO | `apps/web/public/sw.js:1-30`; `apps/web/public/manifest.webmanifest` | - | D16, D17 | App assets cached; no map-tile SWR/cap or 192/512 PNGs |
+| 5.1 | Chat (lobby all, match team-only, 280 chars) | ABSENT | TODO | No chat table, routes, or UI in source/migrations | - | - | Entire feature missing |
+| 5.2 | Presets: save/load/delete host settings in localStorage | PARTIAL | TODO | `apps/web/src/stores/app-store.ts:18-31`; `apps/web/src/pages/SettingsPage.tsx`; `tests/e2e/app.spec.ts` | - | - | User preferences persist; game setting presets absent |
+| 5.3 | Rules/guide screen for Hide & Seek | PARTIAL | TODO | `apps/web/src/pages/SettingsPage.tsx:54-62`; `apps/web/src/pages/HomePage.tsx:50-57` | - | - | Safe-play copy exists; no mode rules guide |
+| 5.4 | Bug report entry table & edge function route | ABSENT | TODO | No bug report implementation found in current routes/schema | - | - | Add insert-only data path and rate limit |
+| 6.1 | Items framework: schema, toggle, activation skeleton | ABSENT | TODO | `backend/supabase/migrations/202610180001_core.sql:12-40`; no mode or item table/RPC | - | - | Add default mode column and host-controlled item framework |
+| 6.2 | Hunter Scan item | ABSENT | TODO | No Scan item RPC, state, UI, or tests found | - | - | Entire feature missing |
+| 6.3 | Hunter Proximity Alarm item | ABSENT | TODO | No alarm item RPC/state/evaluation/tests found | - | - | Entire feature missing |
+| 6.4 | Hunter Zone Mover item | ABSENT | TODO | No zone-move item path/tests found | - | - | Entire feature missing |
+| 6.5 | Runner Decoy item | ABSENT | TODO | No decoy item path/tests found | - | - | Entire feature missing |
+| 6.6 | Runner Zone Shield item | ABSENT | TODO | No shield item path/tests found | - | - | Entire feature missing |
+| 6.7 | Runner Camouflage item | ABSENT | TODO | No camouflage item path/tests found | - | - | Entire feature missing |
+| 6.8 | Ghost Mode deferred documentation | ABSENT | TODO | No `docs/design/ghost-mode-deferred.md`; role allow-list in `packages/game-core/src/payloads.ts` | - | - | Write deferral rationale; implement no Ghost Mode |
 | F.1 | Final report (parity, closed D-IDs, tuning table, script) | TBD (0.5) | TODO | - | - | - | docs/FINAL-REPORT.md |

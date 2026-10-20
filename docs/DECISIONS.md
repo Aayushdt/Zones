@@ -188,3 +188,6 @@
 - Use zero zone-shrink stages by default to preserve the existing optional/static zone behavior; use a 300-second shrink interval if the host enables stages. Use 5-second/50-meter Hunter tag-fix limits, a 30-second QR freshness window, and a 2-second tag-attempt cooldown pending reference testing.
 - For items, start with one charge each, items off, cooldown zero, and conservative provisional durations/radii: Scan 30 seconds, Alarm 100 meters/300 seconds, Zone Mover 200 meters, Decoy 50-meter offset, Shield 120 seconds, and Camouflage 30 seconds. These are tunable playtest assumptions, not values established by the reference.
 - Use a 2-second chat interval and one bug report per hour per session as initial server rate limits; both values are unspecified in the reference.
+# Hide & Seek implementation — existence inventory
+
+- Classify a capability as PARTIAL when a helper or adjacent UI exists without the complete requested data path, server enforcement, or test; classify it ABSENT when no relevant implementation path exists. The 40-step inventory is provisional and P0 is repeated before each implementation step.
