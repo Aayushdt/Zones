@@ -235,3 +235,7 @@
 # Hide & Seek implementation — Step 4.1 GPS lifecycle recovery
 
 - Pause and clear the active geolocation watch while the document is hidden; restart on visibility return and `pageshow`, and retry transient geolocation errors after one second. Permission denial still stops sharing and readiness. This avoids background battery use while recovering browsers that suspend location watches.
+
+# Hide & Seek implementation — Step 4.2 stealth screen
+
+- Keep the existing active-match Wake Lock active under the near-black stealth overlay. Require a 1.5-second hold to exit, with its bounds centralized in the mode config; explicitly warn that a wake-locked screen uses extra battery.

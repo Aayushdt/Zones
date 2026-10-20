@@ -7,6 +7,7 @@ import { useLocationStore } from '../stores/location-store'
 import { maintainScreenWakeLock } from '../services/device-lifecycle'
 import { applyMatchRealtimeEvent, createRealtimeEventGate } from '../services/realtime-events'
 import { startFallbackSync } from '../services/fallback-sync'
+import { HIDE_AND_SEEK_CONFIG } from '@xzones/game-core'
 
 function timeLeft(clock: ClockView, anchor: number): number | null {
   if (clock.ends_at === null) return null
@@ -25,8 +26,10 @@ export function MatchPage() {
   const [zoneSeconds, setZoneSeconds] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [stealth, setStealth] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
   const anchor = useRef(0)
+  const stealthExitTimer = useRef<number | null>(null)
   const currentFix = useLocationStore((state) => state.ownFix)
   const locationStatus = useLocationStore((state) => state.status)
   const stopSharing = useLocationStore((state) => state.stopSharing)
@@ -107,6 +110,15 @@ export function MatchPage() {
     : { role: 'HUNTER', own_position: ownPosition, own_team_positions: view.own_team_positions, runner_snapshots: view.runner_snapshots }
     : null
 
+  const cancelStealthExit = () => {
+    if (stealthExitTimer.current !== null) window.clearTimeout(stealthExitTimer.current)
+    stealthExitTimer.current = null
+  }
+  const holdToExitStealth = () => {
+    cancelStealthExit()
+    stealthExitTimer.current = window.setTimeout(() => setStealth(false), HIDE_AND_SEEK_CONFIG.stealth.exitHoldMs.default)
+  }
+
   if (!view || !mapData) return (
     <main className="route-shell"><div className="route-shell__heading"><p className="welcome__eyebrow">XZones match</p><h1>Loading map</h1></div>
       <section className="state-panel" aria-live="polite"><p>{error || (busy ? 'Syncing your role-safe match view…' : 'Waiting for match data.')}</p>
@@ -116,7 +128,8 @@ export function MatchPage() {
 
   const roleLabel = view.role === 'RUNNER' ? 'Runner' : 'Hunter'
   return (
-    <main className="match-page">
+    <main className={`match-page${stealth ? ' match-page--stealth' : ''}`}>
+      {!stealth && <button className="match-stealth-toggle" onClick={() => setStealth(true)} type="button">Stealth screen</button>}
       <header className="match-hud">
         <Link className="match-menu" aria-label="Back to lobby" to={`/lobby/${matchId}`}>☰</Link>
         <div><strong>Hide and Seek</strong><span>{roleLabel} · ACTIVE</span></div>
@@ -160,6 +173,12 @@ export function MatchPage() {
       <p className="match-text-status" role="status" aria-live="polite">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. {liveStatus} The map never displays opponent distances or directions.</p>
       {view.zone ? <p className="match-text-status" role="status">Zone stage {view.zone.stage} · radius {Math.round(view.zone.radius)} m{view.zone.nextRadius !== null && zoneSeconds !== null ? ` · next shrink in ${Math.floor(zoneSeconds / 60)}:${String(zoneSeconds % 60).padStart(2, '0')} to ${Math.round(view.zone.nextRadius)} m` : ''}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">{locationStatus}</p>
+      {stealth && <section className="stealth-overlay" aria-label="Stealth screen">
+        <p>Stealth screen is on. Your match stays active.</p>
+        <p>Keeping the screen awake uses extra battery.</p>
+        <button className="welcome__action" onPointerDown={holdToExitStealth} onPointerUp={cancelStealthExit}
+          onPointerCancel={cancelStealthExit} onPointerLeave={cancelStealthExit} type="button">Press and hold to exit</button>
+      </section>}
     </main>
   )
 }

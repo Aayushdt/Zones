@@ -61,6 +61,9 @@ export const HIDE_AND_SEEK_CONFIG = {
   host: {
     inactiveSeconds: { default: 180, min: 60, max: 900 },
   },
+  stealth: {
+    exitHoldMs: { default: 1500, min: 500, max: 5000 }, // UNSPECIFIED-IN-REFERENCE
+  },
   chat: {
     maxCharacters: { default: 280, min: 1, max: 280 },
     minimumIntervalSeconds: { default: 2, min: 1, max: 60 }, // UNSPECIFIED-IN-REFERENCE

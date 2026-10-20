@@ -477,6 +477,23 @@
 .match-status-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .match-error { margin: 0.5rem 0; }
 .match-text-status { margin: 0; padding: 0.5rem; color: var(--color-muted); font-size: 0.75rem; }
+.match-stealth-toggle { justify-self: end; }
+.stealth-overlay {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: #050608;
+  color: #f4f4f5;
+  text-align: center;
+}
+.stealth-overlay p { margin: 0; }
+.stealth-overlay p + p { color: #a1a1aa; font-size: 0.8rem; }
+.stealth-overlay button { touch-action: none; user-select: none; }
 @media (max-width: 380px) {
   .match-page { width: calc(100% - 0.5rem); }
   .match-hud { grid-template-columns: auto 1fr auto; gap: 0.35rem; }

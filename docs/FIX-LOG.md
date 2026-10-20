@@ -242,3 +242,8 @@
 
 - Replaced the one-shot location watch with lifecycle-aware watch maintenance: pause while hidden, reacquire on visibility return and `pageshow`, and retry after transient geolocation errors. The match syncs immediately on return and the location status clearly reports when GPS is paused.
 - Validation: `deno test tests/audit/device_lifecycle_test.ts` PASS (2/2); typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 4.2 stealth screen
+
+- Added a near-black active-match overlay that keeps the existing Wake Lock running, explains battery cost, and exits only after a configurable 1.5-second press-and-hold.
+- Validation: typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
