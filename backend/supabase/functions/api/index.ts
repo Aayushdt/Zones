@@ -346,6 +346,8 @@ export async function handleRequest(request: Request): Promise<Response> {
         p_hunter_fix_max_age_seconds: HIDE_AND_SEEK_CONFIG.tag.hunterFixMaxAgeSeconds.default,
         p_zone_move_max_m: HIDE_AND_SEEK_CONFIG.items.hunterZoneMoveMaxM.default,
         p_zone_move_overlap_percent: HIDE_AND_SEEK_CONFIG.items.hunterZoneMoveOverlapPercent.default,
+        p_decoy_max_offset_m: HIDE_AND_SEEK_CONFIG.items.runnerDecoyMaxOffsetM.default,
+        p_ping_max_fix_age_seconds: HIDE_AND_SEEK_CONFIG.location.maxFixAgeSeconds.default,
       })
       if (itemResult.accepted === true && body.item_key === 'HUNTER_ZONE_MOVER') {
         await publishActionEvent(itemsPath[1], 'zone.moved', {

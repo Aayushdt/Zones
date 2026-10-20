@@ -693,7 +693,8 @@ Deno.test('item routes pass only authenticated identity and validated enable/act
     assert(activate.status === 200 && calls[2]?.name === 'xzones_activate_item' && calls[2]?.args.p_item_key === 'HUNTER_SCAN'
       && calls[2]?.args.p_scan_seconds === 30 && calls[2]?.args.p_max_fix_age_seconds === 60
       && calls[2]?.args.p_alarm_radius_m === 100 && calls[2]?.args.p_alarm_seconds === 300
-      && calls[2]?.args.p_zone_move_max_m === 200 && calls[2]?.args.p_zone_move_overlap_percent === 50,
+      && calls[2]?.args.p_zone_move_max_m === 200 && calls[2]?.args.p_zone_move_overlap_percent === 50
+      && calls[2]?.args.p_decoy_max_offset_m === 50,
       'item activation should delegate to server checks and config bounds')
     const alerts = await handleRequest(request(`/matches/${match}/items/alerts`, {}))
     assert(alerts.status === 200 && calls[3]?.name === 'xzones_list_item_alerts'

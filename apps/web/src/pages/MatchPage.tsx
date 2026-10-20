@@ -36,6 +36,7 @@ export function MatchPage() {
   const [alarmExpiresAt, setAlarmExpiresAt] = useState<number | null>(null)
   const [zoneNotice, setZoneNotice] = useState('')
   const [zoneMoverAvailable, setZoneMoverAvailable] = useState(true)
+  const [decoyAvailable, setDecoyAvailable] = useState(true)
   const [stealth, setStealth] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
   const anchor = useRef(0)
@@ -181,6 +182,15 @@ export function MatchPage() {
     await sync()
   }
 
+  async function activateDecoy() {
+    setBusy(true)
+    const result = await supabaseGameApi.activateItem(matchId, 'RUNNER_DECOY')
+    setBusy(false)
+    if (!result.ok) { setError(result.error.message); return }
+    setDecoyAvailable(false)
+    setError('Decoy is armed for the next Hunter ping.')
+  }
+
   const cancelStealthExit = () => {
     if (stealthExitTimer.current !== null) window.clearTimeout(stealthExitTimer.current)
     stealthExitTimer.current = null
@@ -221,6 +231,7 @@ export function MatchPage() {
             {view.role === 'HUNTER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !scanAvailable} onClick={() => void activateScan()} type="button">{scanAvailable ? 'Hunter Scan' : 'Hunter Scan used'}</button> : null}
             {view.role === 'HUNTER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !alarmAvailable} onClick={() => void placeAlarm()} type="button">{alarmAvailable ? 'Place proximity alarm' : 'Alarm placed'}</button> : null}
             {view.role === 'HUNTER' && itemsEnabled && view.zone ? <button className="welcome__secondary" disabled={busy || !zoneMoverAvailable} onClick={() => void moveZone()} type="button">{zoneMoverAvailable ? 'Hunter Zone Mover' : 'Zone Mover used'}</button> : null}
+            {view.role === 'RUNNER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !decoyAvailable} onClick={() => void activateDecoy()} type="button">{decoyAvailable ? 'Runner Decoy' : 'Decoy armed'}</button> : null}
             {view.can_end ? <button className="welcome__secondary" onClick={() => {
               if (window.confirm('End the match for everyone? This cannot be undone.')) {
                 void supabaseGameApi.endMatch(matchId, 'HOST_END').then((result) => {

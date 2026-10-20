@@ -310,3 +310,8 @@
 
 - Added a one-use server-generated zone-center shift, bounded by the 200m maximum and 50% overlap requirement. Both teams receive only the new public zone geometry and re-sync their maps.
 - Validation: SQL smoke checks displacement, radius preservation, and one-use guard; full `pnpm test:all`, typecheck/build, lint, and `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 6.5 Runner Decoy
+
+- Added a one-use Runner Decoy with a server-generated false position bounded around the Runner's fresh fix. It is stored solely for the next scheduled Hunter ping and never disclosed to Runners.
+- Validation: SQL smoke verifies offset bound, one-use guard, and Runner-safe sync; database/type/API checks PASS.

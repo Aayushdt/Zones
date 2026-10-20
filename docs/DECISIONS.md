@@ -278,3 +278,4 @@
 - Hunter Scan snapshots only fresh Runner fixes at activation and returns them only to the authenticated Hunter who activated it; the configured duration controls the temporary display, not a continuous tracking feed.
 - Proximity alarms use the placing Hunter's latest fresh server-stored fix. A Runner location upload triggers a server-side distance check; the alert response contains only an event label/time and is readable only by its placer.
 - Zone Mover generates its direction and displacement on the server rather than accepting a client target. It limits the displacement to both the configured maximum and the conservative configured overlap bound.
+- Runner Decoy uses one server-generated point within 50m of the Runner's fresh fix, reserved for the next scheduled Hunter snapshot. The Runner only receives an armed confirmation.
