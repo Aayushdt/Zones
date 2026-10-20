@@ -418,6 +418,7 @@ Deno.test('leave, claim, end, and result routes call only their server-side life
     if (url.endsWith('/rpc/xzones_claim_controller')) return Response.json({ accepted: true, controller_player_id: 'player-new' })
     if (url.endsWith('/rpc/xzones_end_match')) return Response.json({ state: 'ENDED', winner: null, end_reason: 'HOST_END' })
     if (url.endsWith('/rpc/xzones_match_result')) return Response.json({ winner: null, end_reason: 'HOST_END', ended_at: '2026-10-18T13:00:00Z', duration_seconds: 120, tag_count: 1 })
+    if (url.endsWith('/rpc/xzones_host_suspicious_events')) return Response.json({ events: [] })
     throw new Error(`Unexpected test URL: ${url} ${String(init?.body ?? '')}`)
   }
   const request = (path: string, body: Record<string, unknown> = {}) => new Request(`http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/${path}`, {
@@ -431,8 +432,10 @@ Deno.test('leave, claim, end, and result routes call only their server-side life
     const end = await handleRequest(request('end', { reason: 'HOST_END' }))
     assert(end.status === 200 && (await end.json()).duration_seconds === 120, 'end should return persisted result')
     const result = await handleRequest(request('result'))
-    assert(result.status === 200 && (await result.json()).end_reason === 'HOST_END', 'result should return safe outcome')
-    assert(calls.join(',') === 'xzones_leave_match,xzones_claim_controller,xzones_end_match,xzones_match_result,xzones_cleanup,xzones_match_result', 'lifecycle paths should use the expected RPCs')
+    const resultBody = await result.json()
+    assert(result.status === 200 && resultBody.end_reason === 'HOST_END', 'result should return safe outcome')
+    assert(Array.isArray(resultBody.suspicious_events) && resultBody.suspicious_events.length === 0, 'result should expose only the host-authorized event list')
+    assert(calls.join(',') === 'xzones_leave_match,xzones_claim_controller,xzones_end_match,xzones_match_result,xzones_cleanup,xzones_match_result,xzones_host_suspicious_events', 'lifecycle paths should use the expected RPCs')
   } finally { globalThis.fetch = originalFetch }
 })
 

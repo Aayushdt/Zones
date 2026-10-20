@@ -38,6 +38,10 @@ export function ResultsPage() {
     {result ? <section className="state-panel result-panel" aria-label="Match results">
       <dl><div><dt>Duration</dt><dd>{Math.floor(result.duration_seconds / 60)} min</dd></div>
         <div><dt>Accepted tags</dt><dd>{result.tag_count}</dd></div><div><dt>End reason</dt><dd>{result.end_reason.replaceAll('_', ' ').toLowerCase()}</dd></div></dl>
+      {result.suspicious_events?.length ? <section aria-label="Host-only location integrity alerts">
+        <h2>Location integrity alerts</h2>
+        <ul>{result.suspicious_events.map((event) => <li key={event.id}>{event.display_name}: {event.reason.replaceAll('_', ' ').toLowerCase()} · {new Date(event.created_at).toLocaleTimeString()}</li>)}</ul>
+      </section> : null}
       <nav className="route-shell__nav"><Link className="welcome__action" to="/create">Start a new game</Link><Link className="welcome__secondary" to="/">Home</Link></nav>
     </section> : <section className="state-panel" role={error ? 'alert' : 'status'}>
       <p>{error || 'The final result will appear here once confirmed by the server.'}</p>

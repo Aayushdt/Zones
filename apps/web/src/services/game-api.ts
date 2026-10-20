@@ -127,7 +127,14 @@ export interface LocationAck { accepted: boolean; server_now: string; player_id?
 export interface ZoneView { center: { lat: number; lon: number }; radius: number; stage: number; nextShrinkAt: string | null; nextRadius: number | null }
 export interface QrChallenge { token: string; expires_at: string; server_now: string }
 export interface TagResult { accepted: boolean; state: MatchState; winner?: Role }
-export interface MatchResult { winner: Role | null; end_reason: string; ended_at: string; duration_seconds: number; tag_count: number }
+export interface MatchResult {
+  winner: Role | null
+  end_reason: string
+  ended_at: string
+  duration_seconds: number
+  tag_count: number
+  suspicious_events?: Array<{ id: number; player_id: string; display_name: string; reason: string; created_at: string }>
+}
 export interface LeaveResult { accepted: boolean; state: MatchState; claim_expires_at?: string }
 export type SafeHandlers = {
   onEvent: (event: { type: string; payload: unknown }) => void

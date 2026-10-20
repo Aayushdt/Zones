@@ -68,7 +68,12 @@ export function LocationSharing() {
         }
         setStatus(result.error.message); return
       }
-      if (!result.data.accepted) { setStatus(result.data.reason === 'POOR_ACCURACY' ? 'GPS accuracy is over 100 m; waiting for a clearer fix.' : 'The server rejected this stale location fix.'); return }
+      if (!result.data.accepted) {
+        setStatus(result.data.reason === 'POOR_ACCURACY' ? 'GPS accuracy is over 100 m; waiting for a clearer fix.'
+          : result.data.reason === 'IMPLAUSIBLE_MOVEMENT' || result.data.reason === 'OUTSIDE_ZONE_RANGE'
+            ? 'The server rejected an implausible location fix.' : 'The server rejected this stale location fix.')
+        return
+      }
       sendState.sentAt = Date.now()
       sendState.sentFix = point
       setStatus(result.data.zone_eliminated

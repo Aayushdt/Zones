@@ -674,9 +674,15 @@ export async function handleRequest(request: Request): Promise<Response> {
 
     const resultMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/result$/i)
     if (resultMatch) {
-      return rpcResponse(await callRpc('xzones_match_result', {
+      const result = await callRpc('xzones_match_result', {
         p_auth_user_id: user.id, p_match_id: resultMatch[1],
-      }))
+      })
+      if (typeof result.error === 'string') return rpcResponse(result)
+      const suspicious = await callRpc('xzones_host_suspicious_events', {
+        p_auth_user_id: user.id, p_match_id: resultMatch[1],
+      })
+      if (typeof suspicious.error === 'string') return rpcResponse(suspicious)
+      return rpcResponse({ ...result, suspicious_events: Array.isArray(suspicious.events) ? suspicious.events : [] })
     }
 
     const locationMatch = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/location$/i)

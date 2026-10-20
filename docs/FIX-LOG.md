@@ -208,3 +208,10 @@
 - Made round duration nullable through shared validation, lobby setup, database schema, start/sync/QR RPC behavior, and match clock display. Timer-off matches retain scheduled pings and do not resolve to a Runner time-limit win; elimination and host outcomes remain authoritative.
 - Added a disposable SQL scenario proving timer-off creation, no `ends_at`, no time-based resolution after elapsed time, and continuing pings.
 - Validation: full `pnpm test:all` PASS; typecheck/build/lint PASS; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 3.1 location plausibility
+
+- Rejected fixes outside the existing timestamp clamps, movement above 15 m/s, and locations over 10 km from the configured zone center. These checks run in the database before storing a fix.
+- Added a private suspicious-event log with no raw coordinate payload and a host-authorized result projection. The results UI displays event reason, player name, and time only to the host; other participants receive an empty event list.
+- The project documentation states plainly that browser GPS cannot be attested and these checks are deterrence, not proof of physical location.
+- Validation: DB plausibility smoke and audit PASS; Edge/hostile API 23/23 PASS; typecheck/build PASS; `git diff --check` PASS.
