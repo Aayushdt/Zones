@@ -9,6 +9,6 @@
 | 4 | Performance and scale | DONE (limited) | 0.1h | source indexes and query harness | 0 confirmed | a46b47f |
 | 5 | Operations and maintainability | DONE (limited) | 0.2h | cleanup and deployment search | 1 | a46b47f |
 | 6 | Game logic in the database | DONE (limited) | 0.2h | smoke scenarios and item/trigger review | 0 confirmed | a46b47f |
-| 7 | Final report | TODO | - | - | - | a46b47f |
+| 7 | Final report | DONE | 0.1h | `REPORT.md` | 4 tracked | a46b47f |
 
 Audit mode: FAST. No remote or production SQL will be run. All audit artifacts are schema-only and live under `docs/db-audit/`. Docker socket denial prevents local-stack-only validation, so those checks are explicitly UNVERIFIED.
