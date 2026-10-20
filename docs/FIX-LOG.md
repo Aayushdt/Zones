@@ -221,3 +221,8 @@
 - Added a Hunter GPS Tag action backed by a service-role RPC. The server validates a fresh ≤5-second/≤50-meter Hunter fix, selects the nearest fresh Runner in the formula-derived range, serializes and records the tag, and rate-limits attempts to one per two seconds per Hunter.
 - Misses return only `NOTHING_IN_RANGE`; no runner identifier or distance is present. QR remains available as an independent fallback.
 - Validation: DB GPS tag smoke PASS; Edge/hostile API 24/24 PASS; typecheck/build PASS; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 3.3 QR anti-relay fallback
+
+- Wrapped the existing atomic QR scan RPC with a server-side distance guard. If both Hunter and Runner fixes are ≤30 seconds old and are over 100 m apart, the server returns a generic conflict and leaves the one-time challenge unused; missing/stale fixes preserve the QR fallback.
+- Validation: DB relay and nearby-fallback smoke PASS; Edge/hostile API 25/25 PASS; typecheck/build PASS; `git diff --check` PASS.

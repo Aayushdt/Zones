@@ -381,6 +381,28 @@ Deno.test('QR scan hashes the presented token and rejects malformed tokens befor
   } finally { globalThis.fetch = originalFetch }
 })
 
+Deno.test('QR relay block is mapped to a safe generic response', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc6-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_scan_qr')) return Response.json({ error: 'QR_RELAY_BLOCKED' })
+    throw new Error(`Unexpected test URL: ${url}`)
+  }
+  try {
+    const response = await handleRequest(new Request('http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/qr/scan', {
+      method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'A'.repeat(43) }),
+    }))
+    const body = await response.json()
+    assert(response.status === 409 && body.error.message.includes('fresh GPS fixes'), 'relay block should be a safe conflict')
+    assert(body.error.runner_id === undefined && body.error.distance === undefined, 'relay block must not expose runner or distance')
+  } finally { globalThis.fetch = originalFetch }
+})
+
 Deno.test('GPS Tag hashes a per-Hunter cooldown key and exposes only a generic miss', async () => {
   Deno.env.set('SUPABASE_URL', 'https://unit.test')
   Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')

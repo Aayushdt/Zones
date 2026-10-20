@@ -232,6 +232,7 @@ function rpcResponse(result: JsonObject): Response {
   if (error === 'WRONG_ROLE') return fail(403, error, 'This tag action is not available for your role.')
   if (error === 'INVALID_QR' || error === 'WRONG_MATCH') return fail(404, error, 'That QR is invalid for this match.')
   if (error === 'QR_USED' || error === 'QR_EXPIRED' || error === 'ALREADY_TAGGED') return fail(409, error, 'That tag code is expired, already used, or no longer valid.')
+  if (error === 'QR_RELAY_BLOCKED') return fail(409, error, 'QR fallback is unavailable while fresh GPS fixes are too far apart.')
   if (error === 'DEADLINE_PASSED') return fail(409, error, 'The server deadline has passed.')
   if (error === 'INACTIVE') return fail(409, error, 'Tagging is available only during the active match.')
   if (error === 'NOT_HOST') return fail(403, error, 'Only the current match controller can end this match.')
