@@ -22,4 +22,5 @@ pg_ctl -D "$PG_DATA" -l "$TMP_DIR/postgres.log" \
 createdb -h "$PG_SOCKET" -p "$PG_PORT" "$PG_DB"
 cd "$ROOT_DIR"
 DATABASE_URL="$PG_URL" bash scripts/test-schema.sh
+DATABASE_URL="$PG_URL" bash scripts/test-tag-races.sh
 psql "$PG_URL" -v ON_ERROR_STOP=1 -f tests/audit/db_scenarios_audit.sql

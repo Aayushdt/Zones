@@ -226,3 +226,9 @@
 
 - Wrapped the existing atomic QR scan RPC with a server-side distance guard. If both Hunter and Runner fixes are ≤30 seconds old and are over 100 m apart, the server returns a generic conflict and leaves the one-time challenge unused; missing/stale fixes preserve the QR fallback.
 - Validation: DB relay and nearby-fallback smoke PASS; Edge/hostile API 25/25 PASS; typecheck/build PASS; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 3.4 cross-action race
+
+- Added a disposable-database harness that launches GPS Tag, QR scan, Runner surrender, and host-end operations from four concurrent PostgreSQL sessions against the same Runner/match.
+- Assertions require a terminal match result and at most one accepted tag; the unique runner-tag constraint and match-row locks serialize outcomes.
+- Validation: race harness PASS (`state=ENDED`, `tags=0` in the host-end-winning run, exactly one result); full database audit PASS; `git diff --check` PASS.
