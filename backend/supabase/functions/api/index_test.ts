@@ -568,3 +568,28 @@ Deno.test('visibility heartbeat validates hidden state and delegates controller 
       'valid visibility must reach the authenticated controller RPC')
   } finally { globalThis.fetch = originalFetch }
 })
+
+Deno.test('rejoin discovery delegates exclusively to the authenticated session identity', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  let receivedAuthId = ''
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    if (url.endsWith('/rest/v1/rpc/xzones_find_rejoinable_match')) {
+      receivedAuthId = (JSON.parse(String(init?.body)) as Record<string, string>).p_auth_user_id
+      return Response.json({ match_id: '63adbd40-4fc6-4d7c-b7a8-1f18f97496a3', state: 'ACTIVE' })
+    }
+    throw new Error(`Unexpected URL: ${url}`)
+  }
+  try {
+    const response = await handleRequest(new Request('http://localhost/functions/v1/api/rejoinable', {
+      method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: '{}',
+    }))
+    const result = await response.json()
+    assert(response.status === 200 && result.state === 'ACTIVE', 'rejoin endpoint should return the safe active match route')
+    assert(receivedAuthId === '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc', 'rejoin lookup must use only the authenticated identity')
+  } finally { globalThis.fetch = originalFetch }
+})

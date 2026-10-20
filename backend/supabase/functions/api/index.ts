@@ -291,6 +291,16 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (!body) return fail(400, 'INVALID_JSON', 'Send a JSON object no larger than 16 KB.')
 
   try {
+    if (path === '/rejoinable') {
+      const match = await callRpc('xzones_find_rejoinable_match', { p_auth_user_id: user.id })
+      if (typeof match.error === 'string') return rpcResponse(match)
+      if (match.match_id === null) return ok({ match_id: null })
+      if (typeof match.match_id !== 'string' || !['LOBBY', 'HEAD_START', 'ACTIVE'].includes(String(match.state))) {
+        return fail(503, 'INTERNAL', 'The game service could not complete this request.')
+      }
+      return ok({ match_id: match.match_id, state: match.state })
+    }
+
     const visibilityPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/visibility$/i)
     if (visibilityPath) {
       if (typeof body.hidden !== 'boolean') return fail(400, 'INVALID_INPUT', 'hidden must be a boolean.')

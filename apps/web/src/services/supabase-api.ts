@@ -16,6 +16,7 @@ import {
   type Result,
   type RemovePlayerResult,
   type RoleSafeMatchView,
+  type RejoinableMatch,
   type SafeHandlers,
   type TagResult,
   type TeamView,
@@ -57,6 +58,15 @@ interface ApiLobbySyncResponse {
 }
 
 const SESSION_KEY = 'xzones.guest_session'
+const ACTIVE_MATCH_KEY = 'xzones.active_match'
+
+function saveActiveMatch(id: string): void {
+  try { localStorage.setItem(ACTIVE_MATCH_KEY, id) } catch { /* rejoin discovery still works while session storage is available */ }
+}
+
+function clearActiveMatch(id: string): void {
+  try { if (localStorage.getItem(ACTIVE_MATCH_KEY) === id) localStorage.removeItem(ACTIVE_MATCH_KEY) } catch { /* optional local hint */ }
+}
 
 function error<T>(code: string, message: string, retryable = false): Result<T> {
   return { ok: false, error: apiError(code, message, retryable) }
@@ -216,13 +226,35 @@ class SupabaseGameApi implements GameApi {
   async createLobby(input: CreateInput): Promise<Result<LobbyView>> {
     const result = await this.post<ApiLobbyResponse>('/lobbies', input)
     if (!result.ok) return result
+    if (typeof result.data.match_id === 'string') saveActiveMatch(result.data.match_id)
     return { ok: true, data: asLobby(result.data, input.display_name, result.data.code ?? '') }
   }
 
   async joinLobby(input: JoinInput): Promise<Result<LobbyView>> {
     const result = await this.post<ApiLobbyResponse>('/lobbies/join', input)
     if (!result.ok) return result
+    if (typeof result.data.match_id === 'string') saveActiveMatch(result.data.match_id)
     return { ok: true, data: asLobby(result.data, input.display_name, input.code.toUpperCase()) }
+  }
+
+  async findRejoinableMatch(): Promise<Result<RejoinableMatch | null>> {
+    let savedMatch = ''
+    try { savedMatch = localStorage.getItem(ACTIVE_MATCH_KEY) ?? '' } catch { /* optional local hint */ }
+    if (savedMatch && !readSession()) {
+      return error('SESSION_LOST', 'Your saved guest session is no longer available.')
+    }
+    if (!readSession()) return { ok: true, data: null }
+    const result = await this.post<{ match_id: string | null; state?: RejoinableMatch['state'] }>('/rejoinable', {})
+    if (!result.ok) return result
+    if (result.data.match_id === null) {
+      if (savedMatch) clearActiveMatch(savedMatch)
+      return { ok: true, data: null }
+    }
+    saveActiveMatch(result.data.match_id)
+    if (!['LOBBY', 'HEAD_START', 'ACTIVE'].includes(result.data.state ?? '')) {
+      return error('INVALID_RESPONSE', 'The game service returned an invalid rejoin state.')
+    }
+    return { ok: true, data: { match_id: result.data.match_id, state: result.data.state as RejoinableMatch['state'] } }
   }
 
   async getLobby(id: string): Promise<Result<LobbyView>> {
@@ -385,7 +417,9 @@ class SupabaseGameApi implements GameApi {
   }
 
   async leaveMatch(id: string): Promise<Result<LeaveResult>> {
-    return this.post<LeaveResult>(`/matches/${encodeURIComponent(id)}/leave`, {})
+    const result = await this.post<LeaveResult>(`/matches/${encodeURIComponent(id)}/leave`, {})
+    if (result.ok) clearActiveMatch(id)
+    return result
   }
 
   async claimController(id: string): Promise<Result<{ accepted: boolean; controller_player_id: string }>> {
@@ -397,7 +431,9 @@ class SupabaseGameApi implements GameApi {
   }
 
   async endMatch(id: string, reason: string): Promise<Result<MatchResult>> {
-    return this.post<MatchResult>(`/matches/${encodeURIComponent(id)}/end`, { reason })
+    const result = await this.post<MatchResult>(`/matches/${encodeURIComponent(id)}/end`, { reason })
+    if (result.ok) clearActiveMatch(id)
+    return result
   }
 
   async subscribe(id: string, role: Role, handlers: SafeHandlers): Promise<Unsubscribe> {

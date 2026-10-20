@@ -252,3 +252,8 @@
 
 - Added an authenticated visibility heartbeat restricted to the current active controller. Match resolution now ignores hidden controller time, resumes the baseline on visibility return, and opens the claim window after 180 seconds of visible inactivity.
 - Validation: Edge API tests PASS (15/15); host visibility DB smoke PASS; complete disposable DB audit/race suite PASS; typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 4.4 session rejoin
+
+- Added server-side discovery of active memberships for the current authenticated guest session and a Home screen rejoin entry. Creation/join stores only a local match hint; SQL still authorizes solely by `auth_user_id`. Explicitly left or ended matches are excluded, and a missing saved guest session explains that the host can remove the stale player entry.
+- Validation: Edge API tests PASS (16/16); rejoin DB smoke and full disposable DB suite PASS; typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.

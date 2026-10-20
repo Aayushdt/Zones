@@ -243,3 +243,7 @@
 # Hide & Seek implementation — Step 4.3 host visibility
 
 - Record controller tab visibility through an authenticated API call and server-side timestamp. While the last report is hidden, do not release host controls; a visible report resets the inactivity baseline. A visible host becomes claimable after the configured 180-second threshold.
+
+# Hide & Seek implementation — Step 4.4 rejoin
+
+- Discover a rejoinable match only from the authenticated persisted guest identity; never accept a player name or lobby code as identity. Keep a local match ID only as a hint for explaining a missing session, not as an authorization credential. Explicitly left players and ended matches are not returned.

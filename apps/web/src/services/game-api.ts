@@ -135,6 +135,7 @@ export interface MatchResult {
   tag_count: number
   suspicious_events?: Array<{ id: number; player_id: string; display_name: string; reason: string; created_at: string }>
 }
+export interface RejoinableMatch { match_id: string; state: 'LOBBY' | 'HEAD_START' | 'ACTIVE' }
 export interface LeaveResult { accepted: boolean; state: MatchState; claim_expires_at?: string }
 export type SafeHandlers = {
   onEvent: (event: { type: string; payload: unknown }) => void
@@ -152,6 +153,7 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   startMatch(id: string, expectedRevision?: number): Promise<Result<ClockView>>
   syncClock(id: string): Promise<Result<ClockView>>
   syncMatch(id: string, revision?: number): Promise<Result<RoleSafeMatchView>>
+  findRejoinableMatch(): Promise<Result<RejoinableMatch | null>>
   reportVisibility(id: string, hidden: boolean): Promise<Result<{ accepted: boolean; hidden: boolean }>>
   updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>>
   issueQr(id: string): Promise<Result<QrChallenge>>

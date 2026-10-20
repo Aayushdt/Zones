@@ -94,6 +94,7 @@ export function createMockApi(): GameApi<SimulationLobbyView> {
     async startMatch() { return notImplemented() },
     async syncClock() { return notImplemented() },
     async syncMatch() { return notImplemented() },
+    async findRejoinableMatch() { return { ok: true, data: null } },
     async reportVisibility(_id, hidden) { return { ok: true, data: { accepted: true, hidden } } },
     async updateLocation() { return notImplemented() },
     async issueQr() { return notImplemented() },

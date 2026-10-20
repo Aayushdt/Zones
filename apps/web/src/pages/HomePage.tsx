@@ -1,6 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppStore } from '../stores/app-store'
+import { supabaseGameApi } from '../services/supabase-api'
+import type { RejoinableMatch } from '../services/game-api'
 
 export function HomePage() {
   const guestName = useAppStore((state) => state.guestName)
@@ -10,6 +12,18 @@ export function HomePage() {
   const [safePlayConfirmed, setSafePlayConfirmed] = useState(false)
   const [continued, setContinued] = useState(false)
   const [error, setError] = useState('')
+  const [rejoinable, setRejoinable] = useState<RejoinableMatch | null>(null)
+  const [sessionLost, setSessionLost] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    void supabaseGameApi.findRejoinableMatch().then((result) => {
+      if (!active) return
+      if (result.ok) setRejoinable(result.data)
+      else if (result.error.code === 'SESSION_LOST') setSessionLost(true)
+    })
+    return () => { active = false }
+  }, [])
 
   function continueAsGuest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -33,6 +47,14 @@ export function HomePage() {
         <h1>Real places.<br />Real games.</h1>
         <p className="welcome__copy">Play a private outdoor hide-and-seek game with friends. Stay aware, keep your phone with you, and play only where it is permitted.</p>
       </div>
+      {rejoinable && <section className="state-panel rejoin-panel" aria-label="Saved match">
+        <p className="welcome__copy">An active match is linked to this guest session.</p>
+        <Link className="welcome__action" to={rejoinable.state === 'LOBBY' ? `/lobby/${rejoinable.match_id}`
+          : rejoinable.state === 'HEAD_START' ? `/match/${rejoinable.match_id}/head-start` : `/match/${rejoinable.match_id}`}>
+          Rejoin active match
+        </Link>
+      </section>}
+      {sessionLost && <p className="form-error" role="status">Your saved guest session is no longer available. Ask the host to remove your old player entry; rejoining by name or code alone is not allowed.</p>}
       {!continued ? (
         <form className="state-panel screen-form" onSubmit={continueAsGuest}>
           <label className="field">
