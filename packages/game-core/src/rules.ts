@@ -24,6 +24,55 @@ export function haversineDistanceMeters(lat1: number, lon1: number, lat2: number
 export type ZoneSample = 'INSIDE' | 'OUTSIDE' | 'UNCERTAIN' | 'NO_FIX'
 export interface ZoneConfirmation { outsideSamples: number; insideSamples: number; revealed: boolean }
 
+export interface ZoneScheduleConfig {
+  center: { lat: number; lon: number }
+  startRadiusM: number
+  shrinkStages: number
+  shrinkIntervalSeconds: number
+  finalRadiusM: number
+  headStartSeconds: number
+}
+
+export interface ZoneAtResult {
+  center: ZoneScheduleConfig['center']
+  radius: number
+  stage: number
+  nextShrinkAt: number | null
+  nextRadius: number | null
+}
+
+/** Evaluates the deterministic circle schedule; stage radii are evenly spaced. */
+export function zoneAt(config: ZoneScheduleConfig, matchStartedAt: number, now: number): ZoneAtResult {
+  const valid = Number.isFinite(matchStartedAt) && Number.isFinite(now)
+    && Number.isFinite(config.center.lat) && config.center.lat >= -90 && config.center.lat <= 90
+    && Number.isFinite(config.center.lon) && config.center.lon >= -180 && config.center.lon <= 180
+    && Number.isFinite(config.startRadiusM) && config.startRadiusM > 0
+    && Number.isInteger(config.shrinkStages) && config.shrinkStages >= 0
+    && Number.isFinite(config.shrinkIntervalSeconds) && config.shrinkIntervalSeconds > 0
+    && Number.isFinite(config.headStartSeconds) && config.headStartSeconds >= 0
+    && Number.isFinite(config.finalRadiusM) && config.finalRadiusM > 0
+    && config.finalRadiusM <= config.startRadiusM
+  if (!valid) throw new RangeError('Invalid zone schedule configuration')
+
+  const { shrinkStages } = config
+  if (shrinkStages === 0) {
+    return { center: config.center, radius: config.startRadiusM, stage: 0, nextShrinkAt: null, nextRadius: null }
+  }
+  const intervalMs = config.shrinkIntervalSeconds * 1000
+  const firstShrinkAt = matchStartedAt + (config.headStartSeconds * 1000) + intervalMs
+  const stage = Math.min(shrinkStages, Math.max(0, Math.floor((now - firstShrinkAt) / intervalMs) + 1))
+  const radiusAtStage = (value: number) => config.startRadiusM
+    + ((config.finalRadiusM - config.startRadiusM) * value / shrinkStages)
+  const nextShrinkAt = stage < shrinkStages ? firstShrinkAt + (stage * intervalMs) : null
+  return {
+    center: config.center,
+    radius: radiusAtStage(stage),
+    stage,
+    nextShrinkAt,
+    nextRadius: stage < shrinkStages ? radiusAtStage(stage + 1) : null,
+  }
+}
+
 /** Accuracy bounds must lie wholly on one side of the fixed boundary. */
 export function classifyZoneSample(
   distanceMeters: number | null,

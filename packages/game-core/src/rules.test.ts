@@ -10,8 +10,34 @@ import {
   haversineDistanceMeters,
   nextRandomRole,
   resolveActiveOutcome,
+  zoneAt,
 } from './rules.ts'
 import type { TeamMember } from './types.ts'
+
+describe('deterministic zone schedule', () => {
+  const config = {
+    center: { lat: 12, lon: 77 }, startRadiusM: 500, shrinkStages: 2,
+    shrinkIntervalSeconds: 300, finalRadiusM: 100, headStartSeconds: 180,
+  }
+
+  it('keeps the starting circle through head start and until the first interval elapses', () => {
+    expect(zoneAt(config, 1_000, 180_999)).toEqual({
+      center: config.center, radius: 500, stage: 0, nextShrinkAt: 481_000, nextRadius: 300,
+    })
+    expect(zoneAt(config, 1_000, 481_000).stage).toBe(1)
+  })
+
+  it('uses exact stage boundaries and caps the final stage', () => {
+    expect(zoneAt(config, 1_000, 781_000)).toEqual({
+      center: config.center, radius: 100, stage: 2, nextShrinkAt: null, nextRadius: null,
+    })
+    expect(zoneAt({ ...config, shrinkStages: 0 }, 1_000, 9_000_000).radius).toBe(500)
+  })
+
+  it('rejects impossible zone schedules', () => {
+    expect(() => zoneAt({ ...config, finalRadiusM: 501 }, 1_000, 2_000)).toThrow(RangeError)
+  })
+})
 
 describe('team balance and readiness', () => {
   it('starts only when each supported lobby has its exact prescribed Hunter count', () => {

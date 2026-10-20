@@ -168,3 +168,9 @@
 
 - Added a repeatable temporary-PostgreSQL load harness with 100 concurrent pgbench clients, one simulated player per client, 10-second moving-location cadence, jittered 30–45-second sync cycles, and measured API/RPC fan-out. A short random endpoint prototype was discarded because it ignored client-side GPS pacing; the final benchmark models that throttle.
 - The 600-second run processed 9,055 simulated API requests and 27,380 RPC calls with zero errors. RPC p95 was 1.063 ms, max 7.414 ms; pgbench average transaction latency was 1.503 ms. Typecheck/build/lint and the full suite passed. Results and local-only caveats are in `docs/verification/load-test.md`.
+
+# Hide & Seek implementation — Step 2.1 deterministic zone schedule
+
+- Added `zoneAt` to game-core as a pure timestamp-derived circle schedule. It reports current radius/stage and the next shrink timestamp/radius without timers or scheduler state.
+- Stage 1 begins after head start plus the first interval. Stage radii are evenly interpolated; this algorithm is provisional because the reference specifies timing but not intermediate radii.
+- Validation: game-core tests 28/28 PASS, typecheck PASS, and `git diff --check` PASS.
