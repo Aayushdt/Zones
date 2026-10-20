@@ -157,8 +157,8 @@ export function LobbyPage() {
           </button>
         </div> : null}
         {isController ? <label className="check-field"><input type="checkbox" checked={itemsEnabled} disabled={pending} onChange={(event) => void toggleItems(event.currentTarget.checked)} /><span>Items on/off (experimental)</span></label> : <p className="field-help">Items are {itemsEnabled ? 'on' : 'off'} for this lobby.</p>}
-        <Roster title="Runners" players={runners} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
-        <Roster title="Hunters" players={hunters} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
+        <div className="lobby-teams"><Roster title="Runners" players={runners} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} />
+        <Roster title="Hunters" players={hunters} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} /></div>
         {unassigned.length ? <Roster title="Choose a team" players={unassigned} youId={lobby.you.id} controllerId={lobby.controller_player_id} onRemove={isController ? removePlayer : undefined} disabled={pending} /> : null}
         <div className="team-picker" aria-label="Choose team">
           {(['RUNNER', 'HUNTER', 'RANDOM'] as const).map((role) => (

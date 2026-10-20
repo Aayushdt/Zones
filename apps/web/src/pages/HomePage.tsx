@@ -41,10 +41,11 @@ export function HomePage() {
   }
 
   return (
-    <main className="route-shell">
-      <div className="route-shell__heading">
+    <main className="route-shell home-page">
+      <div className="route-shell__heading home-page__hero">
         <p className="welcome__eyebrow">Hunter vs Runner</p>
-        <h1>Real places.<br />Real games.</h1>
+        <p className="home-page__brand" aria-label="XZones">X<span>✦</span>ZONES</p>
+        <h1>Hide. Seek.<br />Survive.</h1>
         <p className="welcome__copy">Play a private outdoor hide-and-seek game with friends. Stay aware, keep your phone with you, and play only where it is permitted.</p>
       </div>
       {rejoinable && <section className="state-panel rejoin-panel" aria-label="Saved match">
@@ -56,7 +57,7 @@ export function HomePage() {
       </section>}
       {sessionLost && <p className="form-error" role="status">Your saved guest session is no longer available. Ask the host to remove your old player entry; rejoining by name or code alone is not allowed.</p>}
       {!continued ? (
-        <form className="state-panel screen-form" onSubmit={continueAsGuest}>
+        <form className="state-panel screen-form entry-card" onSubmit={continueAsGuest}>
           <label className="field">
             <span>Guest name</span>
             <input
@@ -82,13 +83,16 @@ export function HomePage() {
           <button className="welcome__action primary-action" type="submit">Continue as guest</button>
         </form>
       ) : (
-        <section className="state-panel">
+        <section className="state-panel game-hub-card">
           <p className="welcome__eyebrow">Welcome, {guestName}</p>
-          <p className="welcome__copy">You are playing as a guest. No account or sign-in is needed.</p>
+          <div className="game-hub-card__art" aria-hidden="true"><span>↗</span></div>
+          <h2>Hide and Seek</h2>
+          <p className="welcome__copy">You are playing as a guest. No account or sign-in is needed. Runners stay hidden; Hunters receive only scheduled pings.</p>
           <nav className="route-shell__nav" aria-label="Game actions">
             <Link className="welcome__action" to="/create">Create private game</Link>
             <Link className="welcome__secondary" to="/join">Join with code</Link>
           </nav>
+          <Link className="how-to-play" to="/guide">⌑ <span><strong>How to play</strong><small>Read the rules and safe-play guidance.</small></span><b>›</b></Link>
         </section>
       )}
     </main>

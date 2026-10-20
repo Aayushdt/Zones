@@ -104,13 +104,13 @@ export function CreatePage() {
   }
 
   return (
-    <main className="route-shell">
+    <main className="route-shell create-page">
       <div className="route-shell__heading">
         <p className="welcome__eyebrow">Private lobby</p>
         <h1>Create game</h1>
         <p className="welcome__copy">Set the round, head start, and optional game boundary. Only people with your private code can join.</p>
       </div>
-      <form className="state-panel screen-form" onSubmit={submit}>
+      <form className="state-panel screen-form create-form" onSubmit={submit}>
         <label className="field">
           <span>Guest name</span>
           <input className="form-control" maxLength={24} onChange={(event) => setName(event.currentTarget.value)} required value={name} />
@@ -135,7 +135,7 @@ export function CreatePage() {
         </fieldset>
 
         <fieldset className="field-set">
-          <legend>Game duration</legend>
+          <legend>Game duration <span className="field-legend-note">Server timed</span></legend>
           <div className="segmented-control">
             <button aria-pressed={!timerEnabled} className={!timerEnabled ? 'segment is-selected' : 'segment'} onClick={() => setTimerEnabled(false)} type="button">No timer</button>
             {durations.map((minutes) => (
@@ -152,12 +152,12 @@ export function CreatePage() {
         {!timerEnabled ? <p className="field-help">No time limit. The match ends only when a team has no active players or the host ends it; Runners cannot win by waiting out a clock.</p> : null}
 
         <label className="field">
-          <span>Head start <strong>{Math.floor(headStart / 60)}:{String(headStart % 60).padStart(2, '0')}</strong></span>
+          <span>Head start <strong>{Math.floor(headStart / 60)}:{String(headStart % 60).padStart(2, '0')}</strong></span><small className="field-help">Hunters receive no Runner snapshots during this time.</small>
           <input max={900} min={0} onChange={(event) => setHeadStart(Number(event.currentTarget.value))} step={30} type="range" value={headStart} />
         </label>
 
         <fieldset className="field-set">
-          <legend>Runner ping interval</legend>
+          <legend>Runner ping interval <span className="field-legend-note">Hunters only</span></legend>
           <div className="segmented-control">
             {pingOptions.map((minutes) => (
               <button
