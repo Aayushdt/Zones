@@ -1,6 +1,6 @@
 import { projectEventForRole } from './payloads.ts'
 import { publishRoleEvents } from './broadcast.ts'
-import { isValidMatchConfig } from '../../../../packages/game-core/src/config.ts'
+import { isValidMatchConfig, isValidZoneConfig } from '../../../../packages/game-core/src/config.ts'
 import { HIDE_AND_SEEK_CONFIG } from '../../../../packages/game-core/src/hideAndSeekConfig.ts'
 type JsonObject = Record<string, unknown>
 
@@ -301,6 +301,11 @@ export async function handleRequest(request: Request): Promise<Response> {
         headStartSeconds: body.head_start_seconds as number,
         pingSeconds: pingSeconds as number | null,
       })
+        || !isValidZoneConfig({
+          shrinkStages: (body.zone_shrink_stages ?? 0) as number,
+          shrinkIntervalSeconds: (body.zone_shrink_interval_seconds ?? 300) as number,
+          finalRadiusM: (body.zone_final_radius_m ?? 50) as number,
+        }, body.zone_diameter_m === undefined ? null : (body.zone_diameter_m as number) / 2)
         || (body.zone_diameter_m !== undefined
           && (!numberIn(body.zone_diameter_m, 400, 3000) || body.zone_diameter_m % 2 !== 0))) {
         return fail(400, 'INVALID_CONFIG', 'Check the name, duration, head start, ping, and zone size.')
@@ -333,6 +338,9 @@ export async function handleRequest(request: Request): Promise<Response> {
           p_zone_lat: zoneLat ?? null,
           p_zone_lon: zoneLon ?? null,
           p_zone_diameter_m: body.zone_diameter_m ?? null,
+          p_zone_shrink_stages: body.zone_shrink_stages ?? 0,
+          p_zone_shrink_interval_seconds: body.zone_shrink_interval_seconds ?? 300,
+          p_zone_final_radius_m: body.zone_final_radius_m ?? 50,
         })
         if (result.error !== 'CODE_COLLISION') {
           if (!result.error && typeof result.match_id === 'string' && typeof result.code_expires_at === 'string') {

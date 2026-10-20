@@ -16,6 +16,9 @@ export function CreatePage() {
   const [headStart, setHeadStart] = useState(180)
   const [fixedZone, setFixedZone] = useState(false)
   const [diameter, setDiameter] = useState(1000)
+  const [shrinkStages, setShrinkStages] = useState(0)
+  const [shrinkIntervalMinutes, setShrinkIntervalMinutes] = useState(5)
+  const [finalRadius, setFinalRadius] = useState(50)
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
   const [pending, setPending] = useState(false)
@@ -49,6 +52,9 @@ export function CreatePage() {
         zone_lat: Number(latitude),
         zone_lon: Number(longitude),
       } : {}),
+      zone_shrink_stages: shrinkStages,
+      zone_shrink_interval_seconds: shrinkIntervalMinutes * 60,
+      zone_final_radius_m: fixedZone ? finalRadius : 50,
     })
     setPending(false)
     if (!result.ok) {
@@ -123,6 +129,20 @@ export function CreatePage() {
               <span>Zone diameter · {diameter} m</span>
               <input max={3000} min={400} onChange={(event) => setDiameter(Number(event.currentTarget.value))} step={100} type="range" value={diameter} />
             </label>
+            <label className="field">
+              <span>Shrink stages · {shrinkStages}</span>
+              <input max={10} min={0} onChange={(event) => setShrinkStages(Number(event.currentTarget.value))} step={1} type="range" value={shrinkStages} />
+            </label>
+            {shrinkStages > 0 ? <>
+              <label className="field">
+                <span>Interval per stage · {shrinkIntervalMinutes} min</span>
+                <input max={60} min={1} onChange={(event) => setShrinkIntervalMinutes(Number(event.currentTarget.value))} step={1} type="range" value={shrinkIntervalMinutes} />
+              </label>
+              <label className="field">
+                <span>Final radius · {finalRadius} m</span>
+                <input max={diameter / 2} min={50} onChange={(event) => setFinalRadius(Number(event.currentTarget.value))} step={10} type="range" value={Math.min(finalRadius, diameter / 2)} />
+              </label>
+            </> : null}
             <p className="field-help">Enter a center now. Map selection will be available in the gameplay map step.</p>
             <div className="coordinate-fields">
               <label className="field"><span>Center latitude</span><input className="form-control" inputMode="decimal" onChange={(event) => setLatitude(event.currentTarget.value)} placeholder="e.g. 25.61" value={latitude} /></label>

@@ -6,6 +6,30 @@ export interface MatchConfig {
   pingSeconds: number | null
 }
 
+export interface ZoneConfig {
+  shrinkStages: number
+  shrinkIntervalSeconds: number
+  finalRadiusM: number
+}
+
+export const DEFAULT_ZONE_CONFIG: ZoneConfig = {
+  shrinkStages: HIDE_AND_SEEK_CONFIG.zone.shrinkStages.default,
+  shrinkIntervalSeconds: HIDE_AND_SEEK_CONFIG.zone.shrinkIntervalSeconds.default,
+  finalRadiusM: HIDE_AND_SEEK_CONFIG.zone.finalRadiusM.default,
+}
+
+export function isValidZoneConfig(config: ZoneConfig, startRadiusM: number | null): boolean {
+  return Number.isInteger(config.shrinkStages)
+    && config.shrinkStages >= HIDE_AND_SEEK_CONFIG.zone.shrinkStages.min
+    && config.shrinkStages <= HIDE_AND_SEEK_CONFIG.zone.shrinkStages.max
+    && Number.isInteger(config.shrinkIntervalSeconds)
+    && config.shrinkIntervalSeconds >= HIDE_AND_SEEK_CONFIG.zone.shrinkIntervalSeconds.min
+    && config.shrinkIntervalSeconds <= HIDE_AND_SEEK_CONFIG.zone.shrinkIntervalSeconds.max
+    && Number.isInteger(config.finalRadiusM)
+    && config.finalRadiusM >= HIDE_AND_SEEK_CONFIG.zone.finalRadiusM.min
+    && config.finalRadiusM <= (startRadiusM ?? HIDE_AND_SEEK_CONFIG.zone.startRadiusM.max)
+}
+
 export const DEFAULT_MATCH_CONFIG: MatchConfig = {
   roundSeconds: HIDE_AND_SEEK_CONFIG.match.roundSeconds.default,
   headStartSeconds: HIDE_AND_SEEK_CONFIG.match.headStartSeconds.default,

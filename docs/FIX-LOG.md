@@ -174,3 +174,9 @@
 - Added `zoneAt` to game-core as a pure timestamp-derived circle schedule. It reports current radius/stage and the next shrink timestamp/radius without timers or scheduler state.
 - Stage 1 begins after head start plus the first interval. Stage radii are evenly interpolated; this algorithm is provisional because the reference specifies timing but not intermediate radii.
 - Validation: game-core tests 28/28 PASS, typecheck PASS, and `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 2.2 persisted shrink configuration
+
+- Added an additive migration for circle-zone stages, interval, and final radius; extended the service-role lobby-create RPC with matching bounds and persisted values. Existing RPC callers retain defaults.
+- The create route validates the same centralized limits; the lobby form exposes optional shrink controls when a circle is enabled. Configuration remains zero stages by default.
+- Validation: database audit 14/14 PASS, Edge and hostile API tests 23/23 PASS, game-core 29/29 PASS, typecheck/build PASS, `git diff --check` PASS.

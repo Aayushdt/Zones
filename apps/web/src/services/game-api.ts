@@ -41,6 +41,11 @@ export interface SimulationLobbyView extends Omit<LobbyView, 'id' | 'source' | '
 export interface CreateInput {
   display_name: string
   zone_diameter_m?: number
+  zone_lat?: number
+  zone_lon?: number
+  zone_shrink_stages?: number
+  zone_shrink_interval_seconds?: number
+  zone_final_radius_m?: number
   round_seconds: number
   head_start_seconds: number
   ping_seconds: number | null
