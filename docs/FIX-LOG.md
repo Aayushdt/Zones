@@ -295,3 +295,8 @@
 
 - Added the Hide & Seek mode marker, disabled-by-default item toggle, private item-state tables, controller-only setting, and server-side role/phase/one-use activation skeleton. UI state reloads from the server.
 - Validation: full `pnpm test:all` PASS (31 unit, 27 audit, API 19, hostile API, payload/simulator, Playwright, DB suite); typecheck/build PASS; `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 6.2 Hunter Scan
+
+- Added a one-use server-authorized Hunter Scan returning only active Runners' fresh stored fixes to the activating Hunter. The client removes the temporary map markers after the configured Scan duration; no Realtime broadcast or client-supplied coordinates are involved.
+- Validation: DB scan smoke verifies fresh-fix selection, Hunter-only access, one-use consumption and expiry; full `pnpm test:all`, typecheck/build, lint, and `git diff --check` PASS.

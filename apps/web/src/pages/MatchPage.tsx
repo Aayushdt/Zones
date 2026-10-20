@@ -27,6 +27,10 @@ export function MatchPage() {
   const [zoneSeconds, setZoneSeconds] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [itemsEnabled, setItemsEnabled] = useState(false)
+  const [scanPositions, setScanPositions] = useState<Array<{ runner_id: string; lat: number; lon: number; age_seconds: number; ping_index: number }>>([])
+  const [scanExpiry, setScanExpiry] = useState<number | null>(null)
+  const [scanAvailable, setScanAvailable] = useState(true)
   const [stealth, setStealth] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
   const anchor = useRef(0)
@@ -37,8 +41,8 @@ export function MatchPage() {
 
   const sync = useCallback(async () => {
     setBusy(true)
-    const [matchResult, clockResult] = await Promise.all([
-      supabaseGameApi.syncMatch(matchId), supabaseGameApi.syncClock(matchId),
+    const [matchResult, clockResult, itemStatus] = await Promise.all([
+      supabaseGameApi.syncMatch(matchId), supabaseGameApi.syncClock(matchId), supabaseGameApi.setItemsEnabled(matchId, null),
     ])
     setBusy(false)
     if (!matchResult.ok) { setError(matchResult.error.message); return }
@@ -51,6 +55,7 @@ export function MatchPage() {
     }
     setError('')
     setView(matchResult.data)
+    if (itemStatus.ok) setItemsEnabled(itemStatus.data.items_enabled)
     setClock(clockResult.data)
     anchor.current = performance.now()
     setSeconds(timeLeft(clockResult.data, anchor.current))
@@ -100,6 +105,12 @@ export function MatchPage() {
   }, [view?.zone?.nextShrinkAt])
   useEffect(() => startFallbackSync(() => sync()), [sync])
   useEffect(() => {
+    if (scanExpiry === null) return
+    const remaining = Math.max(0, scanExpiry - Date.now())
+    const timer = window.setTimeout(() => { setScanPositions([]); setScanExpiry(null) }, remaining)
+    return () => window.clearTimeout(timer)
+  }, [scanExpiry])
+  useEffect(() => {
     if (!view || view.state !== 'ACTIVE') return
     const wakeLockApi = (navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ released: boolean; release: () => Promise<void> }> } }).wakeLock
     return maintainScreenWakeLock(true, wakeLockApi, document)
@@ -108,8 +119,23 @@ export function MatchPage() {
   const ownPosition = currentFix ? { ...currentFix, player_id: view?.own_player_id ?? currentFix.player_id } : null
   const mapData: GameMapData | null = view ? view.role === 'RUNNER'
     ? { role: 'RUNNER', own_position: ownPosition, own_team_positions: view.own_team_positions }
-    : { role: 'HUNTER', own_position: ownPosition, own_team_positions: view.own_team_positions, runner_snapshots: view.runner_snapshots }
+    : { role: 'HUNTER', own_position: ownPosition, own_team_positions: view.own_team_positions, runner_snapshots: [
+      ...view.runner_snapshots,
+      ...scanPositions.map((position) => ({ runner_id: position.runner_id, status: 'OK' as const, lat: position.lat, lon: position.lon, age_seconds: position.age_seconds, ping_index: position.ping_index })),
+    ] }
     : null
+
+  async function activateScan() {
+    setBusy(true)
+    const result = await supabaseGameApi.activateItem(matchId, 'HUNTER_SCAN')
+    setBusy(false)
+    if (!result.ok) { setError(result.error.message); return }
+    setScanAvailable(false)
+    const positions = result.data.runner_positions ?? []
+    setScanPositions(positions.map((position) => ({ ...position, ping_index: -1 })))
+    setScanExpiry(Date.now() + HIDE_AND_SEEK_CONFIG.items.hunterScanSeconds.default * 1000)
+    setError(positions.length ? `Scan reveals ${positions.length} fresh Runner fix${positions.length === 1 ? '' : 'es'} temporarily.` : 'Scan found no fresh Runner fixes.')
+  }
 
   const cancelStealthExit = () => {
     if (stealthExitTimer.current !== null) window.clearTimeout(stealthExitTimer.current)
@@ -148,6 +174,7 @@ export function MatchPage() {
             : 'Hunter teammate positions and scheduled Runner ping snapshots are shown separately.'}</p></div>
           <div className="match-status-actions">
             {view.role === 'HUNTER' ? <Link className="welcome__secondary" to={`/match/${matchId}/pings`}>Pings</Link> : null}
+            {view.role === 'HUNTER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !scanAvailable} onClick={() => void activateScan()} type="button">{scanAvailable ? 'Hunter Scan' : 'Hunter Scan used'}</button> : null}
             {view.can_end ? <button className="welcome__secondary" onClick={() => {
               if (window.confirm('End the match for everyone? This cannot be undone.')) {
                 void supabaseGameApi.endMatch(matchId, 'HOST_END').then((result) => {

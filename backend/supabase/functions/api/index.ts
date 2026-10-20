@@ -335,6 +335,8 @@ export async function handleRequest(request: Request): Promise<Response> {
       if (typeof body.item_key !== 'string') return fail(400, 'INVALID_INPUT', 'Choose an available item.')
       return rpcResponse(await callRpc('xzones_activate_item', {
         p_auth_user_id: user.id, p_match_id: itemsPath[1], p_item_key: body.item_key,
+        p_scan_seconds: HIDE_AND_SEEK_CONFIG.items.hunterScanSeconds.default,
+        p_max_fix_age_seconds: HIDE_AND_SEEK_CONFIG.location.maxFixAgeSeconds.default,
       }))
     }
 

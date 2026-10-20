@@ -275,7 +275,7 @@ class SupabaseGameApi implements GameApi {
   }
 
   async activateItem(id: string, itemKey: string): Promise<Result<{ accepted: boolean; uses_remaining: number }>> {
-    return this.post<{ accepted: boolean; uses_remaining: number }>(`/matches/${encodeURIComponent(id)}/items`, { item_key: itemKey })
+    return this.post(`/matches/${encodeURIComponent(id)}/items`, { item_key: itemKey })
   }
 
   async getLobby(id: string): Promise<Result<LobbyView>> {

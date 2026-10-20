@@ -275,3 +275,4 @@
 - Bug reports store only trimmed user-entered text and creation time; the authenticated user ID is HMAC-derived solely as a one-per-hour rate-limit key. A free-text limit of 2,000 characters and one report per hour are conservative defaults because the reference does not specify these values.
 # Item economy defaults
 - Items are disabled by default and their activation state is private to server-side functions; each role-specific item begins with one use, matching the brief's default economy until playtesting changes it.
+- Hunter Scan snapshots only fresh Runner fixes at activation and returns them only to the authenticated Hunter who activated it; the configured duration controls the temporary display, not a continuous tracking feed.
