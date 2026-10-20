@@ -1,8 +1,12 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-export type Theme = 'dusk' | 'paper'
+export type Theme = 'system' | 'dusk' | 'paper'
 export type MapStylePreference = 'auto' | 'dusk' | 'paper'
+
+export function resolveTheme(theme: Theme, prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true): Exclude<Theme, 'system'> {
+  return theme === 'system' ? (prefersDark ? 'dusk' : 'paper') : theme
+}
 
 interface AppState {
   theme: Theme
@@ -18,7 +22,7 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
-      theme: 'dusk',
+      theme: 'system',
       mapStyle: 'auto',
       hapticsEnabled: false,
       guestName: '',

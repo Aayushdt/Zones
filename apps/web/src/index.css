@@ -24,9 +24,18 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(ellipse at 75% 20%, rgb(143 124 255 / 12%), transparent 35rem),
-    var(--color-background);
+  background: var(--color-background);
+}
+
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: url('/contour-grid.svg') center / 720px 720px;
+  color: var(--color-zone);
+  content: '';
+  opacity: 0.055;
+  pointer-events: none;
 }
 
 a {

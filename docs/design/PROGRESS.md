@@ -6,6 +6,6 @@
 | 0.2 | Board mapping | PRESENT-BUT-DIFFERENT | DONE | `board-mapping.md` | Privacy crosswalk | Unsupported board elements explicitly omitted. |
 | 0.3 | Before screenshots | PARTIAL | DONE | `verification/before/{home,create,join,settings,guide}.png` | Chromium at 375×812 | Live match fixtures remain deferred to end-to-end verification. |
 | 0.4 | Board colour sampling | ABSENT | DONE | `board-colours.md` | Image quantization | Sampled design-board swatches documented. |
-| 1 | Foundations | TODO | TODO | - | - | - |
+| 1 | Foundations | PARTIAL | DONE | semantic token layer, System theme, pre-paint script, contour texture | Web build + lint | Build passes; lint warnings pre-existed in effect-heavy pages. |
 | 2 | Shared primitives | TODO | TODO | - | - | - |
 | 3 | Entry, setup, lobby | TODO | TODO | - | - | - |

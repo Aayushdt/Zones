@@ -1,6 +1,6 @@
 .app-header {
   display: flex;
-  width: min(100% - 2rem, 72rem);
+  width: min(100% - 2rem, 76rem);
   min-height: 4rem;
   align-items: center;
   justify-content: space-between;
@@ -18,15 +18,15 @@
   margin: 0;
   color: var(--color-text);
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 800;
-  letter-spacing: -0.08em;
+  letter-spacing: -0.055em;
   text-decoration: none;
 }
 
 .welcome__wordmark span {
-  color: var(--color-accent);
-  font-size: 1rem;
+  color: var(--color-zone);
+  font-size: 1.1rem;
   letter-spacing: 0;
 }
 
@@ -38,7 +38,7 @@
   padding: 0 0.875rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 86%, transparent);
   color: var(--color-text);
   font: 600 0.875rem var(--font-body);
   cursor: pointer;
@@ -99,7 +99,7 @@
 .route-shell {
   display: grid;
   align-content: center;
-  width: min(100% - 2rem, 48rem);
+  width: min(100% - 2rem, 58rem);
   min-height: calc(100svh - 4rem);
   margin-inline: auto;
   padding: 2rem 0 max(2rem, env(safe-area-inset-bottom));
@@ -123,8 +123,9 @@
   margin-top: 1.5rem;
   padding: 1.5rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sheet);
-  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  box-shadow: var(--shadow-card);
   color: var(--color-text);
 }
 

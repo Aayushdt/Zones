@@ -5,9 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#100e1b" />
+    <meta name="theme-color" content="#0d0d18" />
     <meta name="description" content="XZones — original outdoor Hunter vs Runner games for friends." />
     <title>XZones · Hunter vs Runner</title>
+    <script>
+      (() => {
+        try {
+          const stored = JSON.parse(localStorage.getItem('xzones.preferences') || '{}')
+          const preference = stored?.state?.theme || 'system'
+          const dusk = preference === 'dusk' || (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.theme = dusk ? 'dusk' : 'paper'
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', dusk ? '#0d0d18' : '#f0e7d8')
+        } catch { document.documentElement.dataset.theme = 'dusk' }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

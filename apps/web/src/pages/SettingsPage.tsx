@@ -44,7 +44,7 @@ export function SettingsPage() {
         <button className="welcome__secondary" type="submit">Save name</button>
       </form>
       <fieldset className="field-set"><legend>Theme</legend><div className="segmented-control">
-        {(['dusk', 'paper'] as const).map((item) => <button className={theme === item ? 'segment is-selected' : 'segment'} aria-pressed={theme === item} onClick={() => setTheme(item)} type="button" key={item}>{item === 'dusk' ? 'Dusk · Dark' : 'Paper · Light'}</button>)}
+        {(['system', 'dusk', 'paper'] as const).map((item) => <button className={theme === item ? 'segment is-selected' : 'segment'} aria-pressed={theme === item} onClick={() => setTheme(item)} type="button" key={item}>{item === 'system' ? 'System' : item === 'dusk' ? 'Dusk · Dark' : 'Paper · Light'}</button>)}
       </div></fieldset>
       <fieldset className="field-set"><legend>Map style</legend><div className="segmented-control">
         {mapStyles.map((item) => <button className={mapStyle === item.value ? 'segment is-selected' : 'segment'} aria-pressed={mapStyle === item.value} onClick={() => setMapStyle(item.value)} type="button" key={item.value}>{item.label}</button>)}

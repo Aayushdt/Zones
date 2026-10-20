@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Feature, Polygon } from 'geojson'
 import { HIDE_AND_SEEK_CONFIG, interpolateMapCoordinate } from '@xzones/game-core'
-import { useAppStore } from '../stores/app-store'
+import { resolveTheme, useAppStore } from '../stores/app-store'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './GameMap.css'
 
@@ -37,8 +37,8 @@ function syncZoneLayer(map: import('maplibre-gl').Map, zone: GameZone | undefine
   if (source) source.setData(circleGeoJson(zone))
   else {
     map.addSource('xzones-boundary', { type: 'geojson', data: circleGeoJson(zone) })
-    map.addLayer({ id: 'xzones-boundary-fill', type: 'fill', source: 'xzones-boundary', paint: { 'fill-color': '#9a72ff', 'fill-opacity': 0.09 } })
-    map.addLayer({ id: 'xzones-boundary-ring', type: 'line', source: 'xzones-boundary', paint: { 'line-color': '#a581ff', 'line-width': 2, 'line-opacity': 0.9, 'line-dasharray': [3, 2] } })
+    map.addLayer({ id: 'xzones-boundary-fill', type: 'fill', source: 'xzones-boundary', paint: { 'fill-color': '#8b5cf6', 'fill-opacity': 0.12 } })
+    map.addLayer({ id: 'xzones-boundary-ring', type: 'line', source: 'xzones-boundary', paint: { 'line-color': '#8b5cf6', 'line-width': 2, 'line-opacity': 0.9, 'line-dasharray': [3, 2] } })
   }
   const nextSource = map.getSource('xzones-next-boundary') as import('maplibre-gl').GeoJSONSource | undefined
   if (zone.next_radius_m !== undefined) {
@@ -46,8 +46,8 @@ function syncZoneLayer(map: import('maplibre-gl').Map, zone: GameZone | undefine
     if (nextSource) nextSource.setData(circleGeoJson(nextZone))
     else {
       map.addSource('xzones-next-boundary', { type: 'geojson', data: circleGeoJson(nextZone) })
-      map.addLayer({ id: 'xzones-next-boundary-fill', type: 'fill', source: 'xzones-next-boundary', paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.025 } })
-      map.addLayer({ id: 'xzones-next-boundary-line', type: 'line', source: 'xzones-next-boundary', paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-dasharray': [1, 2] } })
+      map.addLayer({ id: 'xzones-next-boundary-fill', type: 'fill', source: 'xzones-next-boundary', paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.025 } })
+      map.addLayer({ id: 'xzones-next-boundary-line', type: 'line', source: 'xzones-next-boundary', paint: { 'line-color': '#f59e0b', 'line-width': 2, 'line-dasharray': [1, 2] } })
     }
   } else {
     if (map.getLayer('xzones-next-boundary-line')) map.removeLayer('xzones-next-boundary-line')
@@ -80,10 +80,10 @@ function circleGeoJson(zone: GameZone): Feature<Polygon> {
 }
 
 export function GameMap({ data, zone, simulation = false }: { data: GameMapData; zone?: GameZone; simulation?: boolean }) {
-  const theme = useAppStore((state) => state.theme)
+  const themePreference = useAppStore((state) => state.theme)
   const mapStyle = useAppStore((state) => state.mapStyle)
   const styleOverride = import.meta.env.VITE_MAP_STYLE_URL?.trim()
-  const resolvedMapStyle = mapStyle === 'auto' ? theme : mapStyle
+  const resolvedMapStyle = mapStyle === 'auto' ? resolveTheme(themePreference) : mapStyle
   const styleUrl = styleOverride || `https://tiles.openfreemap.org/styles/${resolvedMapStyle === 'dusk' ? 'dark' : 'bright'}`
   const ownMarkerSmoothingMs: number = HIDE_AND_SEEK_CONFIG.map.ownMarkerSmoothingMs.default
   const styleUrlRef = useRef(styleUrl)

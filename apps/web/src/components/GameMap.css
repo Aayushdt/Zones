@@ -53,15 +53,15 @@
   width: 2rem;
   height: 2rem;
   place-items: center;
-  border: 2px solid #07131c;
+  border: 2px solid var(--color-map-marker-outline);
   border-radius: 50%;
   box-shadow: 0 0 0 3px currentColor, 0 0 1rem currentColor;
   font: 800 1.05rem var(--font-mono);
 }
 
-.game-marker--you { background: var(--color-runner); color: #62ffe4; }
-.game-marker--teammate { background: #66decd; color: #1ffff0; }
-.game-marker--snapshot { background: #ff743d; color: #ff9a66; border-style: dashed; }
+.game-marker--you { background: var(--color-runner); color: var(--color-runner-ink); box-shadow: 0 0 0 3px currentColor, var(--glow-runner); }
+.game-marker--teammate { background: var(--color-runner); color: var(--color-runner-ink); }
+.game-marker--snapshot { background: var(--color-hunter); color: var(--color-hunter-ink); border-style: dashed; box-shadow: 0 0 0 3px currentColor, var(--glow-hunter); }
 .game-marker--you::before {
   position: absolute;
   z-index: -1;
@@ -93,9 +93,9 @@
 .map-key span { display: inline-flex; align-items: center; gap: 0.35rem; }
 .legend-dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; }
 .legend-dot--you { background: var(--color-runner); }
-.legend-dot--team { background: #66decd; }
+.legend-dot--team { background: var(--color-runner); }
 .legend-dot--ping { background: var(--color-hunter); }
-.legend-ring { width: 0.8rem; height: 0.55rem; border: 1px dashed #a581ff; border-radius: 50%; }
+.legend-ring { width: 0.8rem; height: 0.55rem; border: 1px dashed var(--color-zone); border-radius: 50%; }
 
 .map-status {
   position: absolute;
