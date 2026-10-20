@@ -200,4 +200,4 @@
 # Hide & Seek implementation — Step 1.2 flexible teams
 
 - Keep the centralized `ceil(N/10)` target as the Random-role default, while allowing a host to assign a chosen Hunter count from 1 through `floor(N/2)`. Starting a lobby validates this safe range rather than requiring the default count.
-- The 1.2 full-suite retry failed in the DB audit after the stale exact-count test was revised. Stop further retries and retain BLOCKED status until the updated SQL scenario and migration are verified.
+- Verify flexible count bounds both in pure rules and the database audit. A valid custom 5/12 split starts, while 7/12 is rejected; host assignment is restricted to the current controller and resets readiness.

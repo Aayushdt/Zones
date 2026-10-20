@@ -57,7 +57,7 @@ describe('AUDIT CHECKLIST A: Team logic and lobby rules (packages/game-core)', (
     expect(nextRandomRole(12, 5)).toBe('RUNNER')
   })
 
-  it('A3 / F-07: canStartLobby rejects a lobby above its target Hunter count', () => {
+  it('A3 / F-07: canStartLobby allows custom Hunter counts within safe bounds', () => {
     // Correct 3-player lobby: 1 hunter, 2 runners, all ready
     const valid3: TeamMember[] = [
       { role: 'HUNTER', status: 'ACTIVE', ready: true },
@@ -65,6 +65,12 @@ describe('AUDIT CHECKLIST A: Team logic and lobby rules (packages/game-core)', (
       { role: 'RUNNER', status: 'ACTIVE', ready: true },
     ]
     expect(canStartLobby(valid3)).toEqual({ canStart: true, activeCounts: { hunters: 1, runners: 2 } })
+
+    const custom12: TeamMember[] = [
+      ...Array.from({ length: 5 }, () => ({ role: 'HUNTER' as const, status: 'ACTIVE' as const, ready: true })),
+      ...Array.from({ length: 7 }, () => ({ role: 'RUNNER' as const, status: 'ACTIVE' as const, ready: true })),
+    ]
+    expect(canStartLobby(custom12)).toEqual({ canStart: true, activeCounts: { hunters: 5, runners: 7 } })
 
     // An 11-Hunter preference/assignment cannot be finalized into a valid team.
     const unbalanced12: TeamMember[] = [
