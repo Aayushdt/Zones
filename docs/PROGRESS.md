@@ -3,7 +3,7 @@
 | Step | Title | Classification (from P0) | Status | Evidence | Gate result | Closes | Notes |
 |---|---|---|---|---|---|---|---|
 | 0.1 | Baseline verification (install, typecheck, lint, test) | ABSENT | DONE | `docs/verification/baseline.md` | PASS — install, typecheck/build, lint, all 4 E2E tests, and 14 DB scenarios | - | Supabase-hosted Realtime and real-device GPS are not locally verifiable |
-| 0.2 | Triage error.md defects & fix open Critical/High | ABSENT | TODO | - | - | - | Triage 13 defects |
+| 0.2 | Triage error.md defects & fix open Critical/High | PARTIAL | DONE | `docs/verification/audit-triage.md`; `error.md`; `docs/KNOWN-ISSUES.md` | Baseline suite PASS; F-02 real Supabase integration remains unverified | - | Referenced `full_audit_report.md` is absent; F-02 implementation exists and must retain Realtime-first behavior |
 | 0.3 | Verify unverified audit claims (session, watchPosition, Wake Lock) | ABSENT | TODO | - | - | - | Document in baseline |
 | 0.4 | Create hideAndSeekConfig.ts & hide-and-seek-spec.md | ABSENT | TODO | - | - | - | Centralized config & design spec |
 | 0.5 | Existence inventory (1.1–6.8 P0 checks) | ABSENT | TODO | - | - | - | docs/verification/already-implemented.md |

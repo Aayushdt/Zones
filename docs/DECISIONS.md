@@ -177,3 +177,6 @@
 # Hide & Seek implementation — baseline verification
 
 - Record the baseline against the frozen lockfile using a temporary pnpm store under `/tmp`; the repository's configured store could not open its operation lock in the sandbox. Run the Vite-backed E2E and temporary PostgreSQL gates with local process/socket access when sandbox isolation blocks startup. This changes no application behavior.
+# Hide & Seek implementation — audit triage
+
+- Keep F-02 open until the real Supabase Realtime integration job passes. Mock publisher, role projection, RLS, and SQL tests do not establish actual socket delivery or cached-subscription revocation; preserve the Realtime path while adjusting fallback polling.

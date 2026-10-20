@@ -115,3 +115,6 @@
 # Hide & Seek implementation baseline — 2026-10-20
 
 - Step 0.1 baseline gates pass. The frozen install required writable local process access for pnpm's operation lock; E2E required local Vite server access. No source fixes were needed. Full results: `docs/verification/baseline.md`.
+# Hide & Seek implementation — audit triage
+
+- Step 0.2 cross-checked all 13 `error.md` findings against current known issues and the passing baseline. F-01 and F-03–F-13 are documented fixed; F-02's Realtime implementation exists, but real Supabase delivery remains unverified because the integration stack is unavailable. No source change is made from this evidence. See `docs/verification/audit-triage.md`.
