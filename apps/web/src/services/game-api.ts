@@ -136,6 +136,7 @@ export interface MatchResult {
   suspicious_events?: Array<{ id: number; player_id: string; display_name: string; reason: string; created_at: string }>
 }
 export interface RejoinableMatch { match_id: string; state: 'LOBBY' | 'HEAD_START' | 'ACTIVE' }
+export interface ChatMessage { id: number; player_id: string; author: string; role: Role | null; body: string; created_at: string }
 export interface LeaveResult { accepted: boolean; state: MatchState; claim_expires_at?: string }
 export type SafeHandlers = {
   onEvent: (event: { type: string; payload: unknown }) => void
@@ -154,6 +155,8 @@ export interface GameApi<Lobby extends LobbyView | SimulationLobbyView = LobbyVi
   syncClock(id: string): Promise<Result<ClockView>>
   syncMatch(id: string, revision?: number): Promise<Result<RoleSafeMatchView>>
   findRejoinableMatch(): Promise<Result<RejoinableMatch | null>>
+  listChat(id: string): Promise<Result<{ messages: ChatMessage[] }>>
+  sendChat(id: string, body: string): Promise<Result<ChatMessage>>
   reportVisibility(id: string, hidden: boolean): Promise<Result<{ accepted: boolean; hidden: boolean }>>
   updateLocation(id: string, fix: LocationInput): Promise<Result<LocationAck>>
   issueQr(id: string): Promise<Result<QrChallenge>>

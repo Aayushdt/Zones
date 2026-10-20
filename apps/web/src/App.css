@@ -494,6 +494,15 @@
 .stealth-overlay p { margin: 0; }
 .stealth-overlay p + p { color: #a1a1aa; font-size: 0.8rem; }
 .stealth-overlay button { touch-action: none; user-select: none; }
+.chat-panel { display: grid; gap: 0.6rem; }
+.chat-panel h2 { margin: 0; font-size: 1rem; }
+.chat-messages { display: grid; gap: 0.45rem; max-height: 14rem; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.chat-messages li { padding: 0.45rem 0.6rem; border-radius: var(--radius-control); background: var(--color-background); }
+.chat-messages strong { font-size: 0.75rem; }
+.chat-messages span { color: var(--color-muted); font-size: 0.68rem; }
+.chat-messages p { margin: 0.15rem 0 0; overflow-wrap: anywhere; font-size: 0.84rem; }
+.chat-compose { display: flex; align-items: end; gap: 0.5rem; }
+.chat-compose .field { flex: 1; }
 @media (max-width: 380px) {
   .match-page { width: calc(100% - 0.5rem); }
   .match-hud { grid-template-columns: auto 1fr auto; gap: 0.35rem; }

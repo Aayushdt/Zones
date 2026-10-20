@@ -593,3 +593,39 @@ Deno.test('rejoin discovery delegates exclusively to the authenticated session i
     assert(receivedAuthId === '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc', 'rejoin lookup must use only the authenticated identity')
   } finally { globalThis.fetch = originalFetch }
 })
+
+Deno.test('chat send applies server limits and list/send delegate authorization to database RPCs', async () => {
+  Deno.env.set('SUPABASE_URL', 'https://unit.test')
+  Deno.env.set('SUPABASE_ANON_KEY', 'public-test-key')
+  Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'server-test-key')
+  const originalFetch = globalThis.fetch
+  const calls: Array<{ rpc: string; body: Record<string, unknown> }> = []
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith('/auth/v1/user')) return Response.json({ id: '23b8b0de-1fc4-4d57-b9e0-a98a2bd349bc' })
+    const rpc = url.split('/rpc/')[1]
+    if (rpc === 'xzones_send_chat_message' || rpc === 'xzones_list_chat') {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+      calls.push({ rpc, body })
+      return Response.json(rpc === 'xzones_send_chat_message'
+        ? { id: 1, player_id: 'player-1', author: 'Runner', role: 'RUNNER', body: body.p_body, created_at: '2026-10-20T00:00:00Z' }
+        : { messages: [] })
+    }
+    throw new Error(`Unexpected URL: ${url}`)
+  }
+  const request = (action: string, body: Record<string, unknown> = {}) => new Request(
+    `http://localhost/functions/v1/api/matches/63adbd40-4fc6-4d7c-b7a8-1f18f97496a3/chat/${action}`,
+    { method: 'POST', headers: { authorization: 'Bearer guest-token', 'content-type': 'application/json' }, body: JSON.stringify(body) },
+  )
+  try {
+    const invalid = await handleRequest(request('send', { body: ' ' }))
+    assert(invalid.status === 400 && calls.length === 0, 'blank message should be rejected before RPC')
+    const sent = await handleRequest(request('send', { body: 'hello team' }))
+    const sentBody = await sent.json()
+    assert(sent.status === 200 && sentBody.body === 'hello team', 'valid message should be stored through the server')
+    assert(calls[0]?.rpc === 'xzones_send_chat_message' && calls[0]?.body.p_max_characters === 280
+      && calls[0]?.body.p_minimum_interval_seconds === 2, 'server-side text and rate limits should be passed to SQL')
+    const listed = await handleRequest(request('list'))
+    assert(listed.status === 200 && calls[1]?.rpc === 'xzones_list_chat', 'chat history should be read through role-authorized SQL')
+  } finally { globalThis.fetch = originalFetch }
+})

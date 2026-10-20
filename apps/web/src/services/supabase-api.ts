@@ -17,6 +17,7 @@ import {
   type RemovePlayerResult,
   type RoleSafeMatchView,
   type RejoinableMatch,
+  type ChatMessage,
   type SafeHandlers,
   type TagResult,
   type TeamView,
@@ -255,6 +256,14 @@ class SupabaseGameApi implements GameApi {
       return error('INVALID_RESPONSE', 'The game service returned an invalid rejoin state.')
     }
     return { ok: true, data: { match_id: result.data.match_id, state: result.data.state as RejoinableMatch['state'] } }
+  }
+
+  async listChat(id: string): Promise<Result<{ messages: ChatMessage[] }>> {
+    return this.post<{ messages: ChatMessage[] }>(`/matches/${encodeURIComponent(id)}/chat/list`, {})
+  }
+
+  async sendChat(id: string, body: string): Promise<Result<ChatMessage>> {
+    return this.post<ChatMessage>(`/matches/${encodeURIComponent(id)}/chat/send`, { body })
   }
 
   async getLobby(id: string): Promise<Result<LobbyView>> {

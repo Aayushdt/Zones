@@ -259,3 +259,7 @@
 # Hide & Seek implementation — Step 4.7 offline map tiles and icons
 
 - Use stale-while-revalidate only for OpenFreeMap vector/raster tile paths and bound the tile cache by a configurable 200 entries, evicting oldest entries first. Serve 192px and 512px PNG install icons alongside the existing SVG icon.
+
+# Hide & Seek implementation — Step 5.1 chat
+
+- Poll role-filtered server history every five seconds. Lobby chat is visible to every active lobby member and is purged on match start; during HEAD_START/ACTIVE, reads return only same-role messages; all chat is purged on match end. This makes chat visibility server-enforced even when clients miss updates.

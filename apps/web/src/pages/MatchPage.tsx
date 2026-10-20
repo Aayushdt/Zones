@@ -8,6 +8,7 @@ import { maintainScreenWakeLock } from '../services/device-lifecycle'
 import { applyMatchRealtimeEvent, createRealtimeEventGate } from '../services/realtime-events'
 import { startFallbackSync } from '../services/fallback-sync'
 import { HIDE_AND_SEEK_CONFIG } from '@xzones/game-core'
+import { ChatPanel } from '../components/ChatPanel'
 
 function timeLeft(clock: ClockView, anchor: number): number | null {
   if (clock.ends_at === null) return null
@@ -173,6 +174,7 @@ export function MatchPage() {
       <p className="match-text-status" role="status" aria-live="polite">Active players: {view.active_counts.runners} Runners and {view.active_counts.hunters} Hunters. {liveStatus} The map never displays opponent distances or directions.</p>
       {view.zone ? <p className="match-text-status" role="status">Zone stage {view.zone.stage} · radius {Math.round(view.zone.radius)} m{view.zone.nextRadius !== null && zoneSeconds !== null ? ` · next shrink in ${Math.floor(zoneSeconds / 60)}:${String(zoneSeconds % 60).padStart(2, '0')} to ${Math.round(view.zone.nextRadius)} m` : ''}</p> : null}
       <p className="match-text-status" role="status" aria-live="polite">{locationStatus}</p>
+      <ChatPanel matchId={matchId} />
       {stealth && <section className="stealth-overlay" aria-label="Stealth screen">
         <p>Stealth screen is on. Your match stays active.</p>
         <p>Keeping the screen awake uses extra battery.</p>

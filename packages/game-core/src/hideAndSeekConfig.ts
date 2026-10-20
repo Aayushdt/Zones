@@ -71,6 +71,7 @@ export const HIDE_AND_SEEK_CONFIG = {
   chat: {
     maxCharacters: { default: 280, min: 1, max: 280 },
     minimumIntervalSeconds: { default: 2, min: 1, max: 60 }, // UNSPECIFIED-IN-REFERENCE
+    pollSeconds: { default: 5, min: 5, max: 30 }, // UNSPECIFIED-IN-REFERENCE
   },
   bugReport: {
     minimumIntervalSeconds: { default: 3600, min: 60, max: 86_400 }, // UNSPECIFIED-IN-REFERENCE

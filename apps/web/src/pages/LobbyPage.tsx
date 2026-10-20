@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { HIDE_AND_SEEK_CONFIG, type Role } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
+import { ChatPanel } from '../components/ChatPanel'
 import type { LobbyView, PlayerView } from '../services/game-api'
 import { useLocationStore } from '../stores/location-store'
 
@@ -163,6 +164,7 @@ export function LobbyPage() {
         {error ? <p className="form-error" role="status">{error}</p> : null}
         <button className="welcome__secondary refresh-button" disabled={pending} onClick={() => void refresh()} type="button">{pending ? 'Updating…' : 'Refresh lobby'}</button>
       </section>
+      <ChatPanel matchId={matchId} />
     </main>
   )
 }

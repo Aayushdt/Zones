@@ -291,6 +291,24 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (!body) return fail(400, 'INVALID_JSON', 'Send a JSON object no larger than 16 KB.')
 
   try {
+    const chatPath = path.match(/^\/matches\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\/chat\/(list|send)$/i)
+    if (chatPath) {
+      if (chatPath[2] === 'list') {
+        return rpcResponse(await callRpc('xzones_list_chat', { p_auth_user_id: user.id, p_match_id: chatPath[1] }))
+      }
+      if (typeof body.body !== 'string' || body.body.trim().length < 1
+        || [...body.body.trim()].length > HIDE_AND_SEEK_CONFIG.chat.maxCharacters.default) {
+        return fail(400, 'INVALID_INPUT', 'Chat messages must contain 1 to 280 characters.')
+      }
+      return rpcResponse(await callRpc('xzones_send_chat_message', {
+        p_auth_user_id: user.id,
+        p_match_id: chatPath[1],
+        p_body: body.body,
+        p_max_characters: HIDE_AND_SEEK_CONFIG.chat.maxCharacters.default,
+        p_minimum_interval_seconds: HIDE_AND_SEEK_CONFIG.chat.minimumIntervalSeconds.default,
+      }))
+    }
+
     if (path === '/rejoinable') {
       const match = await callRpc('xzones_find_rejoinable_match', { p_auth_user_id: user.id })
       if (typeof match.error === 'string') return rpcResponse(match)

@@ -272,3 +272,8 @@
 
 - Added bounded stale-while-revalidate caching for OpenFreeMap tile responses, with a mode-configured entry cap and FIFO eviction. Added 192px and 512px PNG install icons to the manifest and app-shell cache.
 - Validation: full `pnpm test:all` PASS (31 unit tests, 27 audit tests, 27 API/hostile tests, payload/simulator tests, Playwright 5/5, and disposable PostgreSQL suite); service worker syntax, typecheck/build, lint, and `git diff --check` PASS.
+
+# Hide & Seek implementation — Step 5.1 team-scoped chat
+
+- Added server-validated chat with 280-character and per-player rate limits, lobby-wide access, same-role-only match reads, and a polling UI. Lobby messages are cleared when the round starts; all remaining chat is deleted when the match ends.
+- Validation: Edge API tests PASS (17/17); DB scope/rate/purge smoke PASS; full disposable DB suite PASS; typecheck/build PASS; lint PASS with existing hook warnings; `git diff --check` PASS.
