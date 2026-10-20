@@ -127,3 +127,9 @@
 # Hide & Seek implementation — existence inventory
 
 - Step 0.5 inspected reachable rules, UI, API, SQL RPCs/migrations, projections, service worker, simulator, tests, and local branch history for all 40 planned implementation steps. Initial classification: 24 PARTIAL, 16 ABSENT, 0 PRESENT, 0 PRESENT-BUT-DIFFERENT. Recheck each step immediately before implementation; `docs/verification/already-implemented.md` is only the starting inventory.
+
+# Hide & Seek implementation — Step 1.1 player limits
+
+- Changed the shared rules, readiness/start checks, lobby/join UI, and API lobby-full message to enforce and display 2–100 players. Added idempotent migration `202610200017_player_limits.sql`, including a serialized database trigger to prevent cap bypass via direct player inserts, plus min-player and hunter defaults in the lobby status RPC.
+- Updated rules/audit/API/E2E tests and added `tests/schema/player-limits-smoke.sql` for two-player start, 100-player limit, rejected 101st join, and direct-insert bypass. Preserved existing migrations.
+- Gates: typecheck, lint, production build, `test:all` and focused Playwright passed. The existing Vite optimizer emitted a Supabase dependency ENOENT warning, but all 4 browser tests passed. Lint emitted existing React-effect warnings.

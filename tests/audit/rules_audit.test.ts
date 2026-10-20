@@ -13,9 +13,10 @@ import {
 } from '../../packages/game-core/src/index.ts'
 
 describe('AUDIT CHECKLIST A: Team logic and lobby rules (packages/game-core)', () => {
-  it('A1: balanceTeams enforces 3..12 player boundaries and formula hunters = min(ceil(n/10), floor(n/2))', () => {
-    // Under minimum (2 players) -> rejected
-    expect(balanceTeams(2)).toBeNull()
+  it('A1: balanceTeams enforces 2..100 player boundaries and formula hunters = min(ceil(n/10), floor(n/2))', () => {
+    expect(balanceTeams(2)).toEqual({ hunters: 1, runners: 1 })
+    expect(balanceTeams(100)).toEqual({ hunters: 10, runners: 90 })
+    expect(balanceTeams(101)).toBeNull()
     expect(balanceTeams(0)).toBeNull()
     expect(balanceTeams(-1)).toBeNull()
 
@@ -39,9 +40,8 @@ describe('AUDIT CHECKLIST A: Team logic and lobby rules (packages/game-core)', (
       expect(balance?.runners).toBe(expectedRunners)
     }
 
-    // Over maximum (13 players) -> rejected
-    expect(balanceTeams(13)).toBeNull()
-    expect(balanceTeams(20)).toBeNull()
+    expect(balanceTeams(13)).not.toBeNull()
+    expect(balanceTeams(20)).not.toBeNull()
   })
 
   it('A2: nextRandomRole assigns to short side toward target', () => {
@@ -76,7 +76,7 @@ describe('AUDIT CHECKLIST A: Team logic and lobby rules (packages/game-core)', (
     expect(check12.blockReason).toBe('NEEDS_TEAMS')
   })
 
-  it('A4: canStartLobby rejects unassigned, unready, under 3, over 12', () => {
+  it('A4: canStartLobby rejects unassigned, unready, under 2, over 100', () => {
     const unready: TeamMember[] = [
       { role: 'HUNTER', status: 'ACTIVE', ready: true },
       { role: 'RUNNER', status: 'ACTIVE', ready: false },
@@ -93,12 +93,14 @@ describe('AUDIT CHECKLIST A: Team logic and lobby rules (packages/game-core)', (
     expect(canStartLobby(unassigned).canStart).toBe(false)
     expect(canStartLobby(unassigned).blockReason).toBe('NEEDS_TEAMS')
 
-    const twoPlayers: TeamMember[] = [
-      { role: 'HUNTER', status: 'ACTIVE', ready: true },
-      { role: 'RUNNER', status: 'ACTIVE', ready: true },
-    ]
-    expect(canStartLobby(twoPlayers).canStart).toBe(false)
-    expect(canStartLobby(twoPlayers).blockReason).toBe('NEEDS_THREE_PLAYERS')
+    const onePlayer: TeamMember[] = [{ role: 'HUNTER', status: 'ACTIVE', ready: true }]
+    expect(canStartLobby(onePlayer).canStart).toBe(false)
+    expect(canStartLobby(onePlayer).blockReason).toBe('NEEDS_TWO_PLAYERS')
+    const hundredPlayers: TeamMember[] = Array.from({ length: 100 }, (_, index) => ({
+      role: index < 10 ? 'HUNTER' : 'RUNNER', status: 'ACTIVE', ready: true,
+    }))
+    expect(canStartLobby(hundredPlayers).canStart).toBe(true)
+    expect(canStartLobby([...hundredPlayers, hundredPlayers[99]]).blockReason).toBe('LOBBY_FULL')
   })
 })
 

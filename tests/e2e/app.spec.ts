@@ -26,6 +26,7 @@ test('settings persist theme and map style preferences across reload', async ({ 
 
 test('join form normalizes codes and rejects an incomplete code before network access', async ({ page }) => {
   await page.goto('/join')
+  await expect(page.getByText(/Lobbies support 2–100 players/)).toBeVisible()
   await page.getByLabel('Guest name').fill('Guest')
   const code = page.getByLabel('Private lobby code')
   await code.fill('abc12')

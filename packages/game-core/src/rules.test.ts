@@ -15,7 +15,7 @@ import type { TeamMember } from './types.ts'
 
 describe('team balance and readiness', () => {
   it('starts only when each supported lobby has its exact prescribed Hunter count', () => {
-    for (let count = 3; count <= 12; count += 1) {
+    for (let count = 2; count <= 100; count += 1) {
       const targetHunters = balanceTeams(count)!.hunters
       const players: TeamMember[] = Array.from({ length: count }, (_, index) => ({
         role: index < targetHunters ? 'HUNTER' : 'RUNNER', status: 'ACTIVE', ready: true,
@@ -35,8 +35,8 @@ describe('team balance and readiness', () => {
     expect(isValidMatchConfig({ roundSeconds: 600, headStartSeconds: 300, pingSeconds: 301 })).toBe(false)
   })
 
-  it('balances every supported lobby size from 3 through 12', () => {
-    for (let count = 3; count <= 12; count += 1) {
+  it('balances every supported lobby size from 2 through 100', () => {
+    for (let count = 2; count <= 100; count += 1) {
       const result = balanceTeams(count)
       expect(result).not.toBeNull()
       expect(result!.hunters).toBe(Math.min(Math.ceil(count / 10), Math.floor(count / 2)))
@@ -46,27 +46,30 @@ describe('team balance and readiness', () => {
     }
   })
 
-  it('rejects player counts outside 3–12 and handles 3-player Random assignment', () => {
-    expect(balanceTeams(2)).toBeNull()
-    expect(balanceTeams(13)).toBeNull()
+  it('rejects player counts outside 2–100 and handles Random assignment', () => {
+    expect(balanceTeams(1)).toBeNull()
+    expect(balanceTeams(101)).toBeNull()
+    expect(balanceTeams(2)).toEqual({ hunters: 1, runners: 1 })
+    expect(balanceTeams(100)).toEqual({ hunters: 10, runners: 90 })
     expect(nextRandomRole(1, 0)).toBe('RUNNER')
     expect(nextRandomRole(2, 0)).toBe('HUNTER')
     expect(nextRandomRole(3, 1)).toBe('RUNNER')
-    expect(nextRandomRole(13, 0)).toBeNull()
+    expect(nextRandomRole(101, 0)).toBeNull()
   })
 
-  it('requires at least three active players, both teams, and readiness', () => {
+  it('requires at least two active players, both teams, and readiness', () => {
     const players: TeamMember[] = [
       { role: 'HUNTER', status: 'ACTIVE', ready: true },
       { role: 'RUNNER', status: 'ACTIVE', ready: true },
       { role: 'RUNNER', status: 'ACTIVE', ready: true },
     ]
     expect(canStartLobby(players)).toEqual({ canStart: true, activeCounts: { hunters: 1, runners: 2 } })
-    expect(canStartLobby(players.slice(0, 2)).blockReason).toBe('NEEDS_THREE_PLAYERS')
+    expect(canStartLobby(players.slice(0, 2))).toEqual({ canStart: true, activeCounts: { hunters: 1, runners: 1 } })
+    expect(canStartLobby(players.slice(0, 1)).blockReason).toBe('NEEDS_TWO_PLAYERS')
     expect(canStartLobby(players.map((player) => ({ ...player, role: 'RUNNER' as const }))).blockReason).toBe('NEEDS_TEAMS')
     expect(canStartLobby(players.map((player, index) => index === 2 ? { ...player, ready: false } : player).map((player) => player)).blockReason)
       .toBe('WAITING_FOR_READY')
-    expect(canStartLobby([...players, ...Array.from({ length: 10 }, () => players[2])]).blockReason).toBe('LOBBY_FULL')
+    expect(canStartLobby([...players, ...Array.from({ length: 98 }, () => players[2])]).blockReason).toBe('LOBBY_FULL')
   })
 })
 

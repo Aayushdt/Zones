@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { HIDE_AND_SEEK_CONFIG } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useAppStore } from '../stores/app-store'
 
@@ -43,7 +44,7 @@ export function JoinPage() {
       <div className="route-shell__heading">
         <p className="welcome__eyebrow">Private game</p>
         <h1>Join with code</h1>
-        <p className="welcome__copy">Ask the host for the six-character code. XZones does not list public lobbies.</p>
+        <p className="welcome__copy">Ask the host for the six-character code. Lobbies support {HIDE_AND_SEEK_CONFIG.players.min.default}–{HIDE_AND_SEEK_CONFIG.players.max.default} players; XZones does not list public lobbies.</p>
       </div>
       <form className="state-panel screen-form" onSubmit={submit}>
         <label className="field">

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import type { Role } from '@xzones/game-core'
+import { HIDE_AND_SEEK_CONFIG, type Role } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
 import type { LobbyView, PlayerView } from '../services/game-api'
 import { useLocationStore } from '../stores/location-store'
 
 const reasonText: Record<string, string> = {
-  NEEDS_THREE_PLAYERS: 'At least three active players are needed.',
-  LOBBY_FULL: 'This lobby has reached its 12-player limit.',
+  NEEDS_TWO_PLAYERS: `At least ${HIDE_AND_SEEK_CONFIG.players.min.default} active players are needed.`,
+  LOBBY_FULL: `This lobby has reached its ${HIDE_AND_SEEK_CONFIG.players.max.default}-player limit.`,
   NEEDS_TEAMS: 'Choose teams using the required Hunter count and assign everyone before starting.',
   WAITING_FOR_READY: 'Every player must be ready before the host can start.',
 }
@@ -110,7 +110,7 @@ export function LobbyPage() {
   return (
     <main className="route-shell lobby-page">
       <div className="route-shell__heading">
-        <p className="welcome__eyebrow">Private lobby · {lobby.players.length}/12</p>
+        <p className="welcome__eyebrow">Private lobby · {lobby.players.length}/{HIDE_AND_SEEK_CONFIG.players.max.default}</p>
         <h1>Lobby</h1>
         <p className="welcome__copy">Choose a team, mark ready, then the host starts the server-timed round.</p>
       </div>

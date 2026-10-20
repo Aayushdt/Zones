@@ -20,7 +20,7 @@ export interface TeamMember {
   ready: boolean
 }
 
-export type StartBlockReason = 'NEEDS_THREE_PLAYERS' | 'LOBBY_FULL' | 'NEEDS_TEAMS' | 'WAITING_FOR_READY'
+export type StartBlockReason = 'NEEDS_TWO_PLAYERS' | 'LOBBY_FULL' | 'NEEDS_TEAMS' | 'WAITING_FOR_READY'
 
 export interface StartCheck {
   canStart: boolean

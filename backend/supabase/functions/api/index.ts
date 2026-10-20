@@ -1,6 +1,7 @@
 import { projectEventForRole } from './payloads.ts'
 import { publishRoleEvents } from './broadcast.ts'
 import { isValidMatchConfig } from '../../../../packages/game-core/src/config.ts'
+import { HIDE_AND_SEEK_CONFIG } from '../../../../packages/game-core/src/hideAndSeekConfig.ts'
 type JsonObject = Record<string, unknown>
 
 const corsHeaders = {
@@ -219,7 +220,7 @@ function rpcResponse(result: JsonObject): Response {
   }
   if (error === 'INVALID_CODE') return fail(404, error, 'That private lobby code is invalid or expired.')
   if (error === 'RATE_LIMITED') return fail(429, error, 'Too many attempts. Wait a little and try again.')
-  if (error === 'LOBBY_FULL') return fail(409, error, 'This lobby already has 12 players.')
+  if (error === 'LOBBY_FULL') return fail(409, error, `This lobby already has ${HIDE_AND_SEEK_CONFIG.players.max.default} players.`)
   if (error === 'MATCH_STARTED') return fail(409, error, 'This match has already started.')
   if (error === 'ALREADY_MEMBER') return fail(409, error, 'This guest is already in the lobby.')
   if (error === 'REMOVED_FROM_LOBBY') return fail(403, error, 'The host removed this guest from the lobby.')

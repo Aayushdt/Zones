@@ -67,7 +67,7 @@ describe('phase 3 exhaustive game-core review', () => {
       expect(canStartLobby(members.map((p, i) => i === n - 1 ? { ...p, status: 'LEFT' } : p)).activeCounts)
         .toEqual({ hunters: target, runners: n - target - (n - 1 >= target ? 1 : 0) })
     }
-    expect(canStartLobby([]).blockReason).toBe('NEEDS_THREE_PLAYERS')
+    expect(canStartLobby([]).blockReason).toBe('NEEDS_TWO_PLAYERS')
     expect(nextRandomRole(3, -1)).toBeNull()
     expect(nextRandomRole(3, 4)).toBeNull()
   })

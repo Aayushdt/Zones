@@ -6,9 +6,10 @@ import type {
   TeamBalance,
   TeamMember,
 } from './types.ts'
+import { HIDE_AND_SEEK_CONFIG } from './hideAndSeekConfig.ts'
 
-const MIN_PLAYERS = 3
-const MAX_PLAYERS = 12
+const MIN_PLAYERS = HIDE_AND_SEEK_CONFIG.players.min.default
+const MAX_PLAYERS = HIDE_AND_SEEK_CONFIG.players.max.default
 
 export function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number | null {
   if (![lat1, lon1, lat2, lon2].every(Number.isFinite)
@@ -69,7 +70,7 @@ export function canStartLobby(players: readonly TeamMember[]): StartCheck {
   const runners = active.filter((player) => player.role === 'RUNNER').length
   const activeCounts = { hunters, runners }
 
-  if (active.length < MIN_PLAYERS) return { canStart: false, blockReason: 'NEEDS_THREE_PLAYERS', activeCounts }
+  if (active.length < MIN_PLAYERS) return { canStart: false, blockReason: 'NEEDS_TWO_PLAYERS', activeCounts }
   if (active.length > MAX_PLAYERS) return { canStart: false, blockReason: 'LOBBY_FULL', activeCounts }
   const target = balanceTeams(active.length)?.hunters
   if (active.some((player) => player.role === null) || hunters !== target || runners === 0) {

@@ -268,6 +268,7 @@ Deno.test('join API maps invalid, full, started, and rate-limited codes to speci
       const body = await response.json()
       assert(response.status === status, `${code} should map to HTTP ${status}`)
       assert(body.error.code === code, `${code} should remain the safe client error code`)
+      if (code === 'LOBBY_FULL') assert(body.error.message.includes('100'), 'full-lobby message should use the 100-player limit')
       assert(!JSON.stringify(body).includes('ABC234'), 'error response must not echo private join code')
     }
   } finally {

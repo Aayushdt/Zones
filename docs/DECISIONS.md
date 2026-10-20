@@ -191,3 +191,8 @@
 # Hide & Seek implementation — existence inventory
 
 - Classify a capability as PARTIAL when a helper or adjacent UI exists without the complete requested data path, server enforcement, or test; classify it ABSENT when no relevant implementation path exists. The 40-step inventory is provisional and P0 is repeated before each implementation step.
+
+# Hide & Seek implementation — Step 1.1 player limits
+
+- The explicit mode requirements of 2–100 players supersede old tests that asserted 3–12. Updated those expectations rather than preserving incompatible behavior.
+- Enforce the 100-player limit in both the join RPC and a match-row-serialized database trigger. The RPC alone would not protect other player insertion paths; trigger enforcement also serializes concurrent joins against one lobby.
