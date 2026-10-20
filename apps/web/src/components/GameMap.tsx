@@ -37,8 +37,8 @@ function syncZoneLayer(map: import('maplibre-gl').Map, zone: GameZone | undefine
   if (source) source.setData(circleGeoJson(zone))
   else {
     map.addSource('xzones-boundary', { type: 'geojson', data: circleGeoJson(zone) })
-    map.addLayer({ id: 'xzones-boundary-fill', type: 'fill', source: 'xzones-boundary', paint: { 'fill-color': '#8b5cf6', 'fill-opacity': 0.12 } })
-    map.addLayer({ id: 'xzones-boundary-ring', type: 'line', source: 'xzones-boundary', paint: { 'line-color': '#8b5cf6', 'line-width': 2, 'line-opacity': 0.9, 'line-dasharray': [3, 2] } })
+    map.addLayer({ id: 'xzones-boundary-fill', type: 'fill', source: 'xzones-boundary', paint: { 'fill-color': '#38BDF8', 'fill-opacity': 0.12 } })
+    map.addLayer({ id: 'xzones-boundary-ring', type: 'line', source: 'xzones-boundary', paint: { 'line-color': '#38BDF8', 'line-width': 2.5, 'line-opacity': 0.95 } })
   }
   const nextSource = map.getSource('xzones-next-boundary') as import('maplibre-gl').GeoJSONSource | undefined
   if (zone.next_radius_m !== undefined) {
@@ -46,8 +46,8 @@ function syncZoneLayer(map: import('maplibre-gl').Map, zone: GameZone | undefine
     if (nextSource) nextSource.setData(circleGeoJson(nextZone))
     else {
       map.addSource('xzones-next-boundary', { type: 'geojson', data: circleGeoJson(nextZone) })
-      map.addLayer({ id: 'xzones-next-boundary-fill', type: 'fill', source: 'xzones-next-boundary', paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.025 } })
-      map.addLayer({ id: 'xzones-next-boundary-line', type: 'line', source: 'xzones-next-boundary', paint: { 'line-color': '#f59e0b', 'line-width': 2, 'line-dasharray': [1, 2] } })
+      map.addLayer({ id: 'xzones-next-boundary-fill', type: 'fill', source: 'xzones-next-boundary', paint: { 'fill-color': '#FFB020', 'fill-opacity': 0.04 } })
+      map.addLayer({ id: 'xzones-next-boundary-line', type: 'line', source: 'xzones-next-boundary', paint: { 'line-color': '#FFB020', 'line-width': 2, 'line-dasharray': [2, 2] } })
     }
   } else {
     if (map.getLayer('xzones-next-boundary-line')) map.removeLayer('xzones-next-boundary-line')

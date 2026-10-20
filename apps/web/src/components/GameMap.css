@@ -1,16 +1,17 @@
 .game-map-shell {
   position: relative;
+  width: 100%;
+  height: 100%;
   min-height: 22rem;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sheet);
-  background: var(--color-surface-raised);
+  background: var(--color-bg);
 }
 
 .game-map-canvas {
   position: absolute;
   inset: 0;
-  min-height: 22rem;
+  width: 100%;
+  height: 100%;
 }
 
 .map-empty {
@@ -26,28 +27,39 @@
 
 .map-controls {
   position: absolute;
-  z-index: 2;
-  top: 0.75rem;
-  right: 0.75rem;
+  z-index: 5;
+  top: 1rem;
+  right: 1rem;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .map-control {
   display: grid;
-  width: 48px;
-  min-height: 48px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   background: var(--color-surface);
   color: var(--color-text);
-  font: 700 1.35rem var(--font-body);
+  font: 700 1.25rem var(--font-body);
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: all var(--transition-fast);
 }
 
-.map-control:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+.map-control:hover {
+  border-color: var(--color-green);
+  color: var(--color-green);
+}
 
+.map-control:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Custom Tactical Player Markers */
 .game-marker {
   display: grid;
   width: 2rem;
@@ -55,72 +67,38 @@
   place-items: center;
   border: 2px solid var(--color-map-marker-outline);
   border-radius: 50%;
-  box-shadow: 0 0 0 3px currentColor, 0 0 1rem currentColor;
-  font: 800 1.05rem var(--font-mono);
+  font: 800 1rem var(--font-mono);
+  transition: transform 0.15s ease-out;
 }
 
-.game-marker--you { background: var(--color-runner); color: var(--color-runner-ink); box-shadow: 0 0 0 3px currentColor, var(--glow-runner); }
-.game-marker--teammate { background: var(--color-runner); color: var(--color-runner-ink); }
-.game-marker--snapshot { background: var(--color-hunter); color: var(--color-hunter-ink); border-style: dashed; box-shadow: 0 0 0 3px currentColor, var(--glow-hunter); }
-.game-marker--you::before {
-  position: absolute;
-  z-index: -1;
-  width: calc(var(--accuracy-px, 12px) * 2);
-  height: calc(var(--accuracy-px, 12px) * 2);
-  border: 1px solid color-mix(in srgb, var(--color-runner) 75%, white);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--color-runner) 23%, transparent);
-  content: '';
+.game-marker--you {
+  background: var(--color-green);
+  color: #000000;
+  box-shadow: 0 0 0 3px var(--color-green-ring), 0 0 16px var(--color-green);
 }
 
-.map-key {
-  position: absolute;
-  z-index: 2;
-  right: 0.75rem;
-  bottom: 2.6rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.8rem;
-  max-width: calc(100% - 1.5rem);
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+.game-marker--teammate {
+  background: var(--color-surface-2);
   color: var(--color-text);
-  font-size: 0.72rem;
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 2px var(--color-blue), 0 0 12px rgba(56, 189, 248, 0.4);
 }
 
-.map-key span { display: inline-flex; align-items: center; gap: 0.35rem; }
-.legend-dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; }
-.legend-dot--you { background: var(--color-runner); }
-.legend-dot--team { background: var(--color-runner); }
-.legend-dot--ping { background: var(--color-hunter); }
-.legend-ring { width: 0.8rem; height: 0.55rem; border: 1px dashed var(--color-zone); border-radius: 50%; }
-
-.map-status {
-  position: absolute;
-  z-index: 2;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  margin: 0;
-  padding: 0.4rem 0.65rem;
-  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
-  color: var(--color-muted);
-  font-size: 0.68rem;
+.game-marker--snapshot {
+  background: var(--color-red);
+  color: #000000;
+  box-shadow: 0 0 0 3px var(--color-red-ring), 0 0 18px var(--color-red);
 }
 
-.map-simulation-stamp {
+.game-marker::after {
   position: absolute;
-  z-index: 3;
-  top: 0.75rem;
-  left: 0.75rem;
-  max-width: calc(100% - 5rem);
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--color-warning);
-  border-radius: var(--radius-control);
-  background: var(--color-background);
-  color: var(--color-warning);
-  font-size: 0.65rem;
-  font-weight: 800;
+  width: var(--accuracy-px, 20px);
+  height: var(--accuracy-px, 20px);
+  max-width: 140px;
+  max-height: 140px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  content: '';
+  opacity: 0.22;
+  pointer-events: none;
 }
