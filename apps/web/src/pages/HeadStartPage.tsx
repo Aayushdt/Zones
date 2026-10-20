@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
 import type { ClockView } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
+import { Card } from '../components/ui/Card'
+import { Button } from '../components/ui/Button'
 
 function remaining(clock: ClockView, monotonicAtResponse: number): number {
   const deadline = Date.parse(clock.head_start_ends_at)
   const serverAtResponse = Date.parse(clock.server_now)
   if (!Number.isFinite(deadline) || !Number.isFinite(serverAtResponse)) return 0
-  const estimatedServerNow = serverAtResponse + Math.max(0, performance.now() - monotonicAtResponse)
+  const estimatedServerNow =
+    serverAtResponse + Math.max(0, performance.now() - monotonicAtResponse)
   return Math.max(0, Math.ceil((deadline - estimatedServerNow) / 1000))
 }
 
@@ -29,40 +33,87 @@ export function HeadStartPage() {
     const result = await supabaseGameApi.syncClock(matchId)
     const receivedAt = performance.now()
     setSyncing(false)
-    if (!result.ok) { setSyncError(result.error.message); return }
+    if (!result.ok) {
+      setSyncError(result.error.message)
+      return
+    }
     setSyncError('')
     setClock(result.data)
-    if (result.data.state === 'ACTIVE') { navigate(`/match/${matchId}`, { replace: true }); return }
-    if (result.data.state === 'ENDED') { navigate(`/match/${matchId}/results`, { replace: true }); return }
+    if (result.data.state === 'ACTIVE') {
+      navigate(`/match/${matchId}`, { replace: true })
+      return
+    }
+    if (result.data.state === 'ENDED') {
+      navigate(`/match/${matchId}/results`, { replace: true })
+      return
+    }
     anchor.current = { clock: result.data, at: receivedAt }
     setRemainingSeconds(remaining(result.data, receivedAt))
   }, [matchId, navigate])
 
-  useEffect(() => { void sync() }, [sync])
+  useEffect(() => {
+    void sync()
+  }, [sync])
+
   useEffect(() => {
     if (!clock) return
     const tick = () => {
       const latest = anchor.current
-      if (latest) setRemainingSeconds(remaining(latest.clock, latest.at))
+      if (latest) {
+        const secs = remaining(latest.clock, latest.at)
+        setRemainingSeconds(secs)
+        if (secs <= 0) {
+          void sync()
+        }
+      }
     }
     const timer = window.setInterval(tick, 250)
-    const resync = window.setInterval(() => { void sync() }, 10_000)
-    return () => { window.clearInterval(timer); window.clearInterval(resync) }
+    const resync = window.setInterval(() => {
+      void sync()
+    }, 10_000)
+    return () => {
+      window.clearInterval(timer)
+      window.clearInterval(resync)
+    }
   }, [clock, sync])
 
   return (
-    <main className="route-shell countdown-page">
-      <div className="route-shell__heading">
-        <p className="welcome__eyebrow">Server-timed round</p>
-        <h1>Head start</h1>
-        <p className="welcome__copy">Runners have time to move before Hunters begin. The server controls when this countdown ends.</p>
+    <main className="head-start-screen">
+      <div className="head-start-card-wrap">
+        <Card variant="glow-green" className="head-start-card">
+          <div className="head-start-header">
+            <span className="head-start-overline font-mono">TACTICAL INFILTRATION</span>
+            <h1 className="head-start-title">Hider Head Start</h1>
+            <p className="head-start-subtitle">
+              Hiders have time to disperse and take cover before Seekers are released into the field.
+            </p>
+          </div>
+
+          <div className="head-start-countdown-box">
+            <div className="head-start-pulse-ring" aria-hidden="true" />
+            <div className="head-start-digits font-mono">
+              {remainingSeconds === null ? '--:--' : format(remainingSeconds)}
+            </div>
+            <span className="head-start-label font-mono text-xs">TIME UNTIL SEEKERS UNLEASHED</span>
+          </div>
+
+          <div className="head-start-footer">
+            <Button
+              size="sm"
+              variant="secondary-outline"
+              disabled={syncing}
+              onClick={() => void sync()}
+            >
+              {syncing ? 'Syncing…' : 'Sync Clock'}
+            </Button>
+            <Link to={`/match/${matchId}`} className="text-muted text-xs font-mono">
+              View map preview <ArrowRight size={14} className="inline ml-1" />
+            </Link>
+          </div>
+
+          {syncError && <p className="form-error font-mono text-xs mt-3" role="alert">{syncError}</p>}
+        </Card>
       </div>
-      <section className="state-panel countdown-panel" aria-label="Head-start countdown">
-        <p className="countdown-value" role="timer" aria-live="off">{remainingSeconds === null ? '—:—' : format(remainingSeconds)}</p>
-        <p className="countdown-state" role="status">{syncError || (syncing ? 'Checking server time…' : clock ? `Server state: ${clock.state}` : 'Connecting to match…')}</p>
-        <button className="welcome__secondary" disabled={syncing} onClick={() => void sync()} type="button">{syncing ? 'Syncing…' : 'Sync match clock'}</button>
-        <Link className="welcome__secondary" to="/">Return home</Link>
-      </section>
     </main>
   )
 }

@@ -23,6 +23,7 @@
     "test:all": "corepack pnpm test:unit && corepack pnpm test:audit && corepack pnpm test:api && corepack pnpm verify:payloads && corepack pnpm test:sim && corepack pnpm test:e2e && corepack pnpm test:db"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "1.64.1",
     "supabase": "2.121.0"
   },
