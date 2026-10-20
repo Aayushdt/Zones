@@ -315,3 +315,8 @@
 
 - Added a one-use Runner Decoy with a server-generated false position bounded around the Runner's fresh fix. It is stored solely for the next scheduled Hunter ping and never disclosed to Runners.
 - Validation: SQL smoke verifies offset bound, one-use guard, and Runner-safe sync; database/type/API checks PASS.
+
+# Hide & Seek implementation — Steps 6.6–6.8
+
+- Added the expiring Runner Zone Shield, server-enforced Runner Camouflage, and Ghost Mode deferral note. Shield suppresses zone-exit consequences only while active; Camouflage filters both the next ping and Hunter Scan.
+- Validation: dedicated Shield/Camouflage SQL smokes and the complete `pnpm test:all` suite PASS; typecheck/build, lint, and diff checks PASS.

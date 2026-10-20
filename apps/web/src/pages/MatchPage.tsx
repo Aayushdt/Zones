@@ -37,6 +37,8 @@ export function MatchPage() {
   const [zoneNotice, setZoneNotice] = useState('')
   const [zoneMoverAvailable, setZoneMoverAvailable] = useState(true)
   const [decoyAvailable, setDecoyAvailable] = useState(true)
+  const [shieldAvailable, setShieldAvailable] = useState(true)
+  const [camouflageAvailable, setCamouflageAvailable] = useState(true)
   const [stealth, setStealth] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Waiting for server role confirmation.')
   const anchor = useRef(0)
@@ -190,6 +192,20 @@ export function MatchPage() {
     setDecoyAvailable(false)
     setError('Decoy is armed for the next Hunter ping.')
   }
+  async function activateShield() {
+    setBusy(true)
+    const result = await supabaseGameApi.activateItem(matchId, 'RUNNER_ZONE_SHIELD')
+    setBusy(false)
+    if (!result.ok) { setError(result.error.message); return }
+    setShieldAvailable(false); setError('Zone Shield is active temporarily.')
+  }
+  async function activateCamouflage() {
+    setBusy(true)
+    const result = await supabaseGameApi.activateItem(matchId, 'RUNNER_CAMOUFLAGE')
+    setBusy(false)
+    if (!result.ok) { setError(result.error.message); return }
+    setCamouflageAvailable(false); setError('Camouflage is active for the next ping and Scan window.')
+  }
 
   const cancelStealthExit = () => {
     if (stealthExitTimer.current !== null) window.clearTimeout(stealthExitTimer.current)
@@ -232,6 +248,8 @@ export function MatchPage() {
             {view.role === 'HUNTER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !alarmAvailable} onClick={() => void placeAlarm()} type="button">{alarmAvailable ? 'Place proximity alarm' : 'Alarm placed'}</button> : null}
             {view.role === 'HUNTER' && itemsEnabled && view.zone ? <button className="welcome__secondary" disabled={busy || !zoneMoverAvailable} onClick={() => void moveZone()} type="button">{zoneMoverAvailable ? 'Hunter Zone Mover' : 'Zone Mover used'}</button> : null}
             {view.role === 'RUNNER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !decoyAvailable} onClick={() => void activateDecoy()} type="button">{decoyAvailable ? 'Runner Decoy' : 'Decoy armed'}</button> : null}
+            {view.role === 'RUNNER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !shieldAvailable} onClick={() => void activateShield()} type="button">{shieldAvailable ? 'Zone Shield' : 'Shield used'}</button> : null}
+            {view.role === 'RUNNER' && itemsEnabled ? <button className="welcome__secondary" disabled={busy || !camouflageAvailable} onClick={() => void activateCamouflage()} type="button">{camouflageAvailable ? 'Camouflage' : 'Camouflage used'}</button> : null}
             {view.can_end ? <button className="welcome__secondary" onClick={() => {
               if (window.confirm('End the match for everyone? This cannot be undone.')) {
                 void supabaseGameApi.endMatch(matchId, 'HOST_END').then((result) => {
