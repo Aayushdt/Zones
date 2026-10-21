@@ -168,7 +168,12 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
           if (map && !disposed) syncZoneLayer(map, zoneRef.current)
         })
 
-        map.setMissingStyleImageResolver?.(() => ({ width: 1, height: 1, data: new Uint8Array(4) }))
+        map.setMissingStyleImageResolver?.((id: string) => {
+          if (!map || disposed) return
+          if (!map.hasImage(id)) {
+            map.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) })
+          }
+        })
         map.on('styleimagemissing', (e) => {
           if (disposed || !map) return
           if (!map.hasImage(e.id)) {

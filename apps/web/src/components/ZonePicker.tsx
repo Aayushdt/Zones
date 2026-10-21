@@ -83,7 +83,12 @@ export function ZonePicker({
           if (!disposed) setMapLoaded(true)
         })
 
-        instance.setMissingStyleImageResolver?.(() => ({ width: 1, height: 1, data: new Uint8Array(4) }))
+        instance.setMissingStyleImageResolver?.((id: string) => {
+          if (!instance || disposed) return
+          if (!instance.hasImage(id)) {
+            instance.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) })
+          }
+        })
         instance.on('styleimagemissing', (e) => {
           if (disposed || !instance) return
           if (!instance.hasImage(e.id)) {
