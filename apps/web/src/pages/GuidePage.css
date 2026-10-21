@@ -1,0 +1,209 @@
+/* ==========================================================================
+   HOW TO PLAY (GUIDE SCREEN)
+   ========================================================================== */
+.guide-screen {
+  min-height: calc(100dvh - 56px);
+  padding: 1.5rem var(--page-gutter) 3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.guide-container {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.guide-back-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  transition: all var(--transition-fast);
+}
+
+.guide-back-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+.guide-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.guide-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.guide-step-card {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.guide-step-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.25rem;
+}
+.guide-step-icon--green { background: var(--color-green-tint); color: var(--color-green); }
+.guide-step-icon--amber { background: var(--color-amber-tint); color: var(--color-amber); }
+.guide-step-icon--red { background: var(--color-red-tint); color: var(--color-red); }
+.guide-step-icon--blue { background: var(--color-blue-tint); color: var(--color-blue); }
+
+.guide-step-number {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--color-muted);
+}
+
+.guide-step-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.guide-step-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.4;
+}
+
+.section-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.guide-roles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 540px) {
+  .guide-roles-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.role-card {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.role-card--seeker {
+  border-top: 3px solid var(--color-red);
+}
+
+.role-card--hider {
+  border-top: 3px solid var(--color-green);
+}
+
+.role-card__badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 800;
+}
+.role-card__badge--seeker { color: var(--color-red); }
+.role-card__badge--hider { color: var(--color-green); }
+
+.role-card__list {
+  padding-left: 1.2rem;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.guide-accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.accordion-card {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: var(--color-surface-2);
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.accordion-body {
+  padding: 0.85rem 1rem 1rem;
+  font-size: 13px;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.accordion-body ul {
+  padding-left: 1.2rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.guide-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}

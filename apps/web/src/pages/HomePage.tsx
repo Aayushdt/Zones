@@ -9,6 +9,7 @@ import { Logo } from '../components/ui/Logo'
 import { Input } from '../components/ui/Input'
 import { StatusChip } from '../components/ui/StatusChip'
 import { StatsModal } from '../components/ui/StatsModal'
+import './HomePage.css'
 
 export function HomePage() {
   const navigate = useNavigate()

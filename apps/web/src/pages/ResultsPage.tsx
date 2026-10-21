@@ -6,6 +6,7 @@ import { supabaseGameApi } from '../services/supabase-api'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { fireWinnerConfetti } from '../utils/feedback'
+import './ResultsPage.css'
 
 const resultLabels: Record<string, string> = {
   ALL_RUNNERS_TAGGED: 'All Hiders were hunted down and eliminated.',

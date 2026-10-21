@@ -1,0 +1,105 @@
+/* ==========================================================================
+   SCREEN 7: TAG PAGE
+   ========================================================================== */
+.tag-screen {
+  min-height: calc(100dvh - 56px);
+  padding: 2rem 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.tag-container {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.tag-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 13px;
+  color: var(--color-muted);
+  margin-bottom: 0.5rem;
+}
+
+.tag-title {
+  margin: 0.2rem 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.tag-seeker-section,
+.tag-hider-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tag-action-card,
+.tag-qr-scan-card,
+.tag-token-card,
+.tag-surrender-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tag-action-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.tag-action-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.tag-action-desc {
+  margin: 0.15rem 0 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.tag-gps-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.qr-display-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.tag-qr-img {
+  width: 240px;
+  height: 240px;
+  border-radius: var(--radius-control);
+  box-shadow: 0 0 20px var(--color-green-glow);
+}
+
+.qr-countdown-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-amber);
+}
+
+.camera-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

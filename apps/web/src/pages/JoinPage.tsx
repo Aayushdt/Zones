@@ -7,6 +7,7 @@ import { useAppStore } from '../stores/app-store'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import './JoinPage.css'
 
 export function JoinPage() {
   const navigate = useNavigate()

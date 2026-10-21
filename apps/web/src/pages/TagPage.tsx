@@ -8,6 +8,7 @@ import { useLocationStore } from '../stores/location-store'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { StatusChip } from '../components/ui/StatusChip'
+import './TagPage.css'
 
 const CameraScanner = lazy(() => import('../components/CameraScanner'))
 

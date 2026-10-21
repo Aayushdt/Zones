@@ -17,6 +17,7 @@ import { SettingRow } from '../components/ui/SettingRow'
 import { Toggle } from '../components/ui/Toggle'
 import { Input } from '../components/ui/Input'
 import { playSound } from '../utils/feedback'
+import './SettingsPage.css'
 
 export function SettingsPage() {
   const savedName = useAppStore((state) => state.guestName)

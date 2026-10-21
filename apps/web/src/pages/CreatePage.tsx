@@ -26,6 +26,7 @@ import { GameplayTab } from './create/GameplayTab'
 import { ZoneTab } from './create/ZoneTab'
 import { AlertsTab } from './create/AlertsTab'
 import { EconomyTab } from './create/EconomyTab'
+import './CreatePage.css'
 
 const durationOptions = [
   { value: '30', label: '30 min' },

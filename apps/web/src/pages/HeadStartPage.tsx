@@ -5,6 +5,7 @@ import type { ClockView } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
+import './HeadStartPage.css'
 
 function remaining(clock: ClockView, monotonicAtResponse: number): number {
   const deadline = Date.parse(clock.head_start_ends_at)

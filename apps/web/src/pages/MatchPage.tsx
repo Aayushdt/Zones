@@ -29,6 +29,7 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { HoldButton } from '../components/ui/HoldButton'
 import { CountdownRing } from '../components/ui/CountdownRing'
 import { playSound, triggerHaptic } from '../utils/feedback'
+import './MatchPage.css'
 
 function timeLeft(clock: ClockView, anchor: number): number | null {
   if (clock.ends_at === null) return null

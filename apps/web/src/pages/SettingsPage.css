@@ -1,0 +1,214 @@
+/* ==========================================================================
+   SCREEN 6: SETTINGS & PREFERENCES
+   ========================================================================== */
+.settings-screen {
+  min-height: calc(100dvh - 56px);
+  padding: 2rem 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.settings-container {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.settings-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 13px;
+  color: var(--color-muted);
+  margin-bottom: 0.5rem;
+}
+
+.settings-title {
+  margin: 0.2rem 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.settings-section-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-section-title {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+
+.settings-haptics-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.settings-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 540px) {
+  .settings-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-info-card {
+  padding: 1rem;
+}
+
+.settings-info-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.settings-info-title {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.settings-safe-list {
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
+/* Permission Banner & Danger Card */
+.permission-status-banner {
+  padding: 1rem;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.permission-status-dot-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.permission-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.permission-status-dot.is-granted {
+  background: var(--color-green);
+  box-shadow: 0 0 8px var(--color-green);
+}
+.permission-status-dot.is-denied {
+  background: var(--color-red);
+  box-shadow: 0 0 8px var(--color-red);
+}
+.permission-status-dot.is-prompt {
+  background: var(--color-amber);
+  box-shadow: 0 0 8px var(--color-amber);
+}
+
+.permission-status-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-danger-card {
+  padding: 1.25rem;
+  border: 1px solid var(--color-red-ring);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.danger-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clear-confirm-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-red-tint);
+  border-radius: var(--radius-control);
+}
+
+.clear-confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.settings-links-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .settings-links-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  transition: all var(--transition-fast);
+}
+
+.settings-nav-btn:hover {
+  border-color: var(--color-green);
+  color: var(--color-green);
+}
+
+@media (min-width: 768px) {
+  .settings-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .settings-container {
+    max-width: 920px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .settings-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}

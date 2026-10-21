@@ -26,6 +26,7 @@ import { Card } from '../components/ui/Card'
 import { Toast } from '../components/ui/Toast'
 import { playSound, triggerHaptic } from '../utils/feedback'
 import { GpsReadinessBadge, type GpsCalibrationStatus } from '../components/GpsReadinessBadge'
+import './LobbyPage.css'
 
 export function LobbyPage() {
   const { matchId = '' } = useParams()
