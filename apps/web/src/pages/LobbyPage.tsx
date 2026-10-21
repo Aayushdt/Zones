@@ -249,7 +249,7 @@ export function LobbyPage() {
   async function startMatch() {
     if (!lobby || lobby.you.id !== lobby.controller_player_id) return
     setPending(true)
-    const result = await supabaseGameApi.startMatch(matchId)
+    const result = await supabaseGameApi.startMatch(matchId, lobby.revision)
     setPending(false)
     if (!result.ok) {
       setError(result.error.message)

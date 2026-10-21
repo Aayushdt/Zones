@@ -4,7 +4,7 @@ import { createMockApi } from '../../apps/web/src/services/mock-api.ts'
 import { useLocationStore } from '../../apps/web/src/stores/location-store.ts'
 import { maintainScreenWakeLock, watchDeviceLocation } from '../../apps/web/src/services/device-lifecycle.ts'
 import { createRealtimeEventGate, applyMatchRealtimeEvent } from '../../apps/web/src/services/realtime-events.ts'
-import { parseApiError } from '../../apps/web/src/services/supabase-api.ts'
+import { parseApiError, supabaseGameApi } from '../../apps/web/src/services/supabase-api.ts'
 import { fallbackSyncDelay, startFallbackSync } from '../../apps/web/src/services/fallback-sync.ts'
 import { createLocationSendState } from '../../apps/web/src/services/location-send-state.ts'
 import { createTacticalFallbackStyle } from '../../apps/web/src/utils/map-tactical-style.ts'
@@ -265,5 +265,32 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
     expect(evaluateCalibration(105, 500)).toBe('poor')
     expect(evaluateCalibration(15, 35_000)).toBe('stale')
     expect(evaluateCalibration(null, 0, true)).toBe('denied')
+  })
+
+  it('I9: startMatch must pass lobby.revision to prevent REVISION_CONFLICT', async () => {
+    let capturedRevision: number | undefined
+    const originalPost = (supabaseGameApi as any).post
+    ;(supabaseGameApi as any).post = vi.fn().mockImplementation((_url: string, body: { expected_revision: number }) => {
+      capturedRevision = body.expected_revision
+      if (body.expected_revision === 0) {
+        return Promise.resolve({ ok: false, error: { code: 'REVISION_CONFLICT', message: 'Revision conflict' } })
+      }
+      return Promise.resolve({ ok: true, data: { ends_at: '2026-10-21T16:00:00Z', server_now: '2026-10-21T15:00:00Z' } })
+    })
+
+    try {
+      // Calling startMatch with lobby.revision sends the expected revision and succeeds
+      const resSuccess = await supabaseGameApi.startMatch('match-123', 4)
+      expect(resSuccess.ok).toBe(true)
+      expect(capturedRevision).toBe(4)
+
+      // Calling startMatch without revision sends 0, failing with REVISION_CONFLICT
+      const resFail = await supabaseGameApi.startMatch('match-123')
+      expect(resFail.ok).toBe(false)
+      expect((resFail as any).error.code).toBe('REVISION_CONFLICT')
+      expect(capturedRevision).toBe(0)
+    } finally {
+      ;(supabaseGameApi as any).post = originalPost
+    }
   })
 })
