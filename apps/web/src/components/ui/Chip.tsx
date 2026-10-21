@@ -31,5 +31,3 @@ export function Chip({
     </span>
   )
 }
-
-export const Badge = Chip
