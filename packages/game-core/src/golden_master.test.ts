@@ -177,9 +177,7 @@ describe('GOLDEN MASTER: Pure Game Logic Snapshot Matrix', () => {
     }))
 
     // canStartLobby combinations
-    const makePlayer = (id: string, role: 'HUNTER' | 'RUNNER' | null, ready: boolean, status: 'ACTIVE' | 'TAGGED' | 'LEFT' = 'ACTIVE'): TeamMember => ({
-      id,
-      display_name: `Player ${id}`,
+    const makePlayer = (role: 'HUNTER' | 'RUNNER' | null, ready: boolean, status: 'ACTIVE' | 'TAGGED' | 'LEFT' = 'ACTIVE'): TeamMember => ({
       role,
       ready,
       status,
@@ -187,19 +185,19 @@ describe('GOLDEN MASTER: Pure Game Logic Snapshot Matrix', () => {
 
     const lobbyTests = [
       { desc: 'empty', players: [] },
-      { desc: '1 player', players: [makePlayer('1', 'HUNTER', true)] },
-      { desc: '2 players balanced and ready', players: [makePlayer('1', 'HUNTER', true), makePlayer('2', 'RUNNER', true)] },
-      { desc: '2 players unready', players: [makePlayer('1', 'HUNTER', true), makePlayer('2', 'RUNNER', false)] },
-      { desc: '2 players no roles', players: [makePlayer('1', null, true), makePlayer('2', null, true)] },
-      { desc: '2 hunters 0 runners', players: [makePlayer('1', 'HUNTER', true), makePlayer('2', 'HUNTER', true)] },
-      { desc: '3 players (1H 2R) ready', players: [makePlayer('1', 'HUNTER', true), makePlayer('2', 'RUNNER', true), makePlayer('3', 'RUNNER', true)] },
+      { desc: '1 player', players: [makePlayer('HUNTER', true)] },
+      { desc: '2 players balanced and ready', players: [makePlayer('HUNTER', true), makePlayer('RUNNER', true)] },
+      { desc: '2 players unready', players: [makePlayer('HUNTER', true), makePlayer('RUNNER', false)] },
+      { desc: '2 players no roles', players: [makePlayer(null, true), makePlayer(null, true)] },
+      { desc: '2 hunters 0 runners', players: [makePlayer('HUNTER', true), makePlayer('HUNTER', true)] },
+      { desc: '3 players (1H 2R) ready', players: [makePlayer('HUNTER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true)] },
       { desc: '12 players (5H 7R) custom allowed', players: [
-        makePlayer('h1', 'HUNTER', true), makePlayer('h2', 'HUNTER', true), makePlayer('h3', 'HUNTER', true), makePlayer('h4', 'HUNTER', true), makePlayer('h5', 'HUNTER', true),
-        makePlayer('r1', 'RUNNER', true), makePlayer('r2', 'RUNNER', true), makePlayer('r3', 'RUNNER', true), makePlayer('r4', 'RUNNER', true), makePlayer('r5', 'RUNNER', true), makePlayer('r6', 'RUNNER', true), makePlayer('r7', 'RUNNER', true),
+        makePlayer('HUNTER', true), makePlayer('HUNTER', true), makePlayer('HUNTER', true), makePlayer('HUNTER', true), makePlayer('HUNTER', true),
+        makePlayer('RUNNER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true),
       ] },
       { desc: '12 players (7H 5R) unbalanced rejected', players: [
-        makePlayer('h1', 'HUNTER', true), makePlayer('h2', 'HUNTER', true), makePlayer('h3', 'HUNTER', true), makePlayer('h4', 'HUNTER', true), makePlayer('h5', 'HUNTER', true), makePlayer('h6', 'HUNTER', true), makePlayer('h7', 'HUNTER', true),
-        makePlayer('r1', 'RUNNER', true), makePlayer('r2', 'RUNNER', true), makePlayer('r3', 'RUNNER', true), makePlayer('r4', 'RUNNER', true), makePlayer('r5', 'RUNNER', true),
+        makePlayer('HUNTER', true), makePlayer('HUNTER', true), makePlayer('HUNTER', true), makePlayer('HUNTER', true), makePlayer('HUNTER', true), makePlayer('HUNTER', true), makePlayer('HUNTER', true),
+        makePlayer('RUNNER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true), makePlayer('RUNNER', true),
       ] },
     ]
     const lobbyResults = lobbyTests.map((t) => ({
