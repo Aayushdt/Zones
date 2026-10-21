@@ -17,7 +17,6 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
   min-height: 100dvh;
 }
 
@@ -663,14 +662,16 @@ input, select, textarea {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-/* SettingRow (~72px compact height, 28px circle help button) */
+/* SettingRow (~64-88px compact height, 26px circle help button) */
 .setting-row {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  min-height: 68px;
-  padding: 0.75rem 0;
+  gap: 0.35rem;
+  padding: 0.65rem 0;
+  min-height: 52px;
   border-bottom: 1px solid var(--color-border-subtle);
+  width: 100%;
+  min-width: 0;
 }
 
 .setting-row:last-child {
@@ -683,57 +684,61 @@ input, select, textarea {
   justify-content: space-between;
   gap: 0.75rem;
   width: 100%;
-}
-
-.setting-row__main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
   min-width: 0;
-  flex: 1;
 }
 
 .setting-row__header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .setting-row__title {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setting-row__help-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .setting-row__help-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  max-width: 26px;
+  max-height: 26px;
   border-radius: 50%;
-  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  flex: none;
+  align-self: center;
   border: 1px solid var(--color-border);
   background: var(--color-surface-2);
   color: var(--color-muted);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  padding: 0;
   transition: all var(--transition-fast);
 }
 
-.setting-row__help-btn:hover {
+.setting-row__help-btn:hover,
+.setting-row__help-btn:focus-visible {
   color: var(--color-green);
   border-color: var(--color-green);
-}
-
-.setting-row__summary {
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-muted);
-  line-height: 1.35;
 }
 
 .setting-row__action {
@@ -751,11 +756,14 @@ input, select, textarea {
   font-size: 12px;
   color: var(--color-green);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .setting-row__bottom {
   width: 100%;
-  padding-top: 0.25rem;
+  min-width: 0;
+  padding-top: 0.2rem;
 }
 
 .setting-row.is-disabled {
@@ -839,9 +847,11 @@ input, select, textarea {
   inset: 0;
   width: 100%;
   height: 100%;
-  max-width: 100vw;
-  max-height: 100vh;
+  max-width: 100%;
+  max-height: 100%;
   overflow: hidden;
+  clip-path: inset(0 0 0 0);
+  contain: paint;
   pointer-events: none;
   display: grid;
   place-items: center;
@@ -855,14 +865,14 @@ input, select, textarea {
   border-radius: 50%;
   pointer-events: none;
 }
-.radar-ring--1 { width: 280px; height: 280px; }
-.radar-ring--2 { width: 540px; height: 540px; }
-.radar-ring--3 { width: 800px; height: 800px; }
+.radar-ring--1 { width: min(220px, 58vw); height: min(220px, 58vw); }
+.radar-ring--2 { width: min(280px, 76vw); height: min(280px, 76vw); }
+.radar-ring--3 { width: min(340px, 92vw); height: min(340px, 92vw); }
 
 .radar-sweep-beam {
   position: absolute;
-  width: 400px;
-  height: 400px;
+  width: min(230px, 60vw);
+  height: min(230px, 60vw);
   border-radius: 50%;
   background: conic-gradient(from 0deg at 50% 50%, rgba(0, 255, 137, 0.15) 0deg, transparent 60deg, transparent 360deg);
   animation: radar-sweep 8s linear infinite;
@@ -1750,48 +1760,63 @@ input, select, textarea {
   width: 100%;
 }
 
-/* Tabs */
+/* Tabs (4 equal-width columns, icon above label, filled pill active state, fits 320px) */
 .app-tabs-wrap {
-  overflow-x: auto;
-  border-bottom: 1px solid var(--color-border);
-  min-width: 0;
   width: 100%;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.app-tabs-wrap::-webkit-scrollbar {
-  display: none;
+  min-width: 0;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.25rem;
 }
 
 .app-tabs {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
   min-width: 0;
-  padding: 0 4px;
+  gap: 4px;
 }
 
 .app-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 48px;
+  padding: 6px 2px;
+  border-radius: var(--radius-control);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 0;
+  transition: all var(--transition-fast);
+}
+
+.app-tab__icon {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  padding: 0 0.85rem;
-  border-bottom: 2px solid transparent;
-  color: var(--color-muted);
-  font-size: 14px;
-  font-weight: 600;
+  justify-content: center;
+}
+
+.app-tab__label {
+  display: block;
+  font-size: 11px;
+  line-height: 1.1;
+  text-align: center;
   white-space: nowrap;
-  cursor: pointer;
-  background: transparent;
-  border-top: none;
-  border-left: none;
-  border-right: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .app-tab.is-active {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
   color: var(--color-green);
-  border-bottom-color: var(--color-green);
+  box-shadow: 0 0 10px rgba(0, 255, 137, 0.15);
 }
 
 .tab-pane-content {
@@ -3568,22 +3593,12 @@ html, body, #root {
 .team-card,
 .settings-section-card,
 .presets-manager-card,
-.join-card,
-.setting-row {
+.join-card {
   container-type: inline-size;
 }
 
 /* Fluid Spacing & Component Adaptations */
 @container (max-width: 400px) {
-  .setting-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  .setting-row__action {
-    width: 100%;
-    justify-content: flex-start;
-  }
   .segmented-control {
     width: 100%;
   }

@@ -70,7 +70,6 @@ export function ResultsPage() {
           <div className="results-hero-icon-wrap" aria-hidden="true">
             <WinnerIcon size={44} />
           </div>
-          <span className="results-hero-overline font-mono">TACTICAL OUTCOME</span>
           <h1 className="results-hero-title">{winnerTitle}</h1>
           <p className="results-hero-summary">
             {result ? resultLabels[result.end_reason] ?? 'Server concluded the round.' : error}

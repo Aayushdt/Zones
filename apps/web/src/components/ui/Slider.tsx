@@ -10,7 +10,7 @@ export interface SliderProps {
   unit?: string
   ticks?: number[]
   disabled?: boolean
-  description?: string
+  hideHeader?: boolean
   className?: string
 }
 
@@ -24,7 +24,7 @@ export function Slider({
   unit = '',
   ticks,
   disabled = false,
-  description,
+  hideHeader = false,
   className = '',
 }: SliderProps) {
   const [editing, setEditing] = useState(false)
@@ -54,38 +54,42 @@ export function Slider({
 
   return (
     <div className={`slider-control ${disabled ? 'is-disabled' : ''} ${className}`}>
-      <div className="slider-control__header">
-        <div className="slider-control__label-group">
+      {!hideHeader && (
+        <div className="slider-control__header">
           <label className="slider-control__label">{label}</label>
-          {description && <span className="slider-control__desc">{description}</span>}
+          <div className="slider-control__value-wrap">
+            {editing ? (
+              <input
+                type="number"
+                min={min}
+                max={max}
+                step={step}
+                value={tempValue}
+                onChange={(e) => setTempValue(e.currentTarget.value)}
+                onBlur={handleManualBlur}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleManualBlur()
+                }}
+                autoFocus
+                className="slider-control__value-input font-mono"
+              />
+            ) : (
+              <button
+                type="button"
+                className="slider-control__value-badge font-mono"
+                onClick={() => {
+                  setTempValue(String(value))
+                  setEditing(true)
+                }}
+                title="Click to edit exact number"
+              >
+                {value}
+                {unit && <span className="slider-control__unit">{unit}</span>}
+              </button>
+            )}
+          </div>
         </div>
-        <div className="slider-control__value-wrap">
-          {editing ? (
-            <input
-              type="number"
-              min={min}
-              max={max}
-              step={step}
-              value={tempValue}
-              onChange={(e) => setTempValue(e.currentTarget.value)}
-              onBlur={handleManualBlur}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleManualBlur() }}
-              autoFocus
-              className="slider-control__value-input font-mono"
-            />
-          ) : (
-            <button
-              type="button"
-              className="slider-control__value-badge font-mono"
-              onClick={() => { setTempValue(String(value)); setEditing(true) }}
-              title="Click to edit exact number"
-            >
-              {value}
-              {unit && <span className="slider-control__unit">{unit}</span>}
-            </button>
-          )}
-        </div>
-      </div>
+      )}
       <div className="slider-control__track-wrap">
         <input
           type="range"

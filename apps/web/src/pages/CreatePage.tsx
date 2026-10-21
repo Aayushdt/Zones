@@ -46,13 +46,6 @@ const pingOptions = [
   { value: '15', label: '15 min' },
 ] as const
 
-const headStartOptions = [
-  { value: '0', label: 'None' },
-  { value: '30', label: '30 s' },
-  { value: '60', label: '1 min' },
-  { value: '180', label: '3 min' },
-  { value: '300', label: '5 min' },
-] as const
 
 type SetupTabId = 'gameplay' | 'zone' | 'alerts' | 'economy'
 
@@ -292,19 +285,28 @@ export function CreatePage() {
               <Link to="/" className="create-back-btn" title="Back to Home" aria-label="Back">
                 <ArrowLeft size={20} />
               </Link>
-              <div className="create-title-wrap">
-                <span className="create-overline font-mono">MATCH OPERATOR</span>
-                <h1 className="create-title">Create Match</h1>
-              </div>
+              <h1 className="create-title">Create match</h1>
+              <button
+                type="button"
+                className="create-save-preset-icon-btn"
+                onClick={() => {
+                  if (presetName.trim()) {
+                    savePreset()
+                  } else {
+                    setPresetName('Quick preset')
+                    savePreset()
+                  }
+                }}
+                title="Save current preset"
+                aria-label="Save current preset"
+              >
+                <Save size={18} />
+              </button>
             </div>
-            <p className="create-subtitle">
-              Configure private outdoor rules. Seekers will receive scheduled snapshots while Hiders stay concealed.
-            </p>
           </header>
 
-          {/* Quick Presets Row */}
+          {/* Quick Presets Row (Horizontally scrollable) */}
           <div className="create-presets-chips">
-            <span className="presets-label text-xs text-muted">PRESETS:</span>
             <button
               type="button"
               className="preset-chip font-mono"
@@ -326,7 +328,7 @@ export function CreatePage() {
             >
               Campus 90m
             </button>
-            {presets.slice(0, 2).map((p) => (
+            {presets.slice(0, 3).map((p) => (
               <button
                 key={p.id}
                 type="button"
@@ -349,7 +351,7 @@ export function CreatePage() {
             ))}
           </div>
 
-          {/* Game Mode Selector Card with arrows and wrapping description */}
+          {/* Game Mode Selector Card with arrows and wrapping mode name only */}
           <Card variant="surface" className="game-mode-card">
             <div className="game-mode-header">
               <button
@@ -360,10 +362,7 @@ export function CreatePage() {
               >
                 <ChevronLeft size={18} />
               </button>
-              <div className="game-mode-title-wrap text-center">
-                <span className="game-mode-badge font-mono text-xs">ACTIVE MODE</span>
-                <h2 className="game-mode-title">Hide & Seek</h2>
-              </div>
+              <h2 className="game-mode-title">Hide & Seek</h2>
               <button
                 type="button"
                 className="game-mode-nav-btn"
@@ -373,9 +372,6 @@ export function CreatePage() {
                 <ChevronRight size={18} />
               </button>
             </div>
-            <p className="game-mode-desc text-muted text-xs">
-              Hiders conceal within the zone boundary while Seekers hunt using scheduled periodic radar snapshots and in-person QR tags.
-            </p>
           </Card>
 
           {/* Form */}
@@ -402,21 +398,19 @@ export function CreatePage() {
             {/* TAB 1: GAMEPLAY */}
             {activeTab === 'gameplay' && (
               <div id="panel-gameplay" role="tabpanel" aria-labelledby="tab-gameplay" className="tab-pane-content">
-                {/* Collapsible Card: Timing */}
                 <CollapsibleCard
                   title="Timing & Duration"
-                  subtitle="Round countdown and hider dispersal window"
                   icon={<Clock size={18} />}
                   defaultOpen={true}
                 >
                   <SettingRow
-                    title="Round Timer"
-                    summary={timerEnabled ? `Match runs up to ${duration} minutes.` : 'No timer; play until all Hiders are tagged.'}
+                    title="Round timer"
                     helpText="Authoritative server timer that decides match completion."
                     valueDisplay={timerEnabled ? `${duration} min` : 'Off'}
                     action={
                       <Toggle
                         label="Round timer"
+                        hideLabel
                         checked={timerEnabled}
                         onChange={(e) => setTimerEnabled(e.currentTarget.checked)}
                       />
@@ -425,67 +419,61 @@ export function CreatePage() {
 
                   {timerEnabled && (
                     <SettingRow
-                      title="Match Duration"
-                      summary={`Active field play lasts ${duration} minutes total.`}
+                      title="Match duration"
                       helpText="Defines total match length including head start."
                       valueDisplay={`${duration} min`}
-                      action={
-                        <div className="button-group-row">
-                          {durationOptions.map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              aria-pressed={duration === Number(opt.value)}
-                              onClick={() => setDuration(Number(opt.value))}
-                              className={`mini-segment-btn ${duration === Number(opt.value) ? 'is-selected' : ''}`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      }
-                    />
+                    >
+                      <div className="button-group-row">
+                        {durationOptions.map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            aria-pressed={duration === Number(opt.value)}
+                            onClick={() => setDuration(Number(opt.value))}
+                            className={`mini-segment-btn ${duration === Number(opt.value) ? 'is-selected' : ''}`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </SettingRow>
                   )}
 
                   <SettingRow
-                    title="Hider Head Start"
-                    summary={headStart > 0 ? `Hiders get ${headStart}s to disperse before Seekers move.` : 'Seekers start immediately.'}
-                    helpText="Seekers remain frozen while Hiders take cover."
+                    title="Hider head start"
+                    helpText="Seekers remain frozen while Hiders disperse across the field."
                     valueDisplay={headStart > 0 ? `${headStart}s` : 'None'}
-                    action={
-                      <SegmentedControl
-                        options={headStartOptions}
-                        value={String(headStart)}
-                        onChange={(val) => setHeadStart(Number(val))}
-                      />
-                    }
-                  />
+                  >
+                    <Slider
+                      label="Hider head start"
+                      hideHeader
+                      value={headStart}
+                      min={0}
+                      max={300}
+                      step={30}
+                      unit="s"
+                      ticks={[0, 30, 60, 180, 300]}
+                      onChange={setHeadStart}
+                    />
+                  </SettingRow>
                 </CollapsibleCard>
 
-                {/* Collapsible Card: Radar & Tagging */}
                 <CollapsibleCard
                   title="Radar & Tagging"
-                  subtitle="Snapshot frequency and hunter visibility"
                   icon={<Radar size={18} />}
                   defaultOpen={true}
                 >
                   <SettingRow
-                    title="Seeker Ping Interval"
-                    summary={
-                      pingMinutes === null
-                        ? 'Ping Off: Seekers receive no periodic radar updates.'
-                        : `Seekers receive an updated Hider snapshot every ${pingMinutes} minutes.`
-                    }
+                    title="Seeker ping interval"
                     helpText="Controls frequency of periodic radar snapshots sent to Seekers."
                     valueDisplay={pingMinutes === null ? 'Off' : `${pingMinutes} min`}
-                    action={
-                      <SegmentedControl
-                        options={pingOptions}
-                        value={pingMinutes === null ? 'off' : String(pingMinutes)}
-                        onChange={(val) => setPingMinutes(val === 'off' ? null : Number(val))}
-                      />
-                    }
-                  />
+                  >
+                    <SegmentedControl
+                      options={pingOptions}
+                      value={pingMinutes === null ? 'off' : String(pingMinutes)}
+                      onChange={(val) => setPingMinutes(val === 'off' ? null : Number(val))}
+                    />
+                  </SettingRow>
                 </CollapsibleCard>
               </div>
             )}
@@ -495,18 +483,17 @@ export function CreatePage() {
               <div id="panel-zone" role="tabpanel" aria-labelledby="tab-zone" className="tab-pane-content">
                 <CollapsibleCard
                   title="Boundary Circle"
-                  subtitle="Field radius and geographic play center"
                   icon={<MapPin size={18} />}
                   defaultOpen={true}
                 >
                   <SettingRow
-                    title="Circle Play Zone"
-                    summary={fixedZone ? `Bound players to a circular field (${diameter}m diameter).` : 'No boundary; play freely without zone constraints.'}
+                    title="Circle play zone"
                     helpText="Enforces circular play area using accuracy-aware GPS checks."
                     valueDisplay={fixedZone ? `${diameter}m` : 'Off'}
                     action={
                       <Toggle
                         label="Circle zone"
+                        hideLabel
                         checked={fixedZone}
                         onChange={(e) => setFixedZone(e.currentTarget.checked)}
                       />
@@ -515,14 +502,13 @@ export function CreatePage() {
 
                   {fixedZone && (
                     <SettingRow
-                      title="Starting Diameter"
-                      summary={`Field radius is ${currentRadius}m.`}
+                      title="Starting diameter"
                       helpText="Starting circle diameter for the outdoor field."
                       valueDisplay={`${diameter}m`}
                     >
                       <Slider
-                        label="Starting Diameter"
-                        description={`Radius: ${currentRadius}m`}
+                        label="Starting diameter"
+                        hideHeader
                         value={diameter}
                         min={400}
                         max={3000}
@@ -537,19 +523,17 @@ export function CreatePage() {
                 {fixedZone && (
                   <CollapsibleCard
                     title="Zone Shrink Schedule"
-                    subtitle="Progressive collapse of safe zone"
                     icon={<Layers size={18} />}
                     defaultOpen={true}
                   >
                     <SettingRow
-                      title="Shrink Stages"
-                      summary={shrinkStages > 0 ? `Zone collapses in ${shrinkStages} stage(s) every ${shrinkIntervalMinutes} min.` : 'Static zone with no shrinkage.'}
+                      title="Shrink stages"
                       helpText="Number of concentric shrink contractions."
                       valueDisplay={shrinkStages > 0 ? `${shrinkStages} stages` : 'Static'}
                     >
                       <Slider
-                        label="Shrink Stages"
-                        description={shrinkStages > 0 ? `Zone collapses in ${shrinkStages} stage(s) every ${shrinkIntervalMinutes} min.` : 'Static zone with no shrinkage.'}
+                        label="Shrink stages"
+                        hideHeader
                         value={shrinkStages}
                         min={0}
                         max={10}
@@ -561,14 +545,13 @@ export function CreatePage() {
                     {shrinkStages > 0 && (
                       <>
                         <SettingRow
-                          title="Shrink Interval"
-                          summary={`Zone contracts every ${shrinkIntervalMinutes} minutes.`}
+                          title="Shrink interval"
                           helpText="Time between each shrink contraction."
                           valueDisplay={`${shrinkIntervalMinutes} min`}
                         >
                           <Slider
-                            label="Shrink Interval"
-                            description={`Zone shrinks every ${shrinkIntervalMinutes} minutes.`}
+                            label="Shrink interval"
+                            hideHeader
                             value={shrinkIntervalMinutes}
                             min={2}
                             max={30}
@@ -579,14 +562,13 @@ export function CreatePage() {
                         </SettingRow>
 
                         <SettingRow
-                          title="Final Safe Radius"
-                          summary={`Final safe area radius: ${finalRadius}m.`}
+                          title="Final safe radius"
                           helpText="Minimum circle radius at match endgame."
                           valueDisplay={`${finalRadius}m`}
                         >
                           <Slider
-                            label="Final Circle Radius"
-                            description={`Final safe area radius: ${finalRadius}m.`}
+                            label="Final safe radius"
+                            hideHeader
                             value={finalRadius}
                             min={50}
                             max={currentRadius}
@@ -601,7 +583,7 @@ export function CreatePage() {
                     {/* Horizontal Shrink Timeline with Scaled Circles */}
                     {shrinkStages > 0 && (
                       <div className="shrink-timeline-box">
-                        <span className="shrink-timeline-title font-mono text-xs">SHRINK PROGRESSION TIMELINE</span>
+                        <span className="shrink-timeline-title font-mono text-xs">SHRINK TIMELINE</span>
                         <div className="shrink-timeline-stages">
                           {timelineStages.map((st) => (
                             <div key={st.stage} className="timeline-stage-item">
@@ -679,18 +661,17 @@ export function CreatePage() {
               <div id="panel-alerts" role="tabpanel" aria-labelledby="tab-alerts" className="tab-pane-content">
                 <CollapsibleCard
                   title="Sensory Alerts"
-                  subtitle="Vibrations and boundary departure warnings"
                   icon={<Bell size={18} />}
                   defaultOpen={true}
                 >
                   <SettingRow
-                    title="Haptic Vibration"
-                    summary="Vibrate phone on new radar ping snapshots and emergency alerts."
+                    title="Haptic vibration"
                     helpText="Uses device haptic motors for tactile game feedback."
                     valueDisplay={hapticsAlerts ? 'On' : 'Off'}
                     action={
                       <Toggle
                         label="Haptic feedback"
+                        hideLabel
                         checked={hapticsAlerts}
                         onChange={(e) => setHapticsAlerts(e.currentTarget.checked)}
                       />
@@ -698,13 +679,13 @@ export function CreatePage() {
                   />
 
                   <SettingRow
-                    title="Zone Exit Warning"
-                    summary="Warn players at 30 s outside boundary before ping reveal."
+                    title="Zone exit warning"
                     helpText="Gives players a 30s grace period to re-enter before live coordinates are exposed."
                     valueDisplay={outOfZoneWarning ? 'On' : 'Off'}
                     action={
                       <Toggle
                         label="Zone exit warning"
+                        hideLabel
                         checked={outOfZoneWarning}
                         onChange={(e) => setOutOfZoneWarning(e.currentTarget.checked)}
                       />
@@ -719,18 +700,17 @@ export function CreatePage() {
               <div id="panel-economy" role="tabpanel" aria-labelledby="tab-economy" className="tab-pane-content">
                 <CollapsibleCard
                   title="Tactical Field Items"
-                  subtitle="Scans, alarms, and decoys (100% free)"
                   icon={<Coins size={18} />}
                   defaultOpen={true}
                 >
                   <SettingRow
-                    title="Tactical Items"
-                    summary="Enable Hunter Scans, Alarms, Decoys, and Zone Shields (1 per role)."
-                    helpText="Free tactical items. No paywall, locks, or monetization."
-                    valueDisplay={itemsEnabled ? 'Enabled' : 'Disabled'}
+                    title="Tactical items"
+                    helpText="Free tactical items including Scans, Alarms, Decoys, and Zone Shields. No locks or paywalls."
+                    valueDisplay={itemsEnabled ? 'On' : 'Off'}
                     action={
                       <Toggle
                         label="Tactical items"
+                        hideLabel
                         checked={itemsEnabled}
                         onChange={(e) => setItemsEnabled(e.currentTarget.checked)}
                       />

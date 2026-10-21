@@ -33,7 +33,6 @@ export function LobbyPage() {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const [toastMsg, setToastMsg] = useState('')
-  const [hunterCount, setHunterCount] = useState(1)
   const [itemsEnabled, setItemsEnabled] = useState(false)
   const [spectatorMode, setSpectatorMode] = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
@@ -55,12 +54,6 @@ export function LobbyPage() {
     setLobby(result.data)
     const items = await supabaseGameApi.setItemsEnabled(matchId, null)
     if (items.ok) setItemsEnabled(items.data.items_enabled)
-    const totalPlayers = result.data.players.length
-    const defaultHunters = Math.min(
-      Math.max(Math.ceil(totalPlayers / HIDE_AND_SEEK_CONFIG.players.hunterCountDivisor.default), 1),
-      Math.max(1, Math.floor(totalPlayers / 2))
-    )
-    setHunterCount(defaultHunters)
   }, [matchId])
 
   useEffect(() => {
@@ -290,7 +283,6 @@ export function LobbyPage() {
             </Link>
 
             <div className="lobby-header__title-group">
-              <span className="lobby-header__overline font-mono">ROOM CODE</span>
               <div className="lobby-header__code-row">
                 <span className="lobby-header__code font-mono" title="Private Lobby Code">
                   {lobbyCode}
@@ -338,7 +330,7 @@ export function LobbyPage() {
           </div>
         </header>
 
-        {/* Scoreboard Card: n Seekers vs n Hiders + Target Balance + Max Players */}
+        {/* Scoreboard Card: n Seekers vs n Hiders + Max 12 Players */}
         <Card variant="raised" className="lobby-scoreboard-card">
           <div className="lobby-scoreboard__counts">
             <div className="scoreboard-team scoreboard-team--seeker">
@@ -354,11 +346,7 @@ export function LobbyPage() {
 
           <div className="lobby-scoreboard__meta">
             <span className="scoreboard-roster-total font-mono text-xs">
-              <Users size={14} /> {lobby.players.length} / {HIDE_AND_SEEK_CONFIG.players.max.default} PLAYERS (MIN {HIDE_AND_SEEK_CONFIG.players.min.default})
-            </span>
-            <span className="scoreboard-balance-hint text-xs text-muted">
-              Target balance: {hunterCount} Seeker{hunterCount > 1 ? 's' : ''} vs{' '}
-              {Math.max(1, lobby.players.length - hunterCount)} Hider{lobby.players.length - hunterCount > 1 ? 's' : ''}
+              <Users size={14} /> {lobby.players.length} / 12 PLAYERS (MIN {HIDE_AND_SEEK_CONFIG.players.min.default})
             </span>
           </div>
         </Card>

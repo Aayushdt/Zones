@@ -2,21 +2,22 @@ import { forwardRef, type InputHTMLAttributes } from 'react'
 
 export interface ToggleProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: string
-  description?: string
+  hideLabel?: boolean
 }
 
 export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(function Toggle(
-  { label, description, checked, onChange, disabled, id, className = '', ...props },
+  { label, hideLabel = false, checked, onChange, disabled, id, className = '', ...props },
   ref,
 ) {
   const toggleId = id || `toggle-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
 
   return (
     <label htmlFor={toggleId} className={`switch-toggle ${disabled ? 'is-disabled' : ''} ${className}`}>
-      <div className="switch-toggle__text">
-        <span className="switch-toggle__label">{label}</span>
-        {description && <span className="switch-toggle__desc">{description}</span>}
-      </div>
+      {!hideLabel && (
+        <div className="switch-toggle__text">
+          <span className="switch-toggle__label">{label}</span>
+        </div>
+      )}
       <div className="switch-toggle__control">
         <input
           ref={ref}
@@ -24,6 +25,7 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(function Toggle(
           type="checkbox"
           role="switch"
           aria-checked={checked}
+          aria-label={label}
           checked={checked}
           disabled={disabled}
           onChange={onChange}

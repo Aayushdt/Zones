@@ -4,7 +4,6 @@ import { Card } from './Card'
 
 export interface CollapsibleCardProps {
   title: string
-  subtitle?: string
   icon?: ReactNode
   badge?: ReactNode
   defaultOpen?: boolean
@@ -14,7 +13,6 @@ export interface CollapsibleCardProps {
 
 export function CollapsibleCard({
   title,
-  subtitle,
   icon,
   badge,
   defaultOpen = true,
@@ -33,12 +31,9 @@ export function CollapsibleCard({
       >
         <div className="collapsible-card__title-wrap">
           {icon && <span className="collapsible-card__icon">{icon}</span>}
-          <div>
-            <div className="collapsible-card__title-line">
-              <span className="collapsible-card__title">{title}</span>
-              {badge && <span className="collapsible-card__badge">{badge}</span>}
-            </div>
-            {subtitle && <p className="collapsible-card__subtitle">{subtitle}</p>}
+          <div className="collapsible-card__title-line">
+            <span className="collapsible-card__title">{title}</span>
+            {badge && <span className="collapsible-card__badge">{badge}</span>}
           </div>
         </div>
         <div className="collapsible-card__chevron-btn" aria-hidden="true">

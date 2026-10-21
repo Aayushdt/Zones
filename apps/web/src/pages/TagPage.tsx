@@ -163,15 +163,9 @@ export function TagPage() {
             <ArrowLeft size={18} />
             <span>Back to Map</span>
           </Link>
-          <span className="tag-overline font-mono">TACTICAL PROXIMITY</span>
           <h1 className="tag-title">
             {isSeeker ? 'Tag a Hider' : 'Tag Resolution'}
           </h1>
-          <p className="tag-subtitle">
-            {isSeeker
-              ? 'Tag closest Hider with a high-accuracy GPS fix or scan their QR token.'
-              : 'Show your single-use QR token to a Seeker, or self-confirm your elimination.'}
-          </p>
         </header>
 
         {/* SEEKER CONTROLS */}

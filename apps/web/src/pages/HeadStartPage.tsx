@@ -82,11 +82,7 @@ export function HeadStartPage() {
       <div className="head-start-card-wrap">
         <Card variant="glow-green" className="head-start-card">
           <div className="head-start-header">
-            <span className="head-start-overline font-mono">TACTICAL INFILTRATION</span>
             <h1 className="head-start-title">Hider Head Start</h1>
-            <p className="head-start-subtitle">
-              Hiders have time to disperse and take cover before Seekers are released into the field.
-            </p>
           </div>
 
           <div className="head-start-countdown-box">

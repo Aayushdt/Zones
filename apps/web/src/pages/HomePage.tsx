@@ -122,9 +122,7 @@ export function HomePage() {
           /* Initial Onboarding Form (Accessible & E2E Compliant) */
           <form className="home-card onboarding-card" onSubmit={continueAsGuest}>
             <div className="card-header-clean">
-              <span className="card-overline">GUEST ENLISTMENT</span>
               <h2 className="card-title">Enter the Zone</h2>
-              <p className="card-subtitle">No account needed. Play private outdoor hide-and-seek games with friends.</p>
             </div>
 
             <label className="field">
@@ -207,13 +205,11 @@ export function HomePage() {
                     <Shuffle size={16} />
                   </button>
                 }
-                helperText="Enter 4-character room code or 6-character private lobby code."
               />
             </div>
 
             {/* Dual 56px Action Buttons */}
             <div className="home-dual-actions">
-              {/* Join Button (Outlined Green with Player subtitle) */}
               <button
                 type="button"
                 className="dual-action-btn dual-action-btn--join"
@@ -224,11 +220,9 @@ export function HomePage() {
                 </div>
                 <div className="dual-action-btn__text">
                   <span className="dual-action-btn__title">Join</span>
-                  <span className="dual-action-btn__subtitle">Player</span>
                 </div>
               </button>
 
-              {/* Create Button (Solid Red with Host subtitle) */}
               <Link
                 to="/create"
                 className="dual-action-btn dual-action-btn--create"
@@ -238,7 +232,6 @@ export function HomePage() {
                 </div>
                 <div className="dual-action-btn__text">
                   <span className="dual-action-btn__title">Create</span>
-                  <span className="dual-action-btn__subtitle">Host</span>
                 </div>
               </Link>
             </div>

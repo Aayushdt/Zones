@@ -115,11 +115,7 @@ export function SettingsPage() {
             <ArrowLeft size={18} />
             <span>Home</span>
           </Link>
-          <span className="settings-overline font-mono">PREFERENCES &amp; SYSTEM</span>
           <h1 className="settings-title">Settings</h1>
-          <p className="settings-subtitle">
-            Local preferences are stored on this device. They do not alter server match rules or player visibility.
-          </p>
         </header>
 
         {/* Guest Profile Section */}
@@ -154,80 +150,78 @@ export function SettingsPage() {
           </div>
 
           <SettingRow
-            title="Theme Palette"
-            summary="Dark neon OLED mode or light high-contrast daylight mode."
+            title="Theme palette"
+            helpText="Dark neon OLED mode or light high-contrast daylight mode."
             valueDisplay={theme === 'system' ? 'System' : theme === 'dusk' ? 'Dusk' : 'Paper'}
-            action={
-              <div className="segmented-control" role="group" aria-label="Theme selection">
-                {(['system', 'dusk', 'paper'] as const).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    className={`segment ${theme === item ? 'is-selected' : ''}`}
-                    aria-pressed={theme === item}
-                    onClick={() => setTheme(item)}
-                  >
-                    {item === 'system' ? 'System' : item === 'dusk' ? 'Dusk · Dark' : 'Paper · Light'}
-                  </button>
-                ))}
-              </div>
-            }
-          />
+          >
+            <div className="segmented-control" role="group" aria-label="Theme selection">
+              {(['system', 'dusk', 'paper'] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`segment ${theme === item ? 'is-selected' : ''}`}
+                  aria-pressed={theme === item}
+                  onClick={() => setTheme(item)}
+                >
+                  {item === 'system' ? 'System' : item === 'dusk' ? 'Dusk · Dark' : 'Paper · Light'}
+                </button>
+              ))}
+            </div>
+          </SettingRow>
 
           <SettingRow
-            title="Map Cartography"
-            summary="Follows theme or selects specific dark topographic / light street tiles."
+            title="Map style"
+            helpText="Follows theme or selects specific dark topographic / light street tiles."
             valueDisplay={mapStyle === 'auto' ? 'Auto' : mapStyle === 'dusk' ? 'Dusk' : 'Paper'}
-            action={
-              <div className="segmented-control" role="group" aria-label="Map style selection">
-                {mapStyles.map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    className={`segment ${mapStyle === item.value ? 'is-selected' : ''}`}
-                    aria-pressed={mapStyle === item.value}
-                    onClick={() => setMapStyle(item.value)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            }
-          />
+          >
+            <div className="segmented-control" role="group" aria-label="Map style selection">
+              {mapStyles.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={`segment ${mapStyle === item.value ? 'is-selected' : ''}`}
+                  aria-pressed={mapStyle === item.value}
+                  onClick={() => setMapStyle(item.value)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </SettingRow>
 
           <SettingRow
-            title="Measurement Units"
-            summary="Distance display in meters (metric) or feet (imperial)."
+            title="Units"
+            helpText="Distance display in meters (metric) or feet (imperial)."
             valueDisplay={units === 'metric' ? 'Metric (m)' : 'Imperial (ft)'}
-            action={
-              <div className="segmented-control" role="group" aria-label="Units selection">
-                <button
-                  type="button"
-                  className={`segment ${units === 'metric' ? 'is-selected' : ''}`}
-                  aria-pressed={units === 'metric'}
-                  onClick={() => setUnits('metric')}
-                >
-                  Metric (m)
-                </button>
-                <button
-                  type="button"
-                  className={`segment ${units === 'imperial' ? 'is-selected' : ''}`}
-                  aria-pressed={units === 'imperial'}
-                  onClick={() => setUnits('imperial')}
-                >
-                  Imperial (ft)
-                </button>
-              </div>
-            }
-          />
+          >
+            <div className="segmented-control" role="group" aria-label="Units selection">
+              <button
+                type="button"
+                className={`segment ${units === 'metric' ? 'is-selected' : ''}`}
+                aria-pressed={units === 'metric'}
+                onClick={() => setUnits('metric')}
+              >
+                Metric (m)
+              </button>
+              <button
+                type="button"
+                className={`segment ${units === 'imperial' ? 'is-selected' : ''}`}
+                aria-pressed={units === 'imperial'}
+                onClick={() => setUnits('imperial')}
+              >
+                Imperial (ft)
+              </button>
+            </div>
+          </SettingRow>
 
           <SettingRow
-            title="Vibration Feedback"
-            summary="Haptic pulses on radar snapshots and match alerts."
+            title="Vibration feedback"
+            helpText="Haptic pulses on radar snapshots and match alerts."
             action={
               <div className="settings-haptics-row">
                 <Toggle
                   label="Vibration feedback"
+                  hideLabel
                   checked={hapticsEnabled}
                   onChange={(e) => setHapticsEnabled(e.currentTarget.checked)}
                 />
@@ -239,12 +233,13 @@ export function SettingsPage() {
           />
 
           <SettingRow
-            title="Audio Cues"
-            summary="Synthesized Web Audio tones for radar pings, tag alerts, and countdowns."
+            title="Audio cues"
+            helpText="Synthesized Web Audio tones for radar pings, tag alerts, and countdowns."
             action={
               <div className="settings-haptics-row">
                 <Toggle
                   label="Sound effects"
+                  hideLabel
                   checked={soundEnabled}
                   onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
                 />
@@ -256,11 +251,12 @@ export function SettingsPage() {
           />
 
           <SettingRow
-            title="Reduce Effects"
-            summary="Disables ambient radar sweeps, confetti, and motion pulses for longer battery runtime."
+            title="Reduce effects"
+            helpText="Disables ambient radar sweeps, confetti, and motion pulses for longer battery runtime."
             action={
               <Toggle
                 label="Reduce motion and visual effects"
+                hideLabel
                 checked={reduceEffects}
                 onChange={(e) => setReduceEffects(e.currentTarget.checked)}
               />

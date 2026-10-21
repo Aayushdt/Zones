@@ -67,10 +67,9 @@ export function JoinPage() {
             <ArrowLeft size={18} />
             <span>Home</span>
           </Link>
-          <span className="join-overline font-mono">ENLIST WITH CODE</span>
           <h1 className="join-title">Join Private Match</h1>
-          <p className="join-subtitle">
-            Enter the private room code provided by your host. Lobbies support {HIDE_AND_SEEK_CONFIG.players.min.default}–{HIDE_AND_SEEK_CONFIG.players.max.default} players.
+          <p className="join-capacity font-mono text-xs text-muted">
+            Lobbies support {HIDE_AND_SEEK_CONFIG.players.min.default}–{HIDE_AND_SEEK_CONFIG.players.max.default} players
           </p>
         </header>
 
@@ -96,7 +95,6 @@ export function JoinPage() {
               placeholder="6-character code"
               onChange={(e) => setCode(e.currentTarget.value.replace(/[^a-z0-9]/gi, '').toUpperCase())}
               required
-              helperText="Six characters (letters and numbers, omitting easily confused glyphs)."
             />
 
             {error && (

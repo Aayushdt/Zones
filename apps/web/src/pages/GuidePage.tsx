@@ -93,7 +93,6 @@ export function GuidePage() {
             <ArrowLeft size={20} />
           </Link>
           <div className="guide-title-wrap">
-            <span className="guide-overline font-mono">FIELD OPERATOR MANUAL</span>
             <h1 className="guide-title">How to play</h1>
           </div>
         </header>
