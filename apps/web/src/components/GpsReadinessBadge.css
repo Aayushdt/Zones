@@ -1,0 +1,78 @@
+.gps-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-badge);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.gps-badge:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-surface-2);
+}
+
+.gps-badge:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.gps-badge--warming {
+  cursor: default;
+  border-color: var(--color-amber-border);
+  background: var(--color-amber-surface);
+  color: var(--color-amber);
+}
+
+.gps-badge--ready {
+  border-color: var(--color-green-border);
+  background: var(--color-green-surface);
+  color: var(--color-green);
+}
+
+.gps-badge--weak {
+  border-color: var(--color-amber-border);
+  background: var(--color-amber-surface);
+  color: var(--color-amber);
+}
+
+.gps-badge--stale {
+  border-color: var(--color-amber-border);
+  background: var(--color-surface-2);
+  color: var(--color-muted);
+}
+
+.gps-badge--denied {
+  cursor: default;
+  border-color: var(--color-red-border);
+  background: var(--color-red-surface);
+  color: var(--color-red);
+}
+
+.gps-badge--timeout {
+  border-color: var(--color-red-border);
+  background: var(--color-red-surface);
+  color: var(--color-red);
+}
+
+.gps-badge-spin {
+  animation: gps-spin 1.4s linear infinite;
+}
+
+@keyframes gps-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

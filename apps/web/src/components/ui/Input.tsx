@@ -29,6 +29,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   ref,
 ) {
   const inputId = id || `input-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
+  const errorId = `${inputId}-error`
+  const helperId = `${inputId}-helper`
+  const describedBy = error ? errorId : helperText ? helperId : undefined
 
   return (
     <div className={`form-field ${error ? 'has-error' : ''} ${disabled ? 'is-disabled' : ''} ${className}`}>
@@ -42,6 +45,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           id={inputId}
           value={value}
           disabled={disabled}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy}
           onChange={(event) => {
             if (uppercase && event.currentTarget.value) {
               event.currentTarget.value = event.currentTarget.value.toUpperCase()
@@ -55,8 +60,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         />
         {trailingAction && <div className="form-field__trailing-action">{trailingAction}</div>}
       </div>
-      {error && <p className="form-field__error" role="alert">{error}</p>}
-      {helperText && !error && <p className="form-field__helper">{helperText}</p>}
+      {error && <p id={errorId} className="form-field__error" role="alert">{error}</p>}
+      {helperText && !error && <p id={helperId} className="form-field__helper">{helperText}</p>}
     </div>
   )
 })

@@ -135,3 +135,27 @@ test('Sticky bottom bar on setup does not overlap content', async ({ page }) => 
   expect(check.ok, `Expected main paddingBottom (${check.paddingBottom}px) >= sticky bar height (${check.barHeight}px)`).toBe(true)
 })
 
+test('Modal dialogs and SettingRow help popovers close on Escape key', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  await page.goto('/create')
+  await page.waitForTimeout(300)
+
+  // 1. SettingRow help popover opens and closes on Escape
+  const helpBtn = page.locator('.setting-row__help-btn').first()
+  await helpBtn.click()
+  await expect(page.locator('.setting-row__popover').first()).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.setting-row__popover')).toHaveCount(0)
+
+  // 2. Fullscreen map modal opens and closes on Escape
+  await page.click('button:has-text("Zone")')
+  await page.waitForTimeout(200)
+  const expandBtn = page.locator('button:has-text("Expand")')
+  if (await expandBtn.isVisible()) {
+    await expandBtn.click()
+    await expect(page.locator('.fullscreen-map-modal')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.fullscreen-map-modal')).toHaveCount(0)
+  }
+})
+

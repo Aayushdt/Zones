@@ -37,8 +37,19 @@ export function SettingRow({
         setHelpOpen(false)
       }
     }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (helpOpen && e.key === 'Escape') {
+        e.preventDefault()
+        setHelpOpen(false)
+        btnRef.current?.focus()
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [helpOpen])
 
   return (

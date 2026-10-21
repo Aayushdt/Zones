@@ -47,10 +47,10 @@ export function StatusChip({
   let label = 'GPS: NO FIX'
 
   if (accuracyM !== null && accuracyM !== undefined && Number.isFinite(accuracyM)) {
-    if (accuracyM <= 15) {
+    if (accuracyM <= 25) {
       variant = 'green'
       label = `GPS ±${Math.round(accuracyM)}m`
-    } else if (accuracyM <= 50) {
+    } else if (accuracyM <= 100) {
       variant = 'amber'
       label = `GPS ±${Math.round(accuracyM)}m`
     } else {

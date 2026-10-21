@@ -25,6 +25,7 @@ import { Toggle } from '../components/ui/Toggle'
 import { Card } from '../components/ui/Card'
 import { Toast } from '../components/ui/Toast'
 import { playSound, triggerHaptic } from '../utils/feedback'
+import { GpsReadinessBadge, type GpsCalibrationStatus } from '../components/GpsReadinessBadge'
 
 export function LobbyPage() {
   const { matchId = '' } = useParams()
@@ -38,6 +39,8 @@ export function LobbyPage() {
   const [qrModalOpen, setQrModalOpen] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [chatOpen, setChatOpen] = useState(false)
+  const [gpsStatus, setGpsStatus] = useState<GpsCalibrationStatus>('untested')
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null)
 
   const enableLocation = useLocationStore((state) => state.enable)
   const clearLocation = useLocationStore((state) => state.clearMatch)
@@ -110,6 +113,19 @@ export function LobbyPage() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        if (qrModalOpen) {
+          e.preventDefault()
+          setQrModalOpen(false)
+          return
+        }
+        if (chatOpen) {
+          e.preventDefault()
+          setChatOpen(false)
+          return
+        }
+      }
+      if (qrModalOpen) return
       if (e.key === 'c' || e.key === 'C') {
         const active = document.activeElement
         if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
@@ -119,7 +135,7 @@ export function LobbyPage() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [lobbyCode])
+  }, [lobbyCode, qrModalOpen, chatOpen])
 
   async function selectTeam(role: Role | 'RANDOM') {
     if (!lobby) return
@@ -159,19 +175,49 @@ export function LobbyPage() {
         setError('Location permission requires HTTPS on a phone (localhost is allowed for development).')
         return
       }
-      setPending(true)
-      setError('Allow location to verify GPS before readying. Coordinates are not retained by this check.')
-      const permission = await new Promise<boolean>((resolve) =>
-        navigator.geolocation.getCurrentPosition(
-          () => resolve(true),
-          () => resolve(false),
-          { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
-        ),
-      )
-      setPending(false)
-      if (!permission) {
-        setError('Location permission or a GPS fix is required before readying. Allow location and try again.')
+      if (gpsStatus === 'denied') {
+        setError('Location permission was denied. Allow location in browser settings and try again.')
         return
+      }
+      setPending(true)
+      const currentFix = useLocationStore.getState().ownFix
+      const fixAgeMs = currentFix ? Date.now() - Date.parse(currentFix.captured_at) : Infinity
+      const isFreshAndAccurate = currentFix && Number.isFinite(fixAgeMs) && fixAgeMs <= 30_000 && (gpsAccuracy ?? currentFix.accuracy_m) <= 25
+
+      if (!isFreshAndAccurate) {
+        setError('Acquiring high-accuracy GPS fix before readying…')
+        const fix = await new Promise<GeolocationPosition | null>((resolve) =>
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            () => resolve(null),
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
+          ),
+        )
+        setPending(false)
+        if (!fix) {
+          setError('Location permission or a GPS fix is required before readying. Move outdoors and try again.')
+          return
+        }
+        useLocationStore.getState().setFix({
+          player_id: 'local-you',
+          display_name: 'You',
+          lat: fix.coords.latitude,
+          lon: fix.coords.longitude,
+          accuracy_m: fix.coords.accuracy,
+          captured_at: new Date(fix.timestamp).toISOString(),
+        })
+        if (fix.coords.accuracy > 100) {
+          setError(`GPS accuracy is over 100m (±${Math.round(fix.coords.accuracy)}m). Move outdoors for a clearer satellite fix.`)
+          return
+        }
+        if (fix.coords.accuracy > 25) {
+          setError(`GPS accuracy is ±${Math.round(fix.coords.accuracy)}m (>25m). Move outdoors for optimal tag detection.`)
+        } else {
+          setError('')
+        }
+      } else {
+        setPending(false)
+        setError('')
       }
       consentedLocation = true
     }
@@ -348,6 +394,12 @@ export function LobbyPage() {
             <span className="scoreboard-roster-total font-mono text-xs">
               <Users size={14} /> {lobby.players.length} / 12 PLAYERS (MIN {HIDE_AND_SEEK_CONFIG.players.min.default})
             </span>
+            <GpsReadinessBadge
+              onStatusChange={(s, acc) => {
+                setGpsStatus(s)
+                setGpsAccuracy(acc)
+              }}
+            />
           </div>
         </Card>
 
@@ -495,9 +547,9 @@ export function LobbyPage() {
 
       {/* QR Code Modal */}
       {qrModalOpen && (
-        <div className="modal-backdrop" onClick={() => setQrModalOpen(false)} role="dialog" aria-modal="true">
+        <div className="modal-backdrop" onClick={() => setQrModalOpen(false)} role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
           <div className="qr-modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="qr-modal-title">Join Lobby QR</h3>
+            <h3 id="qr-modal-title" className="qr-modal-title">Join Lobby QR</h3>
             <p className="qr-modal-desc font-mono">Code: {lobbyCode}</p>
             {qrDataUrl && <img src={qrDataUrl} alt="Lobby QR Code" className="qr-modal-img" />}
             <Button size="md" variant="secondary-outline" onClick={() => setQrModalOpen(false)}>

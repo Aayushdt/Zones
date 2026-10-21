@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Feature, Polygon } from 'geojson'
-import { Navigation } from 'lucide-react'
+import { Navigation, Radio } from 'lucide-react'
 import { Button } from './ui/Button'
+import { resolveTheme, useAppStore } from '../stores/app-store'
+import { createTacticalFallbackStyle } from '../utils/map-tactical-style'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 export function ZonePicker({
@@ -19,6 +21,12 @@ export function ZonePicker({
   const map = useRef<import('maplibre-gl').Map | null>(null)
   const marker = useRef<import('maplibre-gl').Marker | null>(null)
   const callback = useRef(onCenterChange)
+  const themePreference = useAppStore((state) => state.theme)
+  const resolvedTheme = resolveTheme(themePreference)
+  const isInitiallyOnline = typeof navigator !== 'undefined' ? navigator.onLine : true
+  const [isTacticalOffline, setIsTacticalOffline] = useState(!isInitiallyOnline)
+  const fallbackTriggeredRef = useRef(!isInitiallyOnline)
+  const remoteStyleUrl = import.meta.env.VITE_MAP_STYLE_URL?.trim() || `https://tiles.openfreemap.org/styles/${resolvedTheme === 'dusk' ? 'dark' : 'bright'}`
   const [message, setMessage] = useState('Click or drag pin to position zone center.')
   const [mapLoaded, setMapLoaded] = useState(false)
   const centerLat = center?.lat
@@ -33,6 +41,17 @@ export function ZonePicker({
     let disposed = false
     let instance: import('maplibre-gl').Map | null = null
 
+    const switchToFallback = () => {
+      if (disposed || fallbackTriggeredRef.current) return
+      fallbackTriggeredRef.current = true
+      setIsTacticalOffline(true)
+      try {
+        instance?.setStyle(createTacticalFallbackStyle(resolvedTheme))
+      } catch {
+        // Disposing
+      }
+    }
+
     void (async () => {
       try {
         const maplibre = await import('maplibre-gl')
@@ -44,17 +63,31 @@ export function ZonePicker({
           ? [centerLon, centerLat]
           : [0, 20]
 
+        const initialStyle = fallbackTriggeredRef.current
+          ? createTacticalFallbackStyle(resolvedTheme)
+          : remoteStyleUrl
+
         instance = new maplibre.Map({
           container: container.current,
-          style: import.meta.env.VITE_MAP_STYLE_URL?.trim() || 'https://tiles.openfreemap.org/styles/dark',
+          style: initialStyle,
           center: initialCenter,
           zoom: center ? 14 : 2,
           attributionControl: { compact: true },
         })
 
         map.current = instance
-        instance.once('load', () => {
+        instance.on('load', () => {
           if (!disposed) setMapLoaded(true)
+        })
+        instance.on('style.load', () => {
+          if (!disposed) setMapLoaded(true)
+        })
+
+        instance.on('error', (e) => {
+          if (disposed) return
+          if (!mapLoaded || !navigator.onLine || e.error?.message?.includes('style') || e.error?.message?.includes('fetch')) {
+            switchToFallback()
+          }
         })
 
         marker.current = new maplibre.Marker({ color: '#38BDF8', draggable: true })
@@ -71,7 +104,7 @@ export function ZonePicker({
           callback.current({ lat: event.lngLat.lat, lon: event.lngLat.lng })
         })
       } catch {
-        setMessage('Map tiles could not load. You can still enter coordinates.')
+        setMessage('Map could not start in this browser. Enter coordinates below.')
       }
     })()
 
@@ -83,7 +116,38 @@ export function ZonePicker({
       map.current = null
       instance = null
     }
-  }, [])
+  }, [resolvedTheme])
+
+  useEffect(() => {
+    const handleOnline = () => {
+      fallbackTriggeredRef.current = false
+      setIsTacticalOffline(false)
+      if (map.current) {
+        try {
+          map.current.setStyle(remoteStyleUrl)
+        } catch {
+          // ignore
+        }
+      }
+    }
+    const handleOffline = () => {
+      fallbackTriggeredRef.current = true
+      setIsTacticalOffline(true)
+      if (map.current) {
+        try {
+          map.current.setStyle(createTacticalFallbackStyle(resolvedTheme))
+        } catch {
+          // ignore
+        }
+      }
+    }
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [remoteStyleUrl, resolvedTheme])
 
   useEffect(() => {
     if (centerLat === undefined || centerLon === undefined) return
@@ -182,9 +246,21 @@ export function ZonePicker({
 
   return (
     <div className="zone-picker" aria-label="Choose circular zone">
-      <div className="zone-picker__map" ref={container} />
+      <div
+        className={`zone-picker__map ${isTacticalOffline ? 'game-map-canvas--tactical' : ''}`}
+        ref={container}
+      />
+      {isTacticalOffline && (
+        <div className="zone-picker__tactical-badge font-mono" role="status" aria-live="polite">
+          <Radio size={12} className="text-amber" /> OFFLINE TACTICAL GRID
+        </div>
+      )}
       <div className="zone-picker__footer">
-        <p className="zone-picker__message font-mono text-xs">{message}</p>
+        <p className="zone-picker__message font-mono text-xs">
+          {isTacticalOffline
+            ? 'Offline tactical mode active. Click or drag pin to position zone center.'
+            : message}
+        </p>
         <Button
           size="sm"
           variant="secondary-outline"

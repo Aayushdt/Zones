@@ -7,6 +7,8 @@ import { createRealtimeEventGate, applyMatchRealtimeEvent } from '../../apps/web
 import { parseApiError } from '../../apps/web/src/services/supabase-api.ts'
 import { fallbackSyncDelay, startFallbackSync } from '../../apps/web/src/services/fallback-sync.ts'
 import { createLocationSendState } from '../../apps/web/src/services/location-send-state.ts'
+import { createTacticalFallbackStyle } from '../../apps/web/src/utils/map-tactical-style.ts'
+import { GPS_READY_THRESHOLD_METERS, GPS_STALE_AGE_MS } from '../../apps/web/src/components/GpsReadinessBadge.tsx'
 
 class TestVisibility {
   hidden = false
@@ -228,5 +230,40 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
     if (!joinRes.ok) {
       expect(joinRes.error.code).toBe('SIM_CODE_ONLY')
     }
+  })
+
+  it('I7: tactical fallback style requires zero network requests and handles themes', () => {
+    const duskStyle = createTacticalFallbackStyle('dusk')
+    expect(duskStyle.version).toBe(8)
+    expect(Object.keys(duskStyle.sources).length).toBe(0)
+    expect(duskStyle.layers.length).toBeGreaterThan(0)
+    expect((duskStyle.layers[0] as { paint?: { 'background-color'?: string } }).paint?.['background-color']).toBe('#080808')
+
+    const paperStyle = createTacticalFallbackStyle('paper')
+    expect(paperStyle.version).toBe(8)
+    expect(Object.keys(paperStyle.sources).length).toBe(0)
+    expect((paperStyle.layers[0] as { paint?: { 'background-color'?: string } }).paint?.['background-color']).toBe('#F0F4F1')
+  })
+
+  it('I8: GPS calibration thresholds evaluate 25m readiness and 30s staleness accurately', () => {
+    expect(GPS_READY_THRESHOLD_METERS).toBe(25)
+    expect(GPS_STALE_AGE_MS).toBe(30_000)
+
+    function evaluateCalibration(acc: number | null, ageMs: number, denied = false): string {
+      if (denied) return 'denied'
+      if (acc === null) return 'untested'
+      if (ageMs > GPS_STALE_AGE_MS) return 'stale'
+      if (acc <= GPS_READY_THRESHOLD_METERS) return 'ready'
+      if (acc <= 100) return 'weak'
+      return 'poor'
+    }
+
+    expect(evaluateCalibration(12, 5000)).toBe('ready')
+    expect(evaluateCalibration(25, 1000)).toBe('ready')
+    expect(evaluateCalibration(26, 2000)).toBe('weak')
+    expect(evaluateCalibration(60, 4000)).toBe('weak')
+    expect(evaluateCalibration(105, 500)).toBe('poor')
+    expect(evaluateCalibration(15, 35_000)).toBe('stale')
+    expect(evaluateCalibration(null, 0, true)).toBe('denied')
   })
 })

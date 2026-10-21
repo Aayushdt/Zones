@@ -66,6 +66,7 @@ export function MatchPage() {
   const [decoyAvailable, setDecoyAvailable] = useState(true)
   const [shieldAvailable, setShieldAvailable] = useState(true)
   const [camouflageAvailable, setCamouflageAvailable] = useState(true)
+  const [camouflageExpiresAt, setCamouflageExpiresAt] = useState<number | null>(null)
 
   // UI state
   const [stealth, setStealth] = useState(false)
@@ -206,9 +207,15 @@ export function MatchPage() {
   useEffect(() => {
     if (!itemsEnabled || view?.role !== 'HUNTER' || alarmExpiresAt === null) return
     let active = true
+    let previouslyAlerted = false
     const check = async () => {
       const result = await supabaseGameApi.listItemAlerts(matchId)
       if (!active || !result.ok || result.data.alerts.length === 0) return
+      if (!previouslyAlerted) {
+        previouslyAlerted = true
+        playSound('warning')
+        triggerHaptic([60, 40, 60, 40, 100])
+      }
       setAlarmNotice('A Hider entered your proximity alarm radius!')
     }
     void check()
@@ -216,16 +223,30 @@ export function MatchPage() {
       () => void check(),
       HIDE_AND_SEEK_CONFIG.items.hunterAlarmPollSeconds.default * 1000,
     )
-    const expiryTimer = window.setTimeout(
-      () => setAlarmExpiresAt(null),
-      Math.max(0, alarmExpiresAt - Date.now()),
-    )
+    const expiryTimer = window.setTimeout(() => {
+      setAlarmExpiresAt(null)
+      playSound('click')
+      triggerHaptic([20, 20])
+      setError('Proximity Alarm expired.')
+    }, Math.max(0, alarmExpiresAt - Date.now()))
     return () => {
       active = false
       window.clearInterval(timer)
       window.clearTimeout(expiryTimer)
     }
   }, [alarmExpiresAt, itemsEnabled, matchId, view?.role])
+
+  useEffect(() => {
+    if (camouflageExpiresAt === null) return
+    const remaining = Math.max(0, camouflageExpiresAt - Date.now())
+    const timer = window.setTimeout(() => {
+      setCamouflageExpiresAt(null)
+      playSound('click')
+      triggerHaptic([20, 20])
+      setError('Thermal Camouflage expired. You are visible to upcoming pings.')
+    }, remaining)
+    return () => window.clearTimeout(timer)
+  }, [camouflageExpiresAt])
 
   useEffect(() => {
     if (!view || view.state !== 'ACTIVE') return
@@ -289,6 +310,8 @@ export function MatchPage() {
     const result = await supabaseGameApi.activateItem(matchId, 'HUNTER_SCAN')
     setBusy(false)
     if (!result.ok) {
+      playSound('warning')
+      triggerHaptic(30)
       setError(result.error.message)
       return
     }
@@ -296,6 +319,8 @@ export function MatchPage() {
     const positions = result.data.runner_positions ?? []
     setScanPositions(positions.map((p) => ({ ...p, ping_index: -1 })))
     setScanExpiry(Date.now() + HIDE_AND_SEEK_CONFIG.items.hunterScanSeconds.default * 1000)
+    playSound('ping')
+    triggerHaptic([30, 20, 30])
     setError(
       positions.length
         ? `Radar Scan active: ${positions.length} Hider fix${positions.length === 1 ? '' : 'es'} revealed.`
@@ -308,15 +333,18 @@ export function MatchPage() {
     const result = await supabaseGameApi.activateItem(matchId, 'HUNTER_ALARM')
     setBusy(false)
     if (!result.ok) {
+      playSound('warning')
+      triggerHaptic(30)
       setError(result.error.message)
       return
     }
     setAlarmAvailable(false)
-    setAlarmExpiresAt(
-      result.data.active_until
-        ? Date.parse(result.data.active_until)
-        : Date.now() + HIDE_AND_SEEK_CONFIG.items.hunterAlarmSeconds.default * 1000,
-    )
+    const expires = result.data.active_until
+      ? Date.parse(result.data.active_until)
+      : Date.now() + HIDE_AND_SEEK_CONFIG.items.hunterAlarmSeconds.default * 1000
+    setAlarmExpiresAt(expires)
+    playSound('ping')
+    triggerHaptic(40)
     setError('Proximity Alarm deployed at your coordinates.')
   }
 
@@ -325,11 +353,15 @@ export function MatchPage() {
     const result = await supabaseGameApi.activateItem(matchId, 'HUNTER_ZONE_MOVER')
     setBusy(false)
     if (!result.ok) {
+      playSound('warning')
+      triggerHaptic(30)
       setError(result.error.message)
       return
     }
     setZoneMoverAvailable(false)
     setZoneNotice('Play zone shifted by 50%. Updating satellite tracking.')
+    playSound('warning')
+    triggerHaptic([40, 40, 40])
     await sync()
   }
 
@@ -338,10 +370,14 @@ export function MatchPage() {
     const result = await supabaseGameApi.activateItem(matchId, 'RUNNER_DECOY')
     setBusy(false)
     if (!result.ok) {
+      playSound('warning')
+      triggerHaptic(30)
       setError(result.error.message)
       return
     }
     setDecoyAvailable(false)
+    playSound('ping')
+    triggerHaptic(30)
     setError('Decoy ghost signature armed for the next Seeker radar ping.')
   }
 
@@ -350,10 +386,14 @@ export function MatchPage() {
     const result = await supabaseGameApi.activateItem(matchId, 'RUNNER_ZONE_SHIELD')
     setBusy(false)
     if (!result.ok) {
+      playSound('warning')
+      triggerHaptic(30)
       setError(result.error.message)
       return
     }
     setShieldAvailable(false)
+    playSound('ping')
+    triggerHaptic(30)
     setError('Zone Shield deployed: out-of-zone penalties suspended temporarily.')
   }
 
@@ -362,10 +402,18 @@ export function MatchPage() {
     const result = await supabaseGameApi.activateItem(matchId, 'RUNNER_CAMOUFLAGE')
     setBusy(false)
     if (!result.ok) {
+      playSound('warning')
+      triggerHaptic(30)
       setError(result.error.message)
       return
     }
     setCamouflageAvailable(false)
+    const expires = result.data.active_until
+      ? Date.parse(result.data.active_until)
+      : Date.now() + HIDE_AND_SEEK_CONFIG.items.runnerCamouflageSeconds.default * 1000
+    setCamouflageExpiresAt(expires)
+    playSound('ping')
+    triggerHaptic(40)
     setError('Thermal Camouflage active: concealed from next ping & scan.')
   }
 
@@ -503,6 +551,9 @@ export function MatchPage() {
           <div className="hud-banner hud-banner--warning" role="alert">
             <Bell size={16} />
             <span>{alarmNotice}</span>
+            <button type="button" onClick={() => setAlarmNotice('')} aria-label="Dismiss alert">
+              <X size={14} />
+            </button>
           </div>
         )}
         {zoneNotice && (
@@ -556,6 +607,22 @@ export function MatchPage() {
               <div className="hud-metric-pill font-mono">
                 <span className="hud-metric-label">STAGE {view.zone.stage}</span>
                 <span className="hud-metric-val">{Math.round(view.zone.radius)}m</span>
+              </div>
+            )}
+
+            {/* Active Tactical Item Status Pills */}
+            {camouflageExpiresAt !== null && (
+              <div className="hud-metric-pill font-mono hud-item-pill--camo" title="Thermal Camouflage active">
+                <EyeOff size={14} className="text-green" />
+                <span className="hud-metric-label">CAMO</span>
+                <span className="hud-metric-val">{Math.max(0, Math.ceil((camouflageExpiresAt - Date.now()) / 1000))}s</span>
+              </div>
+            )}
+            {alarmExpiresAt !== null && (
+              <div className="hud-metric-pill font-mono hud-item-pill--alarm" title="Proximity Alarm armed">
+                <Bell size={14} className="text-amber" />
+                <span className="hud-metric-label">ALARM</span>
+                <span className="hud-metric-val">{Math.max(0, Math.ceil((alarmExpiresAt - Date.now()) / 1000))}s</span>
               </div>
             )}
 

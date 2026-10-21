@@ -4,7 +4,10 @@ import AxeBuilder from '@axe-core/playwright'
 const VIEWPORTS = [
   { name: 'phone-min-320', width: 320, height: 640, isMobile: true, hasTouch: true },
   { name: 'phone-compact-360', width: 360, height: 740, isMobile: true, hasTouch: true },
+  { name: 'phone-iphoneSE-375', width: 375, height: 667, isMobile: true, hasTouch: true },
   { name: 'phone-standard-390', width: 390, height: 844, isMobile: true, hasTouch: true },
+  { name: 'phone-iphonePlus-414', width: 414, height: 896, isMobile: true, hasTouch: true },
+  { name: 'phone-compactBreak-420', width: 420, height: 800, isMobile: true, hasTouch: true },
   { name: 'phone-max-430', width: 430, height: 932, isMobile: true, hasTouch: true },
   { name: 'phone-landscape-844', width: 844, height: 390, isMobile: true, hasTouch: true },
   { name: 'tablet-portrait-768', width: 768, height: 1024, isMobile: true, hasTouch: true },

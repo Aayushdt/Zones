@@ -10,6 +10,7 @@ import { HeadStartPage } from '../pages/HeadStartPage'
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
+    HydrateFallback: () => <div className="route-loading font-mono text-xs text-muted" aria-busy="true">LOADING…</div>,
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/create', element: <CreatePage /> },

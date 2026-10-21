@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Feature, Polygon } from 'geojson'
+import { Radio } from 'lucide-react'
 import { HIDE_AND_SEEK_CONFIG, interpolateMapCoordinate } from '@xzones/game-core'
 import { resolveTheme, useAppStore } from '../stores/app-store'
+import { createTacticalFallbackStyle } from '../utils/map-tactical-style'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './GameMap.css'
 
@@ -96,15 +98,20 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const [center, setCenter] = useState<[number, number] | null>(initial ? [initial.lon, initial.lat] : null)
   const [mapError, setMapError] = useState('')
   const [mapLoaded, setMapLoaded] = useState(false)
+  const isInitiallyOnline = typeof navigator !== 'undefined' ? navigator.onLine : true
+  const [isTacticalOffline, setIsTacticalOffline] = useState(!isInitiallyOnline)
+  const fallbackTriggeredRef = useRef(!isInitiallyOnline)
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
   const markersRef = useRef(new Map<string, import('maplibre-gl').Marker>())
   const markerFramesRef = useRef(new Map<string, number>())
   const zoneRef = useRef(zone)
+
   useEffect(() => {
     const fix = data.own_position ?? data.own_team_positions[0]
     if (fix) setCenter((current) => current ?? [fix.lon, fix.lat])
   }, [data.own_position?.lat, data.own_position?.lon, data.own_team_positions])
+
   const markerPoints = useMemo(() => {
     const own = data.own_position ?? localPosition
     const teammates = data.own_team_positions.filter((point) => point.player_id !== own?.player_id)
@@ -118,27 +125,65 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
     let disposed = false
     let map: import('maplibre-gl').Map | null = null
     const markers = markersRef.current
+
+    const switchToFallback = () => {
+      if (disposed || fallbackTriggeredRef.current) return
+      fallbackTriggeredRef.current = true
+      setIsTacticalOffline(true)
+      try {
+        map?.setStyle(createTacticalFallbackStyle(resolvedMapStyle))
+      } catch {
+        // MapLibre already disposing
+      }
+    }
+
     void (async () => {
       try {
         const maplibre = await import('maplibre-gl')
         const workerUrl = (await import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url')).default
         if (disposed || !mapContainer.current) return
         maplibre.setWorkerUrl(workerUrl)
+
+        const initialStyle = fallbackTriggeredRef.current
+          ? createTacticalFallbackStyle(resolvedMapStyle)
+          : styleUrlRef.current
+
         map = new maplibre.Map({
-          container: mapContainer.current, style: styleUrlRef.current, center, zoom: 15,
-          attributionControl: { compact: true }, cooperativeGestures: true,
+          container: mapContainer.current,
+          style: initialStyle,
+          center,
+          zoom: 15,
+          attributionControl: { compact: true },
+          cooperativeGestures: true,
         })
+
         map.on('load', () => {
-          setMapLoaded(true)
-          if (map) syncZoneLayer(map, zoneRef.current)
+          if (!disposed) {
+            setMapLoaded(true)
+            if (map) syncZoneLayer(map, zoneRef.current)
+          }
         })
-        map.on('style.load', () => { if (map && !disposed) syncZoneLayer(map, zoneRef.current) })
-        map.on('error', () => setMapError('Map tiles could not load. Check the connection or map style URL.'))
+
+        map.on('style.load', () => {
+          if (map && !disposed) syncZoneLayer(map, zoneRef.current)
+        })
+
+        map.on('error', (e) => {
+          if (disposed) return
+          // If style or initial fetch failed, switch gracefully to tactical fallback without infinite error loops
+          if (!mapLoaded || !navigator.onLine || e.error?.message?.includes('style') || e.error?.message?.includes('fetch')) {
+            switchToFallback()
+          } else {
+            setMapError('Map tiles could not load. Check the connection or map style URL.')
+          }
+        })
+
         mapRef.current = map
       } catch {
         setMapError('The interactive map could not start in this browser.')
       }
     })()
+
     return () => {
       disposed = true
       for (const marker of markers.values()) marker.remove()
@@ -147,12 +192,45 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
       mapRef.current = null
       setMapLoaded(false)
     }
-  }, [center])
+  }, [center, resolvedMapStyle])
+
+  // Listen to network changes for graceful online recovery / offline fallback
+  useEffect(() => {
+    const handleOnline = () => {
+      fallbackTriggeredRef.current = false
+      setIsTacticalOffline(false)
+      setMapError('')
+      if (mapRef.current) {
+        try {
+          mapRef.current.setStyle(styleUrlRef.current)
+        } catch {
+          // ignore
+        }
+      }
+    }
+    const handleOffline = () => {
+      fallbackTriggeredRef.current = true
+      setIsTacticalOffline(true)
+      if (mapRef.current) {
+        try {
+          mapRef.current.setStyle(createTacticalFallbackStyle(resolvedMapStyle))
+        } catch {
+          // ignore
+        }
+      }
+    }
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [resolvedMapStyle])
 
   useEffect(() => {
     const map = mapRef.current
     styleUrlRef.current = styleUrl
-    if (map) map.setStyle(styleUrl)
+    if (map && !fallbackTriggeredRef.current) map.setStyle(styleUrl)
   }, [styleUrl])
 
   useEffect(() => {
@@ -258,9 +336,20 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   return (
     <section className="game-map-shell" aria-label="Game map">
       {simulation ? <div className="map-simulation-stamp">SIMULATION: NOT A REAL MATCH</div> : null}
-      {center ? <div ref={mapContainer} className="game-map-canvas" aria-label={`${data.role === 'RUNNER' ? 'Runner' : 'Hunter'} game map`} /> : (
+      {center ? (
+        <div
+          ref={mapContainer}
+          className={`game-map-canvas ${isTacticalOffline ? 'game-map-canvas--tactical' : ''}`}
+          aria-label={`${data.role === 'RUNNER' ? 'Runner' : 'Hunter'} game map`}
+        />
+      ) : (
         <div className="map-empty"><p>Center the map on your current location to load nearby streets.</p><button className="map-control" onClick={locate} type="button">Center on me</button></div>
       )}
+      {center && isTacticalOffline ? (
+        <div className="map-tactical-badge font-mono" role="status" aria-live="polite">
+          <Radio size={12} className="text-amber" /> OFFLINE TACTICAL GRID
+        </div>
+      ) : null}
       {center ? <div className="map-controls" aria-label="Map controls">
         <button className="map-control" aria-label="Zoom in" onClick={() => zoom(1)} type="button">+</button>
         <button className="map-control" aria-label="Zoom out" onClick={() => zoom(-1)} type="button">−</button>
@@ -272,7 +361,15 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
         {data.role === 'HUNTER' ? <span><i className="legend-dot legend-dot--ping" />Scheduled Runner snapshot</span> : null}
         {zone ? <span><i className="legend-ring" />Game boundary</span> : null}
       </div>
-      <p className="map-status" role="status">{mapError || (center ? 'Map ready. No opponent distances or directions are displayed.' : 'Location is requested only when you choose Center on me.')}</p>
+      <p className="map-status" role="status">
+        {mapError && !isTacticalOffline
+          ? mapError
+          : center
+          ? (isTacticalOffline
+            ? 'Offline tactical grid active. Zones and GPS tracking fully functional.'
+            : 'Map ready. No opponent distances or directions are displayed.')
+          : 'Location is requested only when you choose Center on me.'}
+      </p>
     </section>
   )
 }

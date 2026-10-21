@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Gamepad2,
@@ -24,7 +24,6 @@ import { ZonePicker } from '../components/ZonePicker'
 import { readHostPresets, writeHostPresets, type HostPreset } from '../services/host-presets'
 import { Tabs } from '../components/ui/Tabs'
 import { SettingRow } from '../components/ui/SettingRow'
-import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Toggle } from '../components/ui/Toggle'
 import { Slider } from '../components/ui/Slider'
 import { Input } from '../components/ui/Input'
@@ -85,6 +84,18 @@ export function CreatePage() {
 
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!fullscreenMapOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setFullscreenMapOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [fullscreenMapOpen])
 
   // Built-in presets
   function applyPresetChip(type: 'quick' | 'park' | 'campus') {
@@ -468,11 +479,18 @@ export function CreatePage() {
                     helpText="Controls frequency of periodic radar snapshots sent to Seekers."
                     valueDisplay={pingMinutes === null ? 'Off' : `${pingMinutes} min`}
                   >
-                    <SegmentedControl
-                      options={pingOptions}
+                    <select
+                      className="form-control font-mono"
                       value={pingMinutes === null ? 'off' : String(pingMinutes)}
-                      onChange={(val) => setPingMinutes(val === 'off' ? null : Number(val))}
-                    />
+                      onChange={(e) => setPingMinutes(e.currentTarget.value === 'off' ? null : Number(e.currentTarget.value))}
+                      aria-label="Seeker ping interval"
+                    >
+                      {pingOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label === 'Off' ? 'Off (No automatic pings)' : `${opt.label} interval`}
+                        </option>
+                      ))}
+                    </select>
                   </SettingRow>
                 </CollapsibleCard>
               </div>
@@ -868,10 +886,10 @@ export function CreatePage() {
 
       {/* Fullscreen Map Modal */}
       {fullscreenMapOpen && (
-        <div className="modal-backdrop" onClick={() => setFullscreenMapOpen(false)} role="dialog" aria-modal="true">
+        <div className="modal-backdrop" onClick={() => setFullscreenMapOpen(false)} role="dialog" aria-modal="true" aria-labelledby="expanded-map-title">
           <div className="fullscreen-map-modal" onClick={(e) => e.stopPropagation()}>
             <div className="fullscreen-map-header">
-              <span className="font-mono text-sm">EXPANDED ZONE MAP</span>
+              <span id="expanded-map-title" className="font-mono text-sm">EXPANDED ZONE MAP</span>
               <Button size="sm" variant="secondary-outline" onClick={() => setFullscreenMapOpen(false)}>
                 Close
               </Button>

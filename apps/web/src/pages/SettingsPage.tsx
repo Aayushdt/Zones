@@ -218,37 +218,35 @@ export function SettingsPage() {
             title="Vibration feedback"
             helpText="Haptic pulses on radar snapshots and match alerts."
             action={
-              <div className="settings-haptics-row">
-                <Toggle
-                  label="Vibration feedback"
-                  hideLabel
-                  checked={hapticsEnabled}
-                  onChange={(e) => setHapticsEnabled(e.currentTarget.checked)}
-                />
-                <Button size="sm" variant="secondary-outline" onClick={testHaptics} type="button">
-                  Test vibration
-                </Button>
-              </div>
+              <Toggle
+                label="Vibration feedback"
+                hideLabel
+                checked={hapticsEnabled}
+                onChange={(e) => setHapticsEnabled(e.currentTarget.checked)}
+              />
             }
-          />
+          >
+            <Button size="sm" variant="secondary-outline" onClick={testHaptics} type="button" fullWidth>
+              Test vibration
+            </Button>
+          </SettingRow>
 
           <SettingRow
             title="Audio cues"
             helpText="Synthesized Web Audio tones for radar pings, tag alerts, and countdowns."
             action={
-              <div className="settings-haptics-row">
-                <Toggle
-                  label="Sound effects"
-                  hideLabel
-                  checked={soundEnabled}
-                  onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
-                />
-                <Button size="sm" variant="secondary-outline" onClick={testSound} type="button">
-                  Test sound
-                </Button>
-              </div>
+              <Toggle
+                label="Sound effects"
+                hideLabel
+                checked={soundEnabled}
+                onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
+              />
             }
-          />
+          >
+            <Button size="sm" variant="secondary-outline" onClick={testSound} type="button" fullWidth>
+              Test sound
+            </Button>
+          </SettingRow>
 
           <SettingRow
             title="Reduce effects"

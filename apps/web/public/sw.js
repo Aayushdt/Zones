@@ -27,7 +27,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (request.method !== 'GET') return
   if (url.origin === 'https://tiles.openfreemap.org'
-    && /\/\d+\/\d+\/\d+\.(?:pbf|png|jpg|webp)$/.test(url.pathname)) {
+    && (/\/\d+\/\d+\/\d+\.(?:pbf|png|jpg|webp)$/.test(url.pathname) || url.pathname.startsWith('/styles/'))) {
     event.respondWith((async () => {
       const cache = await caches.open(TILE_CACHE_NAME)
       const cached = await cache.match(request)
@@ -38,12 +38,13 @@ self.addEventListener('fetch', (event) => {
           for (const key of keys.slice(0, Math.max(0, keys.length - tileCacheLimit))) await cache.delete(key)
         }
         return response
-      })
+      }).catch(() => undefined)
       if (cached) {
-        event.waitUntil(refresh.catch(() => undefined))
+        event.waitUntil(refresh)
         return cached
       }
-      return refresh
+      const networkResponse = await refresh
+      return networkResponse || Response.error()
     })())
     return
   }
