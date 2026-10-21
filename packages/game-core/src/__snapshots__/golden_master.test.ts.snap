@@ -1,0 +1,1051 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`GOLDEN MASTER: Pure Game Logic Snapshot Matrix > 1. Zone radius and shrink schedule (zoneAt, haversineDistanceMeters, classifyZoneSample, advanceZoneConfirmation) 1`] = `
+{
+  "confirmationHistory": [
+    {
+      "sample": "INSIDE",
+      "state": {
+        "insideSamples": 1,
+        "outsideSamples": 0,
+        "revealed": false,
+      },
+    },
+    {
+      "sample": "INSIDE",
+      "state": {
+        "insideSamples": 2,
+        "outsideSamples": 0,
+        "revealed": false,
+      },
+    },
+    {
+      "sample": "UNCERTAIN",
+      "state": {
+        "insideSamples": 0,
+        "outsideSamples": 0,
+        "revealed": false,
+      },
+    },
+    {
+      "sample": "OUTSIDE",
+      "state": {
+        "insideSamples": 0,
+        "outsideSamples": 1,
+        "revealed": false,
+      },
+    },
+    {
+      "sample": "OUTSIDE",
+      "state": {
+        "insideSamples": 0,
+        "outsideSamples": 2,
+        "revealed": true,
+      },
+    },
+    {
+      "sample": "OUTSIDE",
+      "state": {
+        "insideSamples": 0,
+        "outsideSamples": 2,
+        "revealed": true,
+      },
+    },
+    {
+      "sample": "UNCERTAIN",
+      "state": {
+        "insideSamples": 0,
+        "outsideSamples": 0,
+        "revealed": true,
+      },
+    },
+    {
+      "sample": "INSIDE",
+      "state": {
+        "insideSamples": 1,
+        "outsideSamples": 0,
+        "revealed": true,
+      },
+    },
+    {
+      "sample": "INSIDE",
+      "state": {
+        "insideSamples": 2,
+        "outsideSamples": 0,
+        "revealed": false,
+      },
+    },
+    {
+      "sample": "NO_FIX",
+      "state": {
+        "insideSamples": 0,
+        "outsideSamples": 0,
+        "revealed": false,
+      },
+    },
+  ],
+  "distanceResults": [
+    {
+      "coords": {
+        "lat1": 51.5074,
+        "lat2": 51.5074,
+        "lon1": -0.1278,
+        "lon2": -0.1278,
+      },
+      "dist": 0,
+    },
+    {
+      "coords": {
+        "lat1": 51.5074,
+        "lat2": 51.5084,
+        "lon1": -0.1278,
+        "lon2": -0.1278,
+      },
+      "dist": 111.1949266450897,
+    },
+    {
+      "coords": {
+        "lat1": 51.5074,
+        "lat2": 51.5074,
+        "lon1": -0.1278,
+        "lon2": -0.1268,
+      },
+      "dist": 69.20922949981974,
+    },
+    {
+      "coords": {
+        "lat1": 0,
+        "lat2": 0,
+        "lon1": 0,
+        "lon2": 1,
+      },
+      "dist": 111194.92664455874,
+    },
+    {
+      "coords": {
+        "lat1": 89,
+        "lat2": 90,
+        "lon1": 0,
+        "lon2": 0,
+      },
+      "dist": 111194.92664455874,
+    },
+    {
+      "coords": {
+        "lat1": -91,
+        "lat2": 0,
+        "lon1": 0,
+        "lon2": 0,
+      },
+      "dist": null,
+    },
+    {
+      "coords": {
+        "lat1": 0,
+        "lat2": 0,
+        "lon1": 181,
+        "lon2": 0,
+      },
+      "dist": null,
+    },
+  ],
+  "sampleResults": [
+    {
+      "sample": "INSIDE",
+      "test": {
+        "acc": 10,
+        "d": 100,
+        "r": 200,
+      },
+    },
+    {
+      "sample": "UNCERTAIN",
+      "test": {
+        "acc": 10,
+        "d": 195,
+        "r": 200,
+      },
+    },
+    {
+      "sample": "OUTSIDE",
+      "test": {
+        "acc": 20,
+        "d": 250,
+        "r": 200,
+      },
+    },
+    {
+      "sample": "UNCERTAIN",
+      "test": {
+        "acc": 15,
+        "d": 210,
+        "r": 200,
+      },
+    },
+    {
+      "sample": "NO_FIX",
+      "test": {
+        "acc": 10,
+        "d": null,
+        "r": 200,
+      },
+    },
+    {
+      "sample": "NO_FIX",
+      "test": {
+        "acc": null,
+        "d": 100,
+        "r": 200,
+      },
+    },
+    {
+      "sample": "NO_FIX",
+      "test": {
+        "acc": 10,
+        "d": -5,
+        "r": 200,
+      },
+    },
+    {
+      "sample": "NO_FIX",
+      "test": {
+        "acc": 10,
+        "d": 100,
+        "r": 0,
+      },
+    },
+  ],
+  "zeroStagesResult": {
+    "center": {
+      "lat": 51.5074,
+      "lon": -0.1278,
+    },
+    "nextRadius": null,
+    "nextShrinkAt": null,
+    "radius": 600,
+    "stage": 0,
+  },
+  "zoneResults": [
+    {
+      "offset": 0,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": 450,
+        "nextShrinkAt": 1700000360000,
+        "radius": 600,
+        "stage": 0,
+      },
+    },
+    {
+      "offset": 30000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": 450,
+        "nextShrinkAt": 1700000360000,
+        "radius": 600,
+        "stage": 0,
+      },
+    },
+    {
+      "offset": 60000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": 450,
+        "nextShrinkAt": 1700000360000,
+        "radius": 600,
+        "stage": 0,
+      },
+    },
+    {
+      "offset": 200000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": 450,
+        "nextShrinkAt": 1700000360000,
+        "radius": 600,
+        "stage": 0,
+      },
+    },
+    {
+      "offset": 360000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": 300,
+        "nextShrinkAt": 1700000660000,
+        "radius": 450,
+        "stage": 1,
+      },
+    },
+    {
+      "offset": 500000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": 300,
+        "nextShrinkAt": 1700000660000,
+        "radius": 450,
+        "stage": 1,
+      },
+    },
+    {
+      "offset": 660000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": 150,
+        "nextShrinkAt": 1700000960000,
+        "radius": 300,
+        "stage": 2,
+      },
+    },
+    {
+      "offset": 800000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": 150,
+        "nextShrinkAt": 1700000960000,
+        "radius": 300,
+        "stage": 2,
+      },
+    },
+    {
+      "offset": 960000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": null,
+        "nextShrinkAt": null,
+        "radius": 150,
+        "stage": 3,
+      },
+    },
+    {
+      "offset": 1500000,
+      "result": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "nextRadius": null,
+        "nextShrinkAt": null,
+        "radius": 150,
+        "stage": 3,
+      },
+    },
+  ],
+}
+`;
+
+exports[`GOLDEN MASTER: Pure Game Logic Snapshot Matrix > 2. Ping scheduling and coalescing (latestDuePingIndex, mergeLatestPings) 1`] = `
+{
+  "merged": [
+    {
+      "accuracy_m": 8,
+      "age_seconds": 2,
+      "captured_at": "2026-01-01T00:01:00Z",
+      "lat": 51.51,
+      "lon": -0.11,
+      "ping_index": 1,
+      "runner_id": "r1",
+      "status": "OK",
+    },
+    {
+      "accuracy_m": 15,
+      "age_seconds": 5,
+      "captured_at": "2026-01-01T00:00:00Z",
+      "lat": 51.6,
+      "lon": -0.2,
+      "ping_index": 0,
+      "runner_id": "r2",
+      "status": "OK",
+    },
+    {
+      "age_seconds": 10,
+      "ping_index": 1,
+      "runner_id": "r3",
+      "status": "NO_FIX",
+    },
+  ],
+  "pingResults": [
+    {
+      "due": null,
+      "input": {
+        "lastIdx": -1,
+        "now": 90000,
+      },
+    },
+    {
+      "due": 0,
+      "input": {
+        "lastIdx": -1,
+        "now": 100000,
+      },
+    },
+    {
+      "due": 0,
+      "input": {
+        "lastIdx": -1,
+        "now": 159000,
+      },
+    },
+    {
+      "due": null,
+      "input": {
+        "lastIdx": 0,
+        "now": 159000,
+      },
+    },
+    {
+      "due": 1,
+      "input": {
+        "lastIdx": 0,
+        "now": 160000,
+      },
+    },
+    {
+      "due": 4,
+      "input": {
+        "lastIdx": 0,
+        "now": 350000,
+      },
+    },
+    {
+      "due": null,
+      "input": {
+        "lastIdx": 4,
+        "now": 1000000,
+      },
+    },
+    {
+      "due": null,
+      "input": {
+        "lastIdx": 4,
+        "now": 1050000,
+      },
+    },
+    {
+      "due": null,
+      "input": {
+        "lastIdx": 10,
+        "now": 200000,
+      },
+    },
+  ],
+}
+`;
+
+exports[`GOLDEN MASTER: Pure Game Logic Snapshot Matrix > 3. Team balancing and lobby rules (balanceTeams, nextRandomRole, canStartLobby) 1`] = `
+{
+  "balanceMatrix": [
+    {
+      "balance": null,
+      "n": 0,
+    },
+    {
+      "balance": null,
+      "n": 1,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 1,
+      },
+      "n": 2,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 2,
+      },
+      "n": 3,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 3,
+      },
+      "n": 4,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 4,
+      },
+      "n": 5,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 5,
+      },
+      "n": 6,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 6,
+      },
+      "n": 7,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 7,
+      },
+      "n": 8,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 8,
+      },
+      "n": 9,
+    },
+    {
+      "balance": {
+        "hunters": 1,
+        "runners": 9,
+      },
+      "n": 10,
+    },
+    {
+      "balance": {
+        "hunters": 2,
+        "runners": 9,
+      },
+      "n": 11,
+    },
+    {
+      "balance": {
+        "hunters": 2,
+        "runners": 10,
+      },
+      "n": 12,
+    },
+    {
+      "balance": {
+        "hunters": 2,
+        "runners": 11,
+      },
+      "n": 13,
+    },
+    {
+      "balance": {
+        "hunters": 2,
+        "runners": 12,
+      },
+      "n": 14,
+    },
+    {
+      "balance": {
+        "hunters": 2,
+        "runners": 13,
+      },
+      "n": 15,
+    },
+    {
+      "balance": {
+        "hunters": 2,
+        "runners": 18,
+      },
+      "n": 20,
+    },
+    {
+      "balance": {
+        "hunters": 5,
+        "runners": 45,
+      },
+      "n": 50,
+    },
+    {
+      "balance": {
+        "hunters": 10,
+        "runners": 90,
+      },
+      "n": 100,
+    },
+    {
+      "balance": null,
+      "n": 101,
+    },
+    {
+      "balance": null,
+      "n": 102,
+    },
+  ],
+  "lobbyResults": [
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 0,
+          "runners": 0,
+        },
+        "blockReason": "NEEDS_TWO_PLAYERS",
+        "canStart": false,
+      },
+      "desc": "empty",
+    },
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 1,
+          "runners": 0,
+        },
+        "blockReason": "NEEDS_TWO_PLAYERS",
+        "canStart": false,
+      },
+      "desc": "1 player",
+    },
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 1,
+          "runners": 1,
+        },
+        "canStart": true,
+      },
+      "desc": "2 players balanced and ready",
+    },
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 1,
+          "runners": 1,
+        },
+        "blockReason": "WAITING_FOR_READY",
+        "canStart": false,
+      },
+      "desc": "2 players unready",
+    },
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 0,
+          "runners": 0,
+        },
+        "blockReason": "NEEDS_TEAMS",
+        "canStart": false,
+      },
+      "desc": "2 players no roles",
+    },
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 2,
+          "runners": 0,
+        },
+        "blockReason": "NEEDS_TEAMS",
+        "canStart": false,
+      },
+      "desc": "2 hunters 0 runners",
+    },
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 1,
+          "runners": 2,
+        },
+        "canStart": true,
+      },
+      "desc": "3 players (1H 2R) ready",
+    },
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 5,
+          "runners": 7,
+        },
+        "canStart": true,
+      },
+      "desc": "12 players (5H 7R) custom allowed",
+    },
+    {
+      "check": {
+        "activeCounts": {
+          "hunters": 7,
+          "runners": 5,
+        },
+        "blockReason": "NEEDS_TEAMS",
+        "canStart": false,
+      },
+      "desc": "12 players (7H 5R) unbalanced rejected",
+    },
+  ],
+  "randomRoleResults": [
+    {
+      "role": "HUNTER",
+      "test": {
+        "h": 0,
+        "n": 2,
+      },
+    },
+    {
+      "role": "RUNNER",
+      "test": {
+        "h": 1,
+        "n": 2,
+      },
+    },
+    {
+      "role": "HUNTER",
+      "test": {
+        "h": 0,
+        "n": 3,
+      },
+    },
+    {
+      "role": "RUNNER",
+      "test": {
+        "h": 1,
+        "n": 3,
+      },
+    },
+    {
+      "role": "HUNTER",
+      "test": {
+        "h": 0,
+        "n": 10,
+      },
+    },
+    {
+      "role": "RUNNER",
+      "test": {
+        "h": 1,
+        "n": 10,
+      },
+    },
+    {
+      "role": "HUNTER",
+      "test": {
+        "h": 1,
+        "n": 11,
+      },
+    },
+    {
+      "role": "RUNNER",
+      "test": {
+        "h": 2,
+        "n": 11,
+      },
+    },
+    {
+      "role": "HUNTER",
+      "test": {
+        "h": 1,
+        "n": 12,
+      },
+    },
+    {
+      "role": "RUNNER",
+      "test": {
+        "h": 2,
+        "n": 12,
+      },
+    },
+    {
+      "role": "RUNNER",
+      "test": {
+        "h": 5,
+        "n": 12,
+      },
+    },
+  ],
+}
+`;
+
+exports[`GOLDEN MASTER: Pure Game Logic Snapshot Matrix > 4. Role-based payload filtering (projectEventForRole security projections) 1`] = `
+[
+  {
+    "hunterView": null,
+    "runnerView": {
+      "data": {
+        "accuracy_m": 10,
+        "age_seconds": 2,
+        "captured_at": "2026-01-01T00:00:00Z",
+        "display_name": "Runner One",
+        "is_stale": false,
+        "lat": 51.5074,
+        "lon": -0.1278,
+        "player_id": "p-runner-1",
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "team.location_live",
+    },
+    "type": "team.location_live",
+  },
+  {
+    "hunterView": {
+      "data": {
+        "accuracy_m": 12,
+        "age_seconds": 5,
+        "captured_at": "2026-01-01T00:05:00Z",
+        "lat": 51.508,
+        "lon": -0.129,
+        "ping_at": "2026-01-01T00:05:00Z",
+        "ping_index": 1,
+        "runner_id": "p-runner-1",
+        "status": "OK",
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "hunter.runner_ping",
+    },
+    "runnerView": null,
+    "type": "hunter.runner_ping",
+  },
+  {
+    "hunterView": null,
+    "runnerView": {
+      "data": {
+        "ping_at": "2026-01-01T00:05:00Z",
+        "ping_index": 1,
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "runner.location_revealed",
+    },
+    "type": "runner.location_revealed",
+  },
+  {
+    "hunterView": {
+      "data": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "radius_m": 300,
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "zone.moved",
+    },
+    "runnerView": {
+      "data": {
+        "center": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+        },
+        "radius_m": 300,
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "zone.moved",
+    },
+    "type": "zone.moved",
+  },
+  {
+    "hunterView": {
+      "data": {
+        "accepted_at": "2026-01-01T00:08:00Z",
+        "method": "QR",
+        "runner_id": "p-runner-1",
+        "status": "TAGGED",
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "tag.accepted",
+    },
+    "runnerView": {
+      "data": {
+        "accepted_at": "2026-01-01T00:08:00Z",
+        "method": "QR",
+        "runner_id": "p-runner-1",
+        "status": "TAGGED",
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "tag.accepted",
+    },
+    "type": "tag.accepted",
+  },
+  {
+    "hunterView": {
+      "data": {
+        "end_reason": "ALL_RUNNERS_TAGGED",
+        "ended_at": "2026-01-01T00:08:05Z",
+        "winner": "HUNTER",
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "match.result",
+    },
+    "runnerView": {
+      "data": {
+        "end_reason": "ALL_RUNNERS_TAGGED",
+        "ended_at": "2026-01-01T00:08:05Z",
+        "winner": "HUNTER",
+      },
+      "event_id": "ev-1",
+      "match_id": "m-1",
+      "revision": 1,
+      "server_at": "2026-01-01T00:00:00Z",
+      "type": "match.result",
+    },
+    "type": "match.result",
+  },
+]
+`;
+
+exports[`GOLDEN MASTER: Pure Game Logic Snapshot Matrix > 5. Tag deadline and terminal win conditions (didTagMeetDeadline, resolveActiveOutcome) 1`] = `
+{
+  "deadlineResults": [
+    {
+      "met": true,
+      "test": {
+        "deadline": 1000000,
+        "tagAt": 999999,
+      },
+    },
+    {
+      "met": false,
+      "test": {
+        "deadline": 1000000,
+        "tagAt": 1000000,
+      },
+    },
+    {
+      "met": false,
+      "test": {
+        "deadline": 1000000,
+        "tagAt": 1000001,
+      },
+    },
+  ],
+  "outcomeResults": [
+    {
+      "outcome": {
+        "reason": "ALL_RUNNERS_TAGGED_OR_LEFT",
+        "winner": "HUNTER",
+      },
+      "test": {
+        "counts": {
+          "hunterActive": 1,
+          "hunterTotal": 1,
+          "runnerActive": 0,
+          "runnerTotal": 2,
+        },
+        "endsAt": 1000000,
+        "now": 500000,
+      },
+    },
+    {
+      "outcome": {
+        "reason": "ALL_HUNTERS_LEFT",
+        "winner": "RUNNER",
+      },
+      "test": {
+        "counts": {
+          "hunterActive": 0,
+          "hunterTotal": 1,
+          "runnerActive": 2,
+          "runnerTotal": 2,
+        },
+        "endsAt": 1000000,
+        "now": 500000,
+      },
+    },
+    {
+      "outcome": {
+        "reason": "TIME_LIMIT",
+        "winner": "RUNNER",
+      },
+      "test": {
+        "counts": {
+          "hunterActive": 1,
+          "hunterTotal": 1,
+          "runnerActive": 1,
+          "runnerTotal": 2,
+        },
+        "endsAt": 1000000,
+        "now": 1000000,
+      },
+    },
+    {
+      "outcome": {
+        "reason": "TIME_LIMIT",
+        "winner": "RUNNER",
+      },
+      "test": {
+        "counts": {
+          "hunterActive": 1,
+          "hunterTotal": 1,
+          "runnerActive": 1,
+          "runnerTotal": 2,
+        },
+        "endsAt": 1000000,
+        "now": 1000050,
+      },
+    },
+    {
+      "outcome": {
+        "reason": "ALL_RUNNERS_TAGGED_OR_LEFT",
+        "winner": "HUNTER",
+      },
+      "test": {
+        "counts": {
+          "hunterActive": 0,
+          "hunterTotal": 1,
+          "runnerActive": 0,
+          "runnerTotal": 2,
+        },
+        "endsAt": 1000000,
+        "now": 500000,
+      },
+    },
+    {
+      "outcome": null,
+      "test": {
+        "counts": {
+          "hunterActive": 1,
+          "hunterTotal": 1,
+          "runnerActive": 2,
+          "runnerTotal": 2,
+        },
+        "endsAt": 1000000,
+        "now": 500000,
+      },
+    },
+  ],
+}
+`;
