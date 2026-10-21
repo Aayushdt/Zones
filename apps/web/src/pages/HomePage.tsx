@@ -71,16 +71,19 @@ export function HomePage() {
   }
 
   const userLevel = guestName ? Math.min(50, Math.floor(guestName.length * 2.2) + 1) : 1
+  const reduceEffects = useAppStore((state) => state.reduceEffects)
 
   return (
     <main className="home-screen-wrap">
       {/* Radar sweep ambient background */}
-      <div className="radar-sweep-bg" aria-hidden="true">
-        <div className="radar-sweep-beam" />
-        <div className="radar-ring radar-ring--1" />
-        <div className="radar-ring radar-ring--2" />
-        <div className="radar-ring radar-ring--3" />
-      </div>
+      {!reduceEffects && (
+        <div className="radar-sweep-bg" aria-hidden="true">
+          <div className="radar-sweep-beam" />
+          <div className="radar-ring radar-ring--1" />
+          <div className="radar-ring radar-ring--2" />
+          <div className="radar-ring radar-ring--3" />
+        </div>
+      )}
 
       <div className="home-column">
         {/* Logo with green glow & tagline */}

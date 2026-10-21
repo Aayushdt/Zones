@@ -5,6 +5,7 @@ import type { MatchResult } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
+import { fireWinnerConfetti } from '../utils/feedback'
 
 const resultLabels: Record<string, string> = {
   ALL_RUNNERS_TAGGED: 'All Hiders were hunted down and eliminated.',
@@ -28,8 +29,16 @@ export function ResultsPage() {
     let active = true
     void supabaseGameApi.getMatchResult(matchId).then((response) => {
       if (!active) return
-      if (response.ok) setResult(response.data)
-      else setError(response.error.message)
+      if (response.ok) {
+        setResult(response.data)
+        if (response.data.winner === 'RUNNER') {
+          fireWinnerConfetti('runners')
+        } else if (response.data.winner === 'HUNTER') {
+          fireWinnerConfetti('hunters')
+        }
+      } else {
+        setError(response.error.message)
+      }
     })
     return () => {
       active = false

@@ -14,6 +14,7 @@ import { Button } from '../components/ui/Button'
 import { SettingRow } from '../components/ui/SettingRow'
 import { Toggle } from '../components/ui/Toggle'
 import { Input } from '../components/ui/Input'
+import { playSound } from '../utils/feedback'
 
 export function SettingsPage() {
   const savedName = useAppStore((state) => state.guestName)
@@ -24,6 +25,10 @@ export function SettingsPage() {
   const setMapStyle = useAppStore((state) => state.setMapStyle)
   const hapticsEnabled = useAppStore((state) => state.hapticsEnabled)
   const setHapticsEnabled = useAppStore((state) => state.setHapticsEnabled)
+  const soundEnabled = useAppStore((state) => state.soundEnabled)
+  const setSoundEnabled = useAppStore((state) => state.setSoundEnabled)
+  const reduceEffects = useAppStore((state) => state.reduceEffects)
+  const setReduceEffects = useAppStore((state) => state.setReduceEffects)
 
   const [name, setName] = useState(savedName)
   const [notice, setNotice] = useState('')
@@ -53,6 +58,15 @@ export function SettingsPage() {
     }
     navigator.vibrate([35, 40, 35])
     setNotice('Vibration test sent to this device.')
+  }
+
+  function testSound() {
+    if (!soundEnabled) {
+      setNotice('Turn on audio cues first.')
+      return
+    }
+    playSound('ping')
+    setNotice('Synthesized radar tone played.')
   }
 
   const mapStyles: Array<{ value: MapStylePreference; label: string }> = [
@@ -161,6 +175,35 @@ export function SettingsPage() {
                   Test vibration
                 </Button>
               </div>
+            }
+          />
+
+          <SettingRow
+            title="Audio Cues"
+            summary="Synthesized Web Audio tones for radar pings, tag alerts, and countdowns."
+            action={
+              <div className="settings-haptics-row">
+                <Toggle
+                  label="Sound effects"
+                  checked={soundEnabled}
+                  onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
+                />
+                <Button size="sm" variant="secondary-outline" onClick={testSound} type="button">
+                  Test sound
+                </Button>
+              </div>
+            }
+          />
+
+          <SettingRow
+            title="Reduce Effects"
+            summary="Disables ambient radar sweeps, confetti, and motion pulses for longer battery runtime."
+            action={
+              <Toggle
+                label="Reduce motion and visual effects"
+                checked={reduceEffects}
+                onChange={(e) => setReduceEffects(e.currentTarget.checked)}
+              />
             }
           />
         </Card>

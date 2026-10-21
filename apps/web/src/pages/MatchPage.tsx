@@ -26,6 +26,9 @@ import { Button } from '../components/ui/Button'
 import { Chip } from '../components/ui/Chip'
 import { StatusChip } from '../components/ui/StatusChip'
 import { BottomSheet } from '../components/ui/BottomSheet'
+import { HoldButton } from '../components/ui/HoldButton'
+import { CountdownRing } from '../components/ui/CountdownRing'
+import { playSound, triggerHaptic } from '../utils/feedback'
 
 function timeLeft(clock: ClockView, anchor: number): number | null {
   if (clock.ends_at === null) return null
@@ -67,13 +70,10 @@ export function MatchPage() {
   // UI state
   const [stealth, setStealth] = useState(false)
   const [radioOpen, setRadioOpen] = useState(false)
-  const [tagHoldProgress, setTagHoldProgress] = useState(0)
   const [liveStatus, setLiveStatus] = useState('Syncing role confirmation…')
 
   const anchor = useRef(0)
   const stealthExitTimer = useRef<number | null>(null)
-  const tagHoldTimer = useRef<number | null>(null)
-  const tagHoldStart = useRef<number | null>(null)
 
   const currentFix = useLocationStore((state) => state.ownFix)
   const stopSharing = useLocationStore((state) => state.stopSharing)
@@ -134,6 +134,8 @@ export function MatchPage() {
           const envelope = received.payload as { type?: unknown } | null
           if (envelope && envelope.type === 'zone.moved') {
             setZoneNotice('Play zone moved by Seeker. Updating radar.')
+            playSound('warning')
+            triggerHaptic([40, 40, 40])
             void sync()
             return
           }
@@ -141,8 +143,11 @@ export function MatchPage() {
             if (!current) return current
             const updated = applyMatchRealtimeEvent(current, received.payload)
             if (!updated) return current
-            if (updated.own_status === 'TAGGED')
+            if (updated.own_status === 'TAGGED') {
+              playSound('warning')
+              triggerHaptic([60, 60, 60])
               stopSharing(matchId, 'You are tagged. Location sharing and GPS watcher are stopped.')
+            }
             if (updated.state === 'ENDED' || updated.state === 'CANCELLED')
               navigate(`/match/${matchId}/results`, { replace: true })
             return updated
@@ -234,35 +239,22 @@ export function MatchPage() {
     return maintainScreenWakeLock(true, wakeLockApi, document)
   }, [view?.state])
 
-  // Hold-to-confirm tag action
-  const startTagHold = () => {
-    tagHoldStart.current = performance.now()
-    setTagHoldProgress(0)
-
-    const interval = window.setInterval(() => {
-      if (!tagHoldStart.current) return
-      const elapsed = performance.now() - tagHoldStart.current
-      const progress = Math.min(100, Math.round((elapsed / 800) * 100))
-      setTagHoldProgress(progress)
-
-      if (progress >= 100) {
-        window.clearInterval(interval)
-        cancelTagHold()
-        executeTag()
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 't' || e.key === 'T') {
+        const active = document.activeElement
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
+        if (view?.role === 'HUNTER' && view.own_status !== 'TAGGED') {
+          e.preventDefault()
+          void executeTag()
+        }
       }
-    }, 30)
-
-    tagHoldTimer.current = interval
-  }
-
-  const cancelTagHold = () => {
-    if (tagHoldTimer.current) {
-      window.clearInterval(tagHoldTimer.current)
-      tagHoldTimer.current = null
     }
-    tagHoldStart.current = null
-    setTagHoldProgress(0)
-  }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [view?.role, view?.own_status, matchId])
+
+
 
   const executeTag = async () => {
     // If high accuracy GPS fix available, attempt immediate GPS Tag; otherwise open Tag Page
@@ -549,19 +541,21 @@ export function MatchPage() {
 
           {/* Quick HUD Metrics & Countdown Rings */}
           <div className="hud-metrics-row">
-            {/* Zone Shrink Countdown */}
+            {/* Zone Shrink Countdown Ring */}
+            {zoneSeconds !== null && (
+              <CountdownRing
+                secondsRemaining={zoneSeconds}
+                totalSeconds={300}
+                label="SHRINK"
+                size={48}
+              />
+            )}
+
+            {/* Zone Stage Info */}
             {view.zone && (
               <div className="hud-metric-pill font-mono">
-                <span className="hud-metric-label">ZONE STAGE {view.zone.stage}</span>
-                <span className="hud-metric-val">
-                  {Math.round(view.zone.radius)}m
-                  {zoneSeconds !== null && (
-                    <span className="hud-shrink-timer">
-                      {' '}
-                      ↓ {Math.floor(zoneSeconds / 60)}:{String(zoneSeconds % 60).padStart(2, '0')}
-                    </span>
-                  )}
-                </span>
+                <span className="hud-metric-label">STAGE {view.zone.stage}</span>
+                <span className="hud-metric-val">{Math.round(view.zone.radius)}m</span>
               </div>
             )}
 
@@ -579,26 +573,13 @@ export function MatchPage() {
           {/* PRIMARY ACTION: BIG HOLD-TO-CONFIRM TAG BUTTON (Seeker) OR REVEAL CODE (Hider) */}
           {isSeeker && !isTagged && (
             <div className="hud-tag-action-wrap">
-              <button
-                type="button"
-                className={`hud-hold-tag-btn ${tagHoldProgress > 0 ? 'is-holding' : ''}`}
-                onPointerDown={startTagHold}
-                onPointerUp={cancelTagHold}
-                onPointerCancel={cancelTagHold}
-                onPointerLeave={cancelTagHold}
-              >
-                <div
-                  className="hud-hold-tag-progress"
-                  style={{ width: `${tagHoldProgress}%` }}
-                />
-                <Crosshair size={24} className="hud-hold-tag-icon" />
-                <div className="hud-hold-tag-label">
-                  <span className="hud-hold-tag-main">
-                    {tagHoldProgress > 0 ? `HOLDING (${tagHoldProgress}%)` : 'HOLD TO TAG'}
-                  </span>
-                  <span className="hud-hold-tag-sub">GPS auto-range or QR fallback</span>
-                </div>
-              </button>
+              <HoldButton
+                onConfirm={executeTag}
+                label="HOLD TO TAG"
+                subtitle="GPS PROXIMITY OR QR SCAN (OR PRESS 'T')"
+                icon={<Crosshair size={22} />}
+                variant="seeker-red"
+              />
             </div>
           )}
 

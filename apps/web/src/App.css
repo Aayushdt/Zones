@@ -2552,10 +2552,412 @@ input, select, textarea {
 }
 
 /* ==========================================================================
-   RESPONSIVE & A11Y
+   INTERACTIVE FEEDBACK COMPONENTS (HoldButton, CountdownRing, Shortcuts)
    ========================================================================== */
-@media (max-width: 480px) {
-  body {
-    font-size: 14px;
+
+/* HoldButton */
+.hold-btn {
+  position: relative;
+  overflow: hidden;
+  min-height: 56px;
+  width: 100%;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  cursor: pointer;
+  transition: transform var(--motion-instant) cubic-bezier(0.2, 0, 0, 1),
+              border-color var(--motion-instant) ease,
+              box-shadow var(--motion-fast) ease;
+}
+
+.hold-btn:active {
+  transform: scale(0.97);
+}
+
+.hold-btn--seeker-red {
+  border-color: var(--color-red);
+}
+
+.hold-btn--seeker-red .hold-btn__fill {
+  background: var(--color-red);
+}
+
+.hold-btn--primary-green {
+  border-color: var(--color-green);
+}
+
+.hold-btn--primary-green .hold-btn__fill {
+  background: var(--color-green);
+}
+
+.hold-btn__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: width 0.05s linear;
+}
+
+.hold-btn.is-holding .hold-btn__fill {
+  opacity: 0.65;
+}
+
+.hold-btn__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+.hold-btn__text-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.hold-btn__title {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.hold-btn__subtitle {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  letter-spacing: 0.05em;
+}
+
+/* CountdownRing */
+.countdown-ring-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.countdown-ring__svg-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdown-ring__digits {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-ring__label {
+  font-size: 0.62rem;
+  color: var(--color-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(0.96); }
+}
+
+.is-critical-pulse {
+  animation: pulse-critical 0.8s ease-in-out infinite;
+}
+
+/* ShortcutsModal */
+.shortcuts-floating-trigger {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 50;
+}
+
+.shortcuts-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: all var(--motion-fast) ease;
+}
+
+.shortcuts-trigger-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-green);
+  box-shadow: 0 0 14px var(--color-green-glow);
+}
+
+.shortcuts-trigger-badge {
+  font-weight: 700;
+  color: var(--color-green);
+}
+
+.shortcuts-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.shortcuts-modal-dialog {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.shortcuts-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shortcuts-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.shortcut-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   RESPONSIVE, CONTAINER QUERIES & VIEWPORT MATRICES
+   ========================================================================== */
+
+/* Base Viewport & Safe-Area Setup */
+html, body, #root {
+  min-height: 100dvh;
+}
+
+.home-screen-wrap,
+.join-screen,
+.lobby-screen,
+.create-screen,
+.hud-screen,
+.settings-screen,
+.results-screen,
+.guide-screen {
+  min-height: 100dvh;
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  box-sizing: border-box;
+}
+
+/* Container Query Declarations */
+.home-card,
+.team-card,
+.settings-section-card,
+.presets-manager-card,
+.join-card,
+.setting-row {
+  container-type: inline-size;
+}
+
+/* Fluid Spacing & Component Adaptations */
+@container (max-width: 400px) {
+  .setting-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .setting-row__action {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .segmented-control {
+    width: 100%;
   }
 }
+
+/* PHONE LANDSCAPE (SHORT HEIGHT <= 520px) */
+@media (max-height: 520px) and (orientation: landscape) {
+  .home-screen-wrap {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .home-column {
+    max-width: 780px;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 1rem;
+    align-items: center;
+  }
+  .home-header {
+    margin-bottom: 0;
+  }
+  .home-dual-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+  .home-footer-row {
+    grid-column: span 2;
+    padding-top: 0.5rem;
+  }
+
+  /* Compact Landscape HUD */
+  .hud-top-bar {
+    top: 0.5rem;
+    left: 0.5rem;
+    transform: none;
+    max-width: 300px;
+  }
+  .hud-bottom-sheet {
+    position: fixed;
+    top: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    left: auto;
+    width: 340px;
+    max-height: calc(100dvh - 1rem);
+    border-radius: var(--radius-card);
+    transform: none;
+    overflow-y: auto;
+  }
+  .hud-metrics-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Lobby in Landscape */
+  .lobby-team-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+/* TABLET (>= 768px) */
+@media (min-width: 768px) {
+  .lobby-team-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .settings-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .results-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* DESKTOP (>= 1024px) */
+@media (min-width: 1024px) {
+  .create-screen__split {
+    display: grid;
+    grid-template-columns: 1fr 440px;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+  .create-preview-sticky {
+    position: sticky;
+    top: 5rem;
+  }
+  .lobby-container {
+    max-width: 1080px;
+  }
+  .results-container {
+    max-width: 840px;
+  }
+  .settings-container {
+    max-width: 920px;
+  }
+}
+
+/* ULTRAWIDE (>= 1600px) */
+@media (min-width: 1600px) {
+  .create-container,
+  .lobby-container,
+  .settings-container,
+  .results-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
+
+/* INPUT AWARENESS (TOUCH VS FINE POINTER) */
+@media (hover: hover) and (pointer: fine) {
+  .card:hover,
+  .team-card:hover,
+  .home-card:hover {
+    transform: translateY(-2px);
+    transition: transform var(--motion-fast) cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow var(--motion-fast) ease;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  a.btn,
+  input,
+  select,
+  .app-tab,
+  .segment,
+  .icon-btn,
+  .home-footer-item {
+    min-height: 48px;
+  }
+  *:active {
+    transform: scale(0.97);
+  }
+}
+

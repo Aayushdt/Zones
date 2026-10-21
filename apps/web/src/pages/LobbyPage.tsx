@@ -12,6 +12,7 @@ import { Button } from '../components/ui/Button'
 import { Toggle } from '../components/ui/Toggle'
 import { Card } from '../components/ui/Card'
 import { Toast } from '../components/ui/Toast'
+import { playSound, triggerHaptic } from '../utils/feedback'
 
 export function LobbyPage() {
   const { matchId = '' } = useParams()
@@ -102,13 +103,45 @@ export function LobbyPage() {
     }
   }
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'c' || e.key === 'C') {
+        const active = document.activeElement
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
+        e.preventDefault()
+        void handleCopyCode()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [lobbyCode])
+
   async function selectTeam(role: Role | 'RANDOM') {
     if (!lobby) return
+    const prevLobby = lobby
+    // Optimistic UI
+    if (role !== 'RANDOM') {
+      setLobby((current) => {
+        if (!current) return current
+        const updated = current.players.map((p) =>
+          p.id === current.you.id ? { ...p, role } : p,
+        )
+        return {
+          ...current,
+          you: { ...current.you, role },
+          players: updated,
+        }
+      })
+    }
+    triggerHaptic(20)
+    playSound('click')
     setPending(true)
     const result = await supabaseGameApi.selectTeam(matchId, role)
     setPending(false)
     if (!result.ok) {
+      setLobby(prevLobby) // Rollback on error
       setError(result.error.message)
+      playSound('warning')
       return
     }
     await refresh()

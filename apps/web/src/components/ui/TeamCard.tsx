@@ -1,4 +1,5 @@
 import { Crosshair, EyeOff, Check, Users } from 'lucide-react'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 import type { Role } from '@xzones/game-core'
 import type { PlayerView } from '../../services/game-api'
 import { PlayerRow } from './PlayerRow'
@@ -36,6 +37,7 @@ export function TeamCard({
   const singularRole = isSeeker ? 'Seeker' : 'Hider'
   const Icon = isSeeker ? Crosshair : EyeOff
   const variant = isSeeker ? 'seeker' : 'hider'
+  const [listRef] = useAutoAnimate<HTMLDivElement>()
 
   return (
     <div
@@ -81,7 +83,7 @@ export function TeamCard({
             description={`No players on ${title} yet.`}
           />
         ) : (
-          <div className="team-card__list">
+          <div ref={listRef} className="team-card__list">
             {players.map((player) => (
               <PlayerRow
                 key={player.id}
