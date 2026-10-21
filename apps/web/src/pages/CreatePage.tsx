@@ -13,23 +13,19 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Maximize2,
-  Clock,
-  Radar,
-  Layers,
 } from 'lucide-react'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useAppStore } from '../stores/app-store'
 import { ZonePicker } from '../components/ZonePicker'
 import { readHostPresets, writeHostPresets, type HostPreset } from '../services/host-presets'
 import { Tabs } from '../components/ui/Tabs'
-import { SettingRow } from '../components/ui/SettingRow'
-import { Toggle } from '../components/ui/Toggle'
-import { Slider } from '../components/ui/Slider'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { CollapsibleCard } from '../components/ui/CollapsibleCard'
+import { GameplayTab } from './create/GameplayTab'
+import { ZoneTab } from './create/ZoneTab'
+import { AlertsTab } from './create/AlertsTab'
+import { EconomyTab } from './create/EconomyTab'
 
 const durationOptions = [
   { value: '30', label: '30 min' },
@@ -408,334 +404,60 @@ export function CreatePage() {
 
             {/* TAB 1: GAMEPLAY */}
             {activeTab === 'gameplay' && (
-              <div id="panel-gameplay" role="tabpanel" aria-labelledby="tab-gameplay" className="tab-pane-content">
-                <CollapsibleCard
-                  title="Timing & Duration"
-                  icon={<Clock size={18} />}
-                  defaultOpen={true}
-                >
-                  <SettingRow
-                    title="Round timer"
-                    helpText="Authoritative server timer that decides match completion."
-                    valueDisplay={timerEnabled ? `${duration} min` : 'Off'}
-                    action={
-                      <Toggle
-                        label="Round timer"
-                        hideLabel
-                        checked={timerEnabled}
-                        onChange={(e) => setTimerEnabled(e.currentTarget.checked)}
-                      />
-                    }
-                  />
-
-                  {timerEnabled && (
-                    <SettingRow
-                      title="Match duration"
-                      helpText="Defines total match length including head start."
-                      valueDisplay={`${duration} min`}
-                    >
-                      <div className="button-group-row">
-                        {durationOptions.map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            aria-pressed={duration === Number(opt.value)}
-                            onClick={() => setDuration(Number(opt.value))}
-                            className={`mini-segment-btn ${duration === Number(opt.value) ? 'is-selected' : ''}`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </SettingRow>
-                  )}
-
-                  <SettingRow
-                    title="Hider head start"
-                    helpText="Seekers remain frozen while Hiders disperse across the field."
-                    valueDisplay={headStart > 0 ? `${headStart}s` : 'None'}
-                  >
-                    <Slider
-                      label="Hider head start"
-                      hideHeader
-                      value={headStart}
-                      min={0}
-                      max={300}
-                      step={30}
-                      unit="s"
-                      ticks={[0, 30, 60, 180, 300]}
-                      onChange={setHeadStart}
-                    />
-                  </SettingRow>
-                </CollapsibleCard>
-
-                <CollapsibleCard
-                  title="Radar & Tagging"
-                  icon={<Radar size={18} />}
-                  defaultOpen={true}
-                >
-                  <SettingRow
-                    title="Seeker ping interval"
-                    helpText="Controls frequency of periodic radar snapshots sent to Seekers."
-                    valueDisplay={pingMinutes === null ? 'Off' : `${pingMinutes} min`}
-                  >
-                    <select
-                      className="form-control font-mono"
-                      value={pingMinutes === null ? 'off' : String(pingMinutes)}
-                      onChange={(e) => setPingMinutes(e.currentTarget.value === 'off' ? null : Number(e.currentTarget.value))}
-                      aria-label="Seeker ping interval"
-                    >
-                      {pingOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label === 'Off' ? 'Off (No automatic pings)' : `${opt.label} interval`}
-                        </option>
-                      ))}
-                    </select>
-                  </SettingRow>
-                </CollapsibleCard>
-              </div>
+              <GameplayTab
+                timerEnabled={timerEnabled}
+                setTimerEnabled={setTimerEnabled}
+                duration={duration}
+                setDuration={setDuration}
+                durationOptions={durationOptions}
+                headStart={headStart}
+                setHeadStart={setHeadStart}
+                pingMinutes={pingMinutes}
+                setPingMinutes={setPingMinutes}
+                pingOptions={pingOptions}
+              />
             )}
 
             {/* TAB 2: ZONE */}
             {activeTab === 'zone' && (
-              <div id="panel-zone" role="tabpanel" aria-labelledby="tab-zone" className="tab-pane-content">
-                <CollapsibleCard
-                  title="Boundary Circle"
-                  icon={<MapPin size={18} />}
-                  defaultOpen={true}
-                >
-                  <SettingRow
-                    title="Circle play zone"
-                    helpText="Enforces circular play area using accuracy-aware GPS checks."
-                    valueDisplay={fixedZone ? `${diameter}m` : 'Off'}
-                    action={
-                      <Toggle
-                        label="Circle zone"
-                        hideLabel
-                        checked={fixedZone}
-                        onChange={(e) => setFixedZone(e.currentTarget.checked)}
-                      />
-                    }
-                  />
-
-                  {fixedZone && (
-                    <SettingRow
-                      title="Starting diameter"
-                      helpText="Starting circle diameter for the outdoor field."
-                      valueDisplay={`${diameter}m`}
-                    >
-                      <Slider
-                        label="Starting diameter"
-                        hideHeader
-                        value={diameter}
-                        min={400}
-                        max={3000}
-                        step={100}
-                        unit="m"
-                        onChange={(val) => setDiameter(val % 2 === 0 ? val : val + 1)}
-                      />
-                    </SettingRow>
-                  )}
-                </CollapsibleCard>
-
-                {fixedZone && (
-                  <CollapsibleCard
-                    title="Zone Shrink Schedule"
-                    icon={<Layers size={18} />}
-                    defaultOpen={true}
-                  >
-                    <SettingRow
-                      title="Shrink stages"
-                      helpText="Number of concentric shrink contractions."
-                      valueDisplay={shrinkStages > 0 ? `${shrinkStages} stages` : 'Static'}
-                    >
-                      <Slider
-                        label="Shrink stages"
-                        hideHeader
-                        value={shrinkStages}
-                        min={0}
-                        max={10}
-                        step={1}
-                        onChange={setShrinkStages}
-                      />
-                    </SettingRow>
-
-                    {shrinkStages > 0 && (
-                      <>
-                        <SettingRow
-                          title="Shrink interval"
-                          helpText="Time between each shrink contraction."
-                          valueDisplay={`${shrinkIntervalMinutes} min`}
-                        >
-                          <Slider
-                            label="Shrink interval"
-                            hideHeader
-                            value={shrinkIntervalMinutes}
-                            min={2}
-                            max={30}
-                            step={1}
-                            unit="min"
-                            onChange={setShrinkIntervalMinutes}
-                          />
-                        </SettingRow>
-
-                        <SettingRow
-                          title="Final safe radius"
-                          helpText="Minimum circle radius at match endgame."
-                          valueDisplay={`${finalRadius}m`}
-                        >
-                          <Slider
-                            label="Final safe radius"
-                            hideHeader
-                            value={finalRadius}
-                            min={50}
-                            max={currentRadius}
-                            step={25}
-                            unit="m"
-                            onChange={setFinalRadius}
-                          />
-                        </SettingRow>
-                      </>
-                    )}
-
-                    {/* Horizontal Shrink Timeline with Scaled Circles */}
-                    {shrinkStages > 0 && (
-                      <div className="shrink-timeline-box">
-                        <span className="shrink-timeline-title font-mono text-xs">SHRINK TIMELINE</span>
-                        <div className="shrink-timeline-stages">
-                          {timelineStages.map((st) => (
-                            <div key={st.stage} className="timeline-stage-item">
-                              <div
-                                className="timeline-stage-circle"
-                                style={{
-                                  width: `${Math.max(22, (st.radius / currentRadius) * 44)}px`,
-                                  height: `${Math.max(22, (st.radius / currentRadius) * 44)}px`,
-                                }}
-                              />
-                              <span className="timeline-stage-label font-mono text-xs">{st.label}</span>
-                              <span className="timeline-stage-radius font-mono text-xs">{st.radius}m</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CollapsibleCard>
-                )}
-
-                {/* Mobile & Tablet Interactive Map Preview */}
-                {fixedZone && (
-                  <Card variant="raised" className="mobile-zone-map-card">
-                    <div className="mobile-map-header">
-                      <div className="preview-indicator">
-                        <span className="preview-dot" />
-                        <span className="preview-title font-mono">ZONE MAP PREVIEW</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="secondary-outline"
-                        icon={<Maximize2 size={14} />}
-                        onClick={() => setFullscreenMapOpen(true)}
-                        title="Expand map to fullscreen"
-                      >
-                        Expand
-                      </Button>
-                    </div>
-
-                    <div className="preview-map-container">
-                      <ZonePicker
-                        center={
-                          latitude && longitude
-                            ? { lat: Number(latitude), lon: Number(longitude) }
-                            : null
-                        }
-                        radiusM={currentRadius}
-                        nextRadiusM={nextRadiusPreview}
-                        onCenterChange={(pt) => {
-                          setLatitude(String(pt.lat.toFixed(6)))
-                          setLongitude(String(pt.lon.toFixed(6)))
-                        }}
-                      />
-                    </div>
-
-                    <div className="preview-legend">
-                      <div className="legend-item">
-                        <span className="legend-color legend-color--blue" />
-                        <span>Active Boundary ({currentRadius}m)</span>
-                      </div>
-                      {nextRadiusPreview && (
-                        <div className="legend-item">
-                          <span className="legend-color legend-color--amber" />
-                          <span>Next Shrink ({nextRadiusPreview}m dashed)</span>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                )}
-              </div>
+              <ZoneTab
+                fixedZone={fixedZone}
+                setFixedZone={setFixedZone}
+                diameter={diameter}
+                setDiameter={setDiameter}
+                shrinkStages={shrinkStages}
+                setShrinkStages={setShrinkStages}
+                shrinkIntervalMinutes={shrinkIntervalMinutes}
+                setShrinkIntervalMinutes={setShrinkIntervalMinutes}
+                finalRadius={finalRadius}
+                setFinalRadius={setFinalRadius}
+                currentRadius={currentRadius}
+                timelineStages={timelineStages}
+                latitude={latitude}
+                longitude={longitude}
+                setLatitude={setLatitude}
+                setLongitude={setLongitude}
+                nextRadiusPreview={nextRadiusPreview}
+                setFullscreenMapOpen={setFullscreenMapOpen}
+              />
             )}
 
             {/* TAB 3: ALERTS */}
             {activeTab === 'alerts' && (
-              <div id="panel-alerts" role="tabpanel" aria-labelledby="tab-alerts" className="tab-pane-content">
-                <CollapsibleCard
-                  title="Sensory Alerts"
-                  icon={<Bell size={18} />}
-                  defaultOpen={true}
-                >
-                  <SettingRow
-                    title="Haptic vibration"
-                    helpText="Uses device haptic motors for tactile game feedback."
-                    valueDisplay={hapticsAlerts ? 'On' : 'Off'}
-                    action={
-                      <Toggle
-                        label="Haptic feedback"
-                        hideLabel
-                        checked={hapticsAlerts}
-                        onChange={(e) => setHapticsAlerts(e.currentTarget.checked)}
-                      />
-                    }
-                  />
-
-                  <SettingRow
-                    title="Zone exit warning"
-                    helpText="Gives players a 30s grace period to re-enter before live coordinates are exposed."
-                    valueDisplay={outOfZoneWarning ? 'On' : 'Off'}
-                    action={
-                      <Toggle
-                        label="Zone exit warning"
-                        hideLabel
-                        checked={outOfZoneWarning}
-                        onChange={(e) => setOutOfZoneWarning(e.currentTarget.checked)}
-                      />
-                    }
-                  />
-                </CollapsibleCard>
-              </div>
+              <AlertsTab
+                hapticsAlerts={hapticsAlerts}
+                setHapticsAlerts={setHapticsAlerts}
+                outOfZoneWarning={outOfZoneWarning}
+                setOutOfZoneWarning={setOutOfZoneWarning}
+              />
             )}
 
             {/* TAB 4: ECONOMY */}
             {activeTab === 'economy' && (
-              <div id="panel-economy" role="tabpanel" aria-labelledby="tab-economy" className="tab-pane-content">
-                <CollapsibleCard
-                  title="Tactical Field Items"
-                  icon={<Coins size={18} />}
-                  defaultOpen={true}
-                >
-                  <SettingRow
-                    title="Tactical items"
-                    helpText="Free tactical items including Scans, Alarms, Decoys, and Zone Shields. No locks or paywalls."
-                    valueDisplay={itemsEnabled ? 'On' : 'Off'}
-                    action={
-                      <Toggle
-                        label="Tactical items"
-                        hideLabel
-                        checked={itemsEnabled}
-                        onChange={(e) => setItemsEnabled(e.currentTarget.checked)}
-                      />
-                    }
-                  />
-                </CollapsibleCard>
-              </div>
+              <EconomyTab
+                itemsEnabled={itemsEnabled}
+                setItemsEnabled={setItemsEnabled}
+              />
             )}
 
             {/* Browser Presets Manager (Persistent & Compatible with E2E) */}
