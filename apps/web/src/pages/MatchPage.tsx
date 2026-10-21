@@ -122,14 +122,21 @@ export function MatchPage() {
     void sync()
   }, [sync])
 
+  const syncRef = useRef(sync)
   useEffect(() => {
-    if (!view || view.own_status === 'TAGGED') return
+    syncRef.current = sync
+  }, [sync])
+  const currentRole = view?.role
+  const currentOwnStatus = view?.own_status
+
+  useEffect(() => {
+    if (!currentRole || currentOwnStatus === 'TAGGED') return
     let active = true
     let unsubscribe: (() => void) | undefined
-    const gate = createRealtimeEventGate(view.role)
+    const gate = createRealtimeEventGate(currentRole)
     setLiveStatus('Connected to private team channel.')
     void supabaseGameApi
-      .subscribe(matchId, view.role, {
+      .subscribe(matchId, currentRole, {
         onEvent: (received) => {
           if (!gate.accept(received.payload)) return
           const envelope = received.payload as { type?: unknown } | null
@@ -137,7 +144,7 @@ export function MatchPage() {
             setZoneNotice('Play zone moved by Seeker. Updating radar.')
             playSound('warning')
             triggerHaptic([40, 40, 40])
-            void sync()
+            void syncRef.current()
             return
           }
           setView((current) => {
@@ -170,7 +177,7 @@ export function MatchPage() {
       active = false
       unsubscribe?.()
     }
-  }, [matchId, navigate, stopSharing, view?.role, view?.own_status])
+  }, [matchId, navigate, stopSharing, currentRole, currentOwnStatus])
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -248,8 +255,9 @@ export function MatchPage() {
     return () => window.clearTimeout(timer)
   }, [camouflageExpiresAt])
 
+  const isMatchActive = view?.state === 'ACTIVE'
   useEffect(() => {
-    if (!view || view.state !== 'ACTIVE') return
+    if (!isMatchActive) return
     const wakeLockApi = (
       navigator as Navigator & {
         wakeLock?: {
@@ -258,26 +266,28 @@ export function MatchPage() {
       }
     ).wakeLock
     return maintainScreenWakeLock(true, wakeLockApi, document)
-  }, [view?.state])
+  }, [isMatchActive])
+
+  const executeTagRef = useRef<(() => Promise<void>) | undefined>(undefined)
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 't' || e.key === 'T') {
         const active = document.activeElement
         if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
-        if (view?.role === 'HUNTER' && view.own_status !== 'TAGGED') {
+        if (currentRole === 'HUNTER' && currentOwnStatus !== 'TAGGED') {
           e.preventDefault()
-          void executeTag()
+          void executeTagRef.current?.()
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [view?.role, view?.own_status, matchId])
+  }, [currentRole, currentOwnStatus])
 
 
 
-  const executeTag = async () => {
+  const executeTag = useCallback(async () => {
     // If high accuracy GPS fix available, attempt immediate GPS Tag; otherwise open Tag Page
     const fixAgeMs = currentFix ? Date.now() - Date.parse(currentFix.captured_at) : Infinity
     if (currentFix && Number.isFinite(fixAgeMs) && fixAgeMs <= 5000 && currentFix.accuracy_m <= 50) {
@@ -302,7 +312,10 @@ export function MatchPage() {
     } else {
       navigate(`/match/${matchId}/tag`)
     }
-  }
+  }, [matchId, currentFix, sync, navigate])
+  useEffect(() => {
+    executeTagRef.current = executeTag
+  }, [executeTag])
 
   // Tactical Item Handlers
   async function activateScan() {

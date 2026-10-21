@@ -293,4 +293,48 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
       ;(supabaseGameApi as any).post = originalPost
     }
   })
+
+  it('I10: realtime subscription reconnects cleanly without dangling listeners', async () => {
+    let unsubsCount = 0
+    let subsCount = 0
+    const unsubMock = vi.fn().mockImplementation(() => {
+      unsubsCount++
+    })
+    const subMock = vi.fn().mockImplementation(() => {
+      subsCount++
+      return Promise.resolve(unsubMock)
+    })
+
+    const originalSubscribe = supabaseGameApi.subscribe
+    supabaseGameApi.subscribe = subMock
+
+    try {
+      // Mount subscription 1
+      let active1 = true
+      let unlisten1: (() => void) | undefined
+      const stop1 = await supabaseGameApi.subscribe('match-1', 'RUNNER', { onEvent: () => {} })
+      if (active1) unlisten1 = stop1
+
+      expect(subsCount).toBe(1)
+      expect(unsubsCount).toBe(0)
+
+      // Tear down on reconnect / role change
+      active1 = false
+      unlisten1?.()
+      expect(unsubsCount).toBe(1)
+
+      // Reconnect with new role
+      let active2 = true
+      let unlisten2: (() => void) | undefined
+      const stop2 = await supabaseGameApi.subscribe('match-1', 'HUNTER', { onEvent: () => {} })
+      if (active2) unlisten2 = stop2
+
+      expect(subsCount).toBe(2)
+      active2 = false
+      unlisten2?.()
+      expect(unsubsCount).toBe(2)
+    } finally {
+      supabaseGameApi.subscribe = originalSubscribe
+    }
+  })
 })
