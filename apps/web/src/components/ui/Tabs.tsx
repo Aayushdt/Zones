@@ -12,6 +12,7 @@ export interface TabsProps<T extends string> {
   activeTab: T
   onChange: (tabId: T) => void
   ariaLabel?: string
+  orientation?: 'horizontal' | 'vertical' | 'responsive'
   className?: string
 }
 
@@ -20,11 +21,17 @@ export function Tabs<T extends string>({
   activeTab,
   onChange,
   ariaLabel = 'Navigation tabs',
+  orientation = 'responsive',
   className = '',
 }: TabsProps<T>) {
   return (
-    <div className={`app-tabs-wrap ${className}`}>
-      <div role="tablist" aria-label={ariaLabel} className="app-tabs">
+    <div className={`app-tabs-wrap app-tabs-wrap--${orientation} ${className}`}>
+      <div
+        role="tablist"
+        aria-label={ariaLabel}
+        aria-orientation={orientation === 'vertical' ? 'vertical' : 'horizontal'}
+        className={`app-tabs app-tabs--${orientation}`}
+      >
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab
           return (

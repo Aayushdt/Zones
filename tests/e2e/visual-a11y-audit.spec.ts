@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
 const VIEWPORTS = [
-  { name: 'phone-compact-360', width: 360, height: 640, isMobile: true, hasTouch: true },
+  { name: 'phone-min-320', width: 320, height: 640, isMobile: true, hasTouch: true },
+  { name: 'phone-compact-360', width: 360, height: 740, isMobile: true, hasTouch: true },
   { name: 'phone-standard-390', width: 390, height: 844, isMobile: true, hasTouch: true },
   { name: 'phone-max-430', width: 430, height: 932, isMobile: true, hasTouch: true },
   { name: 'phone-landscape-844', width: 844, height: 390, isMobile: true, hasTouch: true },
@@ -21,7 +22,7 @@ const ROUTES = [
   { path: '/create', name: 'setup' },
   { path: '/settings', name: 'settings' },
   { path: '/guide', name: 'guide' },
-  { path: '/simulator', name: 'simulator-hud' },
+  { path: '/dev/sim', name: 'simulator-hud' },
 ]
 
 test.describe('Visual and Accessibility Multi-Device Audit', () => {
@@ -44,7 +45,15 @@ test.describe('Visual and Accessibility Multi-Device Audit', () => {
           }, theme)
 
           // Wait for layout and fonts to stabilize
-          await page.waitForTimeout(250)
+          await page.waitForTimeout(200)
+
+          // Verify no horizontal overflow (overflow culprits)
+          const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
+          const clientWidth = await page.evaluate(() => document.documentElement.clientWidth)
+          expect(
+            scrollWidth,
+            `Expected no horizontal overflow on ${route.path} (${vp.name}, ${theme}): scrollWidth ${scrollWidth} <= clientWidth ${clientWidth}`
+          ).toBeLessThanOrEqual(clientWidth + 2)
 
           // Capture screenshot
           await page.screenshot({

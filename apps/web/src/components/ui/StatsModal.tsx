@@ -21,13 +21,14 @@ export function StatsModal({ isOpen, onClose, guestName }: StatsModalProps) {
   if (!isOpen) return null
 
   // Deterministic local player stats derived from guest name or defaults
+  const isNewPlayer = !guestName || guestName.trim().length === 0
   const seed = (guestName || 'Player').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
-  const matches = (seed % 18) + 3
-  const tags = ((seed * 3) % 24) + 2
-  const escapes = ((seed * 5) % 15) + 1
-  const minutes = matches * 28 + (seed % 45)
-  const level = Math.min(50, Math.floor(matches * 1.5) + 3)
-  const xpCurrent = (seed * 37) % 800 + 150
+  const matches = isNewPlayer ? 0 : (seed % 18) + 3
+  const tags = isNewPlayer ? 0 : ((seed * 3) % 24) + 2
+  const escapes = isNewPlayer ? 0 : ((seed * 5) % 15) + 1
+  const minutes = isNewPlayer ? 0 : matches * 28 + (seed % 45)
+  const level = isNewPlayer ? 1 : Math.min(50, Math.floor(matches * 1.5) + 3)
+  const xpCurrent = isNewPlayer ? 0 : (seed * 37) % 800 + 150
   const xpTotal = 1000
   const xpProgress = Math.round((xpCurrent / xpTotal) * 100)
 

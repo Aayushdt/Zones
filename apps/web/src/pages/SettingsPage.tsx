@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   User,
@@ -7,6 +7,8 @@ import {
   BookOpen,
   Bug,
   ArrowLeft,
+  MapPin,
+  Trash2,
 } from 'lucide-react'
 import { useAppStore, type MapStylePreference } from '../stores/app-store'
 import { Card } from '../components/ui/Card'
@@ -31,8 +33,25 @@ export function SettingsPage() {
   const setReduceEffects = useAppStore((state) => state.setReduceEffects)
 
   const [name, setName] = useState(savedName)
+  const [units, setUnits] = useState<'metric' | 'imperial'>('metric')
+  const [permissionState, setPermissionState] = useState<string>('checking')
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
+
+  useEffect(() => {
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions
+        .query({ name: 'geolocation' as PermissionName })
+        .then((status) => {
+          setPermissionState(status.state)
+          status.onchange = () => setPermissionState(status.state)
+        })
+        .catch(() => setPermissionState('prompt'))
+    } else {
+      setPermissionState('unknown')
+    }
+  }, [])
 
   function saveName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -69,6 +88,18 @@ export function SettingsPage() {
     setNotice('Synthesized radar tone played.')
   }
 
+  function clearLocalData() {
+    try {
+      localStorage.clear()
+      sessionStorage.clear()
+      setNotice('All local preferences, saved presets, and match tokens cleared.')
+      setClearConfirmOpen(false)
+      setName('')
+    } catch {
+      setError('Could not clear browser storage.')
+    }
+  }
+
   const mapStyles: Array<{ value: MapStylePreference; label: string }> = [
     { value: 'auto', label: 'Match theme' },
     { value: 'dusk', label: 'Dusk' },
@@ -78,12 +109,13 @@ export function SettingsPage() {
   return (
     <main className="settings-screen">
       <div className="settings-container">
+        {/* Header pattern with back link and title */}
         <header className="settings-header">
-          <Link to="/" className="settings-back-link">
+          <Link to="/" className="settings-back-link" title="Back to Home" aria-label="Back to Home">
             <ArrowLeft size={18} />
             <span>Home</span>
           </Link>
-          <span className="settings-overline font-mono">PREFERENCES</span>
+          <span className="settings-overline font-mono">PREFERENCES &amp; SYSTEM</span>
           <h1 className="settings-title">Settings</h1>
           <p className="settings-subtitle">
             Local preferences are stored on this device. They do not alter server match rules or player visibility.
@@ -118,12 +150,13 @@ export function SettingsPage() {
         <Card variant="raised" className="settings-section-card">
           <div className="settings-section-header">
             <SunMoon size={18} className="text-amber" />
-            <span className="settings-section-title font-mono">APPEARANCE</span>
+            <span className="settings-section-title font-mono">APPEARANCE &amp; MAP</span>
           </div>
 
           <SettingRow
             title="Theme Palette"
             summary="Dark neon OLED mode or light high-contrast daylight mode."
+            valueDisplay={theme === 'system' ? 'System' : theme === 'dusk' ? 'Dusk' : 'Paper'}
             action={
               <div className="segmented-control" role="group" aria-label="Theme selection">
                 {(['system', 'dusk', 'paper'] as const).map((item) => (
@@ -144,6 +177,7 @@ export function SettingsPage() {
           <SettingRow
             title="Map Cartography"
             summary="Follows theme or selects specific dark topographic / light street tiles."
+            valueDisplay={mapStyle === 'auto' ? 'Auto' : mapStyle === 'dusk' ? 'Dusk' : 'Paper'}
             action={
               <div className="segmented-control" role="group" aria-label="Map style selection">
                 {mapStyles.map((item) => (
@@ -157,6 +191,32 @@ export function SettingsPage() {
                     {item.label}
                   </button>
                 ))}
+              </div>
+            }
+          />
+
+          <SettingRow
+            title="Measurement Units"
+            summary="Distance display in meters (metric) or feet (imperial)."
+            valueDisplay={units === 'metric' ? 'Metric (m)' : 'Imperial (ft)'}
+            action={
+              <div className="segmented-control" role="group" aria-label="Units selection">
+                <button
+                  type="button"
+                  className={`segment ${units === 'metric' ? 'is-selected' : ''}`}
+                  aria-pressed={units === 'metric'}
+                  onClick={() => setUnits('metric')}
+                >
+                  Metric (m)
+                </button>
+                <button
+                  type="button"
+                  className={`segment ${units === 'imperial' ? 'is-selected' : ''}`}
+                  aria-pressed={units === 'imperial'}
+                  onClick={() => setUnits('imperial')}
+                >
+                  Imperial (ft)
+                </button>
               </div>
             }
           />
@@ -208,6 +268,44 @@ export function SettingsPage() {
           />
         </Card>
 
+        {/* Location Permission Status & Guidance Card */}
+        <Card variant="raised" className="settings-section-card">
+          <div className="settings-section-header">
+            <MapPin size={18} className="text-blue" />
+            <span className="settings-section-title font-mono">LOCATION PERMISSIONS</span>
+          </div>
+
+          <div className="permission-status-banner">
+            <div className="permission-status-dot-wrap">
+              <span
+                className={`permission-status-dot ${
+                  permissionState === 'granted'
+                    ? 'is-granted'
+                    : permissionState === 'denied'
+                    ? 'is-denied'
+                    : 'is-prompt'
+                }`}
+              />
+              <span className="permission-status-label font-mono">
+                STATUS:{' '}
+                {permissionState === 'granted'
+                  ? 'PRECISION GPS ACTIVE'
+                  : permissionState === 'denied'
+                  ? 'PERMISSION DENIED'
+                  : 'PROMPT ON MATCH JOIN'}
+              </span>
+            </div>
+
+            <p className="text-xs text-muted">
+              {permissionState === 'granted'
+                ? 'Your device is configured for high-accuracy outdoor field tracking.'
+                : permissionState === 'denied'
+                ? 'Location is blocked. To fix: tap the padlock/tune icon in your browser address bar, select Site Permissions, allow Location, and reload.'
+                : 'XZones requests GPS access only when you ready up in a match lobby.'}
+            </p>
+          </div>
+        </Card>
+
         {/* Privacy & Safe Play Cards */}
         <div className="settings-info-grid">
           <Card variant="surface" className="settings-info-card">
@@ -236,6 +334,39 @@ export function SettingsPage() {
             </ul>
           </Card>
         </div>
+
+        {/* Clear Local Data & Reset Card */}
+        <Card variant="surface" className="settings-danger-card">
+          <div className="danger-card-header">
+            <Trash2 size={18} className="text-red" />
+            <span className="font-mono text-sm text-red">STORAGE &amp; CACHE RESET</span>
+          </div>
+          <p className="text-xs text-muted">
+            Clears saved player names, local match history tokens, and custom presets from this browser.
+          </p>
+          {!clearConfirmOpen ? (
+            <Button
+              size="sm"
+              variant="destructive"
+              icon={<Trash2 size={14} />}
+              onClick={() => setClearConfirmOpen(true)}
+            >
+              Clear local data
+            </Button>
+          ) : (
+            <div className="clear-confirm-box">
+              <span className="text-xs text-red font-mono">Confirm clearing all device storage?</span>
+              <div className="clear-confirm-actions">
+                <Button size="sm" variant="destructive" onClick={clearLocalData}>
+                  Yes, clear all
+                </Button>
+                <Button size="sm" variant="secondary-outline" onClick={() => setClearConfirmOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
 
         {/* Direct Links */}
         <div className="settings-links-row">

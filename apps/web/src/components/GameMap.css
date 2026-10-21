@@ -73,7 +73,7 @@
 
 .game-marker--you {
   background: var(--color-green);
-  color: #000000;
+  color: var(--color-green-text);
   box-shadow: 0 0 0 3px var(--color-green-ring), 0 0 16px var(--color-green);
 }
 
@@ -86,7 +86,7 @@
 
 .game-marker--snapshot {
   background: var(--color-red);
-  color: #000000;
+  color: var(--color-red-text);
   box-shadow: 0 0 0 3px var(--color-red-ring), 0 0 18px var(--color-red);
 }
 
@@ -101,4 +101,28 @@
   content: '';
   opacity: 0.22;
   pointer-events: none;
+}
+
+/* Compact, clean MapLibre attribution (small, fitted, not large or underlined) */
+.maplibregl-ctrl-attrib {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent) !important;
+  color: var(--color-muted) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  max-width: calc(100% - 24px) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--color-muted) !important;
+  text-decoration: none !important;
+}
+
+.maplibregl-ctrl-attrib a:hover {
+  color: var(--color-text) !important;
+  text-decoration: underline !important;
 }

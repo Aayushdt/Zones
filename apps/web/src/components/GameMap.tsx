@@ -196,7 +196,9 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
         let marker = markersRef.current.get(key)
         const isNewMarker = !marker
         if (!marker) {
-          marker = new Marker({ element: pointElement(point.kind, point.label, point.accuracyPixels), anchor: 'center' }).addTo(map)
+          marker = new Marker({ element: pointElement(point.kind, point.label, point.accuracyPixels), anchor: 'center' })
+            .setLngLat(point.coordinates)
+            .addTo(map)
           markersRef.current.set(key, marker)
         }
         const previousFrame = markerFrames.get(key)

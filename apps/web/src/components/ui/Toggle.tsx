@@ -31,6 +31,9 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(function Toggle(
           {...props}
         />
         <span className="switch-toggle__track" aria-hidden="true">
+          <span className={`switch-toggle__state-text font-mono ${checked ? 'is-on' : 'is-off'}`}>
+            {checked ? 'ON' : 'OFF'}
+          </span>
           <span className="switch-toggle__thumb" />
         </span>
       </div>

@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Copy, Share2, QrCode, Dices, Play, AlertCircle, MessageSquare } from 'lucide-react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import {
+  Copy,
+  Share2,
+  QrCode,
+  Dices,
+  Play,
+  AlertCircle,
+  MessageSquare,
+  ArrowLeft,
+  Settings,
+  HelpCircle,
+  Users,
+} from 'lucide-react'
 import QRCode from 'qrcode'
 import { HIDE_AND_SEEK_CONFIG, type Role } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
@@ -198,8 +210,7 @@ export function LobbyPage() {
   async function startMatch() {
     if (!lobby || lobby.you.id !== lobby.controller_player_id) return
     setPending(true)
-    setError('')
-    const result = await supabaseGameApi.startMatch(matchId, lobby.revision)
+    const result = await supabaseGameApi.startMatch(matchId)
     setPending(false)
     if (!result.ok) {
       setError(result.error.message)
@@ -208,32 +219,57 @@ export function LobbyPage() {
     navigate(`/match/${matchId}`)
   }
 
-  if (!lobby) {
+  if (error && !lobby) {
     return (
-      <main className="route-shell">
-        <div className="lobby-loading-state font-mono">
-          <div className="radar-spinner" aria-hidden="true" />
-          <p>{error || 'Connecting to private tactical lobby…'}</p>
+      <main className="lobby-screen">
+        <div className="lobby-content-wrap">
+          <Card variant="raised" className="lobby-error-card">
+            <AlertCircle size={32} className="text-red" />
+            <h2 className="lobby-error-title">Could not load lobby</h2>
+            <p className="lobby-error-desc">{error}</p>
+            <div className="lobby-error-actions">
+              <Button size="md" variant="primary-green" onClick={() => void refresh()}>
+                Retry connection
+              </Button>
+              <Link to="/">
+                <Button size="md" variant="secondary-outline">
+                  Return to Home
+                </Button>
+              </Link>
+            </div>
+          </Card>
         </div>
       </main>
     )
   }
 
-  const isController = lobby.you.id === lobby.controller_player_id
+  if (!lobby) {
+    return (
+      <main className="lobby-screen">
+        <div className="lobby-content-wrap">
+          <Card variant="raised" className="lobby-loading-card">
+            <span className="font-mono text-sm text-muted">CONNECTING TO LOBBY…</span>
+          </Card>
+        </div>
+      </main>
+    )
+  }
+
   const hunters = lobby.players.filter((p) => p.role === 'HUNTER')
   const runners = lobby.players.filter((p) => p.role === 'RUNNER')
-  const unassigned = lobby.players.filter((p) => !p.role)
-  const allReady = lobby.players.every((p) => p.ready)
-  const minPlayersMet = lobby.players.length >= HIDE_AND_SEEK_CONFIG.players.min.default
+  const unassigned = lobby.players.filter((p) => p.role === null)
+  const isController = lobby.you.id === lobby.controller_player_id
 
-  // Calculate start blocker reason
+  const minPlayersMet = lobby.players.length >= HIDE_AND_SEEK_CONFIG.players.min.default
+  const allReady = lobby.players.length > 0 && lobby.players.every((p) => p.ready)
+
   let startDisabledReason = ''
   if (!minPlayersMet) {
-    startDisabledReason = `Need at least ${HIDE_AND_SEEK_CONFIG.players.min.default} players to begin`
+    startDisabledReason = `Need at least ${HIDE_AND_SEEK_CONFIG.players.min.default} players to begin (currently ${lobby.players.length})`
   } else if (unassigned.length > 0) {
-    startDisabledReason = `${unassigned.length} player(s) still unassigned`
+    startDisabledReason = `${unassigned.length} player(s) still unassigned to a team`
   } else if (hunters.length === 0 || runners.length === 0) {
-    startDisabledReason = 'Both Seekers and Hiders teams require players'
+    startDisabledReason = 'Both Seekers and Hiders require at least 1 player'
   } else if (!allReady) {
     const notReadyCount = lobby.players.filter((p) => !p.ready).length
     startDisabledReason = `Waiting for ${notReadyCount} player(s) to ready up`
@@ -246,68 +282,112 @@ export function LobbyPage() {
       {toastMsg && <Toast message={toastMsg} type="success" onClose={() => setToastMsg('')} durationMs={3000} />}
 
       <div className="lobby-content-wrap">
-        {/* Lobby Code Tactical Card */}
-        <Card variant="raised" className="lobby-code-card">
-          <div className="lobby-code-header">
-            <span className="lobby-code-overline font-mono">PRIVATE LOBBY ACCESS</span>
-            <div className="lobby-code-row">
-              <span className="lobby-code-value font-mono" title="Lobby Room Code">
-                {lobbyCode}
-              </span>
-              <div className="lobby-code-actions">
-                <Button
-                  size="sm"
-                  variant="secondary-outline"
-                  icon={<Copy size={15} />}
-                  onClick={handleCopyCode}
-                  title="Copy code"
-                >
-                  Copy
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary-outline"
-                  icon={<Share2 size={15} />}
-                  onClick={handleShare}
-                  title="Share invite link"
-                >
-                  Share
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary-outline"
-                  icon={<QrCode size={15} />}
-                  onClick={handleOpenQr}
-                  title="Show QR Code"
-                >
-                  QR
-                </Button>
+        {/* Header pattern: Back, Big Mono Code + Copy, Version Chip, Share, QR, Settings */}
+        <header className="lobby-header">
+          <div className="lobby-header__top">
+            <Link to="/" className="lobby-back-btn" title="Back to Home" aria-label="Back">
+              <ArrowLeft size={20} />
+            </Link>
+
+            <div className="lobby-header__title-group">
+              <span className="lobby-header__overline font-mono">ROOM CODE</span>
+              <div className="lobby-header__code-row">
+                <span className="lobby-header__code font-mono" title="Private Lobby Code">
+                  {lobbyCode}
+                </span>
+                <span className="lobby-version-chip font-mono text-xs">v0.1.0</span>
               </div>
+            </div>
+
+            <div className="lobby-header__actions">
+              <Button
+                size="sm"
+                variant="secondary-outline"
+                icon={<Copy size={14} />}
+                onClick={handleCopyCode}
+                title="Copy lobby code"
+              >
+                Copy
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary-outline"
+                icon={<Share2 size={14} />}
+                onClick={handleShare}
+                title="Share lobby link"
+              >
+                Share
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary-outline"
+                icon={<QrCode size={14} />}
+                onClick={handleOpenQr}
+                title="Show QR Code"
+              >
+                QR
+              </Button>
+              <Link to="/settings" className="lobby-settings-btn" title="Settings" aria-label="Settings">
+                <Settings size={18} />
+              </Link>
             </div>
           </div>
 
-          <div className="lobby-meta-bar">
-            <span className="lobby-players-count font-mono">
-              {lobby.players.length} / {HIDE_AND_SEEK_CONFIG.players.max.default} PLAYERS
+          <div className="lobby-mode-line text-xs text-muted" title="Hide & Seek (Seekers vs Hiders) · GPS outdoor hide-and-seek">
+            <span className="font-mono text-green">MODE:</span> Hide & Seek · Scheduled snapshots · Physical QR tagging
+          </div>
+        </header>
+
+        {/* Scoreboard Card: n Seekers vs n Hiders + Target Balance + Max Players */}
+        <Card variant="raised" className="lobby-scoreboard-card">
+          <div className="lobby-scoreboard__counts">
+            <div className="scoreboard-team scoreboard-team--seeker">
+              <span className="scoreboard-number font-mono">{hunters.length}</span>
+              <span className="scoreboard-label font-mono">SEEKERS</span>
+            </div>
+            <div className="scoreboard-vs font-mono">VS</div>
+            <div className="scoreboard-team scoreboard-team--hider">
+              <span className="scoreboard-number font-mono">{runners.length}</span>
+              <span className="scoreboard-label font-mono">HIDERS</span>
+            </div>
+          </div>
+
+          <div className="lobby-scoreboard__meta">
+            <span className="scoreboard-roster-total font-mono text-xs">
+              <Users size={14} /> {lobby.players.length} / {HIDE_AND_SEEK_CONFIG.players.max.default} PLAYERS (MIN {HIDE_AND_SEEK_CONFIG.players.min.default})
             </span>
-            <span className="lobby-balance-hint">
+            <span className="scoreboard-balance-hint text-xs text-muted">
               Target balance: {hunterCount} Seeker{hunterCount > 1 ? 's' : ''} vs{' '}
               {Math.max(1, lobby.players.length - hunterCount)} Hider{lobby.players.length - hunterCount > 1 ? 's' : ''}
             </span>
           </div>
         </Card>
 
-        {/* Tactical Controls & Random Teams */}
+        {/* Tactical Actions Bar: Auto-Balance, Neutral How To Play, Spectate, Items */}
         <div className="lobby-quick-actions">
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<Dices size={16} />}
-            onClick={() => selectTeam('RANDOM')}
-            title="Automatically balance teams"
-          >
-            Auto-Balance Teams
-          </Button>
+          <div className="lobby-quick-actions__buttons">
+            <Button
+              size="sm"
+              variant="secondary-outline"
+              icon={<Dices size={16} />}
+              onClick={() => selectTeam('RANDOM')}
+              title="Automatically balance teams"
+            >
+              Auto-Balance
+            </Button>
+
+            {/* NEUTRAL outline How to Play button */}
+            <Link to="/guide">
+              <Button
+                size="sm"
+                variant="secondary-outline"
+                icon={<HelpCircle size={16} />}
+                title="View rules and how to play"
+              >
+                How to play
+              </Button>
+            </Link>
+          </div>
 
           <div className="lobby-toggles-group">
             <Toggle
@@ -330,7 +410,7 @@ export function LobbyPage() {
           </div>
         </div>
 
-        {/* Dual Team Cards: Seekers (Red) vs Hiders (Green) */}
+        {/* Dual Team Cards: Seekers (Red) vs Hiders (Green) - Shared Page Gutter */}
         <div className="lobby-teams-grid">
           <TeamCard
             role="HUNTER"
@@ -372,11 +452,10 @@ export function LobbyPage() {
           </Card>
         )}
 
-        {/* Error message */}
+        {/* Error notice if any */}
         {error && (
-          <p className="form-error lobby-error" role="alert">
-            <AlertCircle size={16} />
-            <span>{error}</span>
+          <p className="form-error" role="alert">
+            {error}
           </p>
         )}
 
@@ -393,7 +472,7 @@ export function LobbyPage() {
         </div>
       </div>
 
-      {/* Sticky Bottom Bar for Ready & Start Match */}
+      {/* Sticky Bottom Bar for Ready & Start Match: flex: 1, min-width: 0, non-overlapping */}
       <footer className="lobby-sticky-footer">
         <div className="lobby-sticky-footer__inner">
           <Button
@@ -401,9 +480,9 @@ export function LobbyPage() {
             variant={lobby.you.ready ? 'primary-green' : 'secondary-outline'}
             onClick={() => setReady(!lobby.you.ready)}
             disabled={pending}
-            className="lobby-ready-btn"
+            className="lobby-footer-btn lobby-ready-btn"
           >
-            {lobby.you.ready ? '✓ YOU ARE READY' : 'CLICK TO READY UP'}
+            {lobby.you.ready ? '✓ READY' : 'CLICK TO READY'}
           </Button>
 
           {isController ? (
@@ -413,14 +492,14 @@ export function LobbyPage() {
               onClick={startMatch}
               disabled={!canStart || pending}
               disabledReason={startDisabledReason}
-              icon={<Play size={20} />}
-              className="lobby-start-btn"
+              icon={<Play size={18} />}
+              className="lobby-footer-btn lobby-start-btn"
             >
               START MATCH
             </Button>
           ) : (
-            <div className="lobby-waiting-hint font-mono">
-              WAITING FOR HOST TO START MATCH
+            <div className="lobby-waiting-hint font-mono text-xs">
+              WAITING FOR HOST TO START
             </div>
           )}
         </div>
