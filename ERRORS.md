@@ -1,5 +1,7 @@
 # Code Audit Defect Report: `ERRORS.md`
 
+> ℹ️ **Looking for frontend, mobile UX, & accessibility defects?** See the [# UI Audit](#ui-audit) section below.
+
 ## Summary Table
 
 | ID | Status | Severity | File & Lines | Title |
@@ -140,3 +142,115 @@
   ```
 - **What is wrong:** *(Note on audit report accuracy: The claim that tracks "leak indefinitely" was overstated since modern browser garbage collection releases tracks when streams stop).* However, hardening was needed: `stop()` failed to nullify `video.current.srcObject = null` or call `.pause()`, mutable ref was accessed directly in cleanup, animation frame could reschedule after stop, and error handling swallowed permissions errors into generic failures.
 - **Remediation:** Captured `const videoElement = video.current` locally at effect mount; called `videoElement.pause()` and `videoElement.srcObject = null` in cleanup; guarded `scan()` with `if (!stopped)` and nullified `frame`; protected `videoElement.play()` against unhandled rejections; separated `NotAllowedError` permission denials from hardware/HTTPS unavailability.
+
+---
+
+# UI Audit
+
+This section documents real frontend, mobile responsiveness, runtime performance, and accessibility defects identified during the comprehensive UI audit of `apps/web`.
+
+## UI Defect Summary Table
+
+| ID | Status | Severity | Area | File & Symbol | Title |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **[UI-E-001]** | OPEN | Critical | State handling | [`apps/web/src/services/supabase-api.ts`](apps/web/src/services/supabase-api.ts) (`syncMatch`) | Unhandled `TypeError: Cannot read properties of undefined (reading 'flatMap')` |
+| **[UI-E-002]** | OPEN | High | Performance | [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) (`MatchPage`) | Full-Page Re-render Storm and Redundant Marker Sync on Clock Ticks |
+| **[UI-E-003]** | OPEN | High | Responsive | [`apps/web/src/pages/MatchPage.css`](apps/web/src/pages/MatchPage.css) (`.hud-top-bar`, `.bottom-sheet`) | HUD Overlays and Bottom Actions Lack Safe-Area Insets for Notched Phones |
+| **[UI-E-004]** | OPEN | Medium | Responsive | [`apps/web/src/App.css`](apps/web/src/App.css) (`.form-field__input`) | Form Inputs Below 16px Cause Automatic Viewport Zoom on iOS Safari |
+| **[UI-E-005]** | OPEN | Medium | Accessibility | [`apps/web/src/pages/LobbyPage.css`](apps/web/src/pages/LobbyPage.css), [`CreatePage.css`](apps/web/src/pages/CreatePage.css) | Touch Targets Below 44x44px for Primary Navigation & Action Buttons |
+| **[UI-E-006]** | OPEN | Medium | Accessibility | [`apps/web/src/pages/HomePage.tsx`](apps/web/src/pages/HomePage.tsx), [`GuidePage.tsx`](apps/web/src/pages/GuidePage.tsx) | Heading Hierarchy and Missing Level-One Landmark Violations |
+
+### UI Defect Counts by Severity
+- **Critical:** 1
+- **High:** 2
+- **Medium:** 3
+- **Low:** 0
+- **Total:** 6
+
+---
+
+## Detailed UI Defects
+
+### [UI-E-001] Unhandled `TypeError: Cannot read properties of undefined (reading 'flatMap')` in Sync API
+- **Severity:** Critical
+- **Area:** State handling / Runtime Crash
+- **File & symbol:** [`apps/web/src/services/supabase-api.ts`](apps/web/src/services/supabase-api.ts) (`syncMatch`)
+- **Evidence:**
+  ```ts
+  own_team_positions: result.data.events.flatMap((event) => { ... })
+  const snapshots = result.data.events.flatMap((event) => { ... })
+  ```
+  Recorded in Playwright baseline capture: 16 uncaught page errors `TypeError: Cannot read properties of undefined (reading 'flatMap')`.
+- **What is wrong:** `syncMatch()` expects `result.data.events` to always be an array. When backend payloads, fixtures, or simulation mocks omit `events` or supply `undefined`/`null`, calling `.flatMap()` throws an unhandled `TypeError` that breaks component lifecycle and stalls the match polling loop.
+- **Impact:** Entire match screen crashes or fails to synchronize positions for both Hunters and Runners.
+- **Suggested fix:** Guard with `const events = Array.isArray(result.data.events) ? result.data.events : []` before invoking `.flatMap()`.
+
+---
+
+### [UI-E-002] Full-Page Re-render Storm and Redundant Marker Sync on Clock Ticks
+- **Severity:** High
+- **Area:** Performance / Battery & CPU
+- **File & symbol:** [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) (`MatchPage`), [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx) (`GameMap`)
+- **Evidence:**
+  `MatchPage.tsx:193` sets a 250ms interval calling `setSeconds()`, and line 77 runs `useNow(1000)`. Every tick produces brand-new inline object literals `mapData` and `zone`, which are passed into `<GameMap data={mapData} zone={zone} />`. In `GameMap.tsx:123`, `useMemo([data])` re-evaluates and triggers the `useEffect([markerPoints])` effect up to 4 times per second, executing dynamic `import('maplibre-gl')`, DOM marker mutations, and coordinate projections even when no player has moved.
+- **What is wrong:** HUD countdown timer state is coupled to the root `MatchPage` component instead of an isolated leaf component, churning the entire page tree and canvas overlay.
+- **Impact:** High CPU usage, dropped frames on low/mid-tier mobile devices, and excessive battery drain during outdoor matches.
+- **Suggested fix:** Extract the countdown clock into a dedicated memoized `<HudTimer />` leaf component so root `MatchPage` does not re-render on second ticks. Stabilize `mapData` reference identity using `useMemo` with coordinate-value dependencies.
+
+---
+
+### [UI-E-003] HUD Overlays and Bottom Actions Lack Safe-Area Insets for Notched Phones
+- **Severity:** High
+- **Area:** Responsive / Mobile Layout
+- **File & symbol:** [`apps/web/src/pages/MatchPage.css`](apps/web/src/pages/MatchPage.css) (`.hud-top-bar`, `.bottom-sheet`)
+- **Evidence:**
+  ```css
+  .hud-top-bar { padding: 0.75rem 1rem; }
+  .bottom-sheet { padding: 0.75rem 1.25rem 1.5rem; }
+  ```
+  Neither element uses `env(safe-area-inset-top)` or `env(safe-area-inset-bottom)`.
+- **What is wrong:** Fixed HUD header buttons (menu, role badge, clock, radio drawer, stealth) collide with camera notches and the iOS Dynamic Island. The bottom sheet (Hold to Confirm Tag button, items tray, footer actions) collides with the mobile home swipe gesture bar on modern iOS and Android devices.
+- **Impact:** Mis-taps on primary game actions (tagging or closing drawers) or accidental task switching while running outdoors.
+- **Suggested fix:** Apply `padding-top: max(0.75rem, env(safe-area-inset-top, 0px))` to `.hud-top-bar` and `padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px))` to `.bottom-sheet`.
+
+---
+
+### [UI-E-004] Form Inputs Below 16px Cause Automatic Viewport Zoom on iOS Safari
+- **Severity:** Medium
+- **Area:** Responsive / iOS WebKit Quirks
+- **File & symbol:** [`apps/web/src/App.css`](apps/web/src/App.css) (`.form-field__input`)
+- **Evidence:**
+  [`apps/web/src/App.css:484`](apps/web/src/App.css): `.form-field__input { font-size: 15px; }`.
+- **What is wrong:** iOS Mobile Safari enforces an automatic viewport zoom whenever a text input with `font-size < 16px` receives focus. Because the app uses fixed HUD layouts, this auto-zoom scales the page unpredictably, clipping edge controls and forcing players to manually pinch-to-zoom out.
+- **Impact:** Frustrating zoom jump when typing match codes, guest names, or chat messages outdoors.
+- **Suggested fix:** Set `font-size: 16px;` on `.form-field__input` and ensure all form inputs meet the 16px threshold.
+
+---
+
+### [UI-E-005] Touch Targets Below 44x44px for Primary Navigation & Action Buttons
+- **Severity:** Medium
+- **Area:** Accessibility / One-Handed Mobile UX
+- **File & symbol:** [`apps/web/src/pages/LobbyPage.css`](apps/web/src/pages/LobbyPage.css), [`CreatePage.css`](apps/web/src/pages/CreatePage.css), [`GuidePage.css`](apps/web/src/pages/GuidePage.css), [`App.css`](apps/web/src/App.css)
+- **Evidence:**
+  - `.lobby-back-btn` and `.lobby-settings-btn`: `width: 36px; height: 36px;`
+  - `.create-back-btn` and `.game-mode-nav-btn`: `width: 36px; height: 36px;`
+  - `.guide-back-btn`: `width: 36px; height: 36px;`
+  - `.app-btn--sm`: `min-height: 36px;`
+- **What is wrong:** Interactive buttons are smaller than the standard 44x44 CSS px touch target minimum required for one-handed mobile use in active outdoor conditions.
+- **Impact:** Mis-taps, missed taps, and high interaction friction when players are running or wearing gloves.
+- **Suggested fix:** Upgrade button dimensions to `min-width: 44px; min-height: 44px;` or attach touch pseudo-elements (`::before`) providing a 44x44px tap zone without breaking visual design rhythm.
+
+---
+
+### [UI-E-006] Heading Hierarchy and Missing Level-One Landmark Violations
+- **Severity:** Medium
+- **Area:** Accessibility / Screen Reader Landmarks
+- **File & symbol:** [`apps/web/src/pages/HomePage.tsx`](apps/web/src/pages/HomePage.tsx), [`LobbyPage.tsx`](apps/web/src/pages/LobbyPage.tsx), [`MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx), [`GuidePage.tsx`](apps/web/src/pages/GuidePage.tsx)
+- **Evidence:**
+  axe automated accessibility scan reported:
+  - `page-has-heading-one` on `HomePage`, `LobbyPage`, and `MatchPage`.
+  - `heading-order` on `GuidePage` (jumps from `<h1>How to play</h1>` directly into step card `<h3>`).
+- **What is wrong:** Screen reader users cannot navigate to main page landmarks or comprehend document structure because `<h1>` tags are omitted in favor of styled presentation text, and heading levels skip degrees.
+- **Impact:** Screen reader disorientation and accessibility test failures.
+- **Suggested fix:** Introduce semantic or visually hidden `<h1>` elements on `HomePage` ("XZones Tactical Hide and Seek"), `LobbyPage` ("Match Staging Lobby"), and `MatchPage` ("Tactical Match HUD"). Correct `GuidePage` step cards from `<h3>` to `<h2>`.
+

@@ -59,7 +59,7 @@ This document tracks the step-by-step UI audit, accessibility remediation, perfo
 - [x] **Step 0:** Setup and baseline (no UI code changes)
 - [x] **Step 1:** UI inventory (documentation only)
 - [x] **Step 2:** Deep UI analysis (read code + measure + record raw findings in the log)
-- [ ] **Step 3:** Write findings into ERRORS.md and IMPROVEMENTS.md (docs only)
+- [x] **Step 3:** Write findings into ERRORS.md and IMPROVEMENTS.md (docs only)
 - [ ] **Step 4:** Plan the fix batches (docs only)
 - [ ] **Step 5:** Responsive and layout foundation
 - [ ] **Step 6:** Accessibility
@@ -217,4 +217,25 @@ Seven deep analysis passes were conducted across the frontend codebase, styles, 
 ### Needs Verification & Risk Watchlist
 - **Map GeoJSON Transition:** Migrating player markers entirely from DOM elements to a GeoJSON symbol layer would reduce DOM nodes, but may impact smooth 60fps CSS/RAF coordinate interpolation. Verify if prop stabilization alone resolves all map re-render overhead before altering marker architecture.
 - **Font Subsetting:** Verify that removing non-Latin Inter subsets does not break rendering for player display names containing international Unicode characters. (Standard Latin + Latin-ext covers all typical game names).
+
+---
+
+## Step 3 Execution: Write Findings into ERRORS.md and IMPROVEMENTS.md
+
+Both repository audit reports were updated with dedicated, non-colliding `# UI Audit` sections, preserving all existing code remediation findings (E-001..E-006, I-001..I-007) and adding navigation pointers near the top:
+
+1. **[`ERRORS.md`](ERRORS.md):**
+   - Added pointer: `> ℹ️ **Looking for frontend, mobile UX, & accessibility defects?** See the [# UI Audit](#ui-audit) section below.`
+   - Appended `# UI Audit` containing UI Defect Summary Table and 6 detailed entries:
+     - `[UI-E-001]` Critical: Unhandled `TypeError: Cannot read properties of undefined (reading 'flatMap')` in `supabase-api.ts`.
+     - `[UI-E-002]` High: Full-Page Re-render Storm and Redundant Marker Sync on Clock Ticks in `MatchPage.tsx` and `GameMap.tsx`.
+     - `[UI-E-003]` High: HUD Overlays and Bottom Actions Lack Safe-Area Insets for Notched Phones in `MatchPage.css`.
+     - `[UI-E-004]` Medium: Form Inputs Below 16px Cause Automatic Viewport Zoom on iOS Safari in `App.css`.
+     - `[UI-E-005]` Medium: Touch Targets Below 44x44px for Primary Navigation & Action Buttons in `LobbyPage.css`, `CreatePage.css`, `GuidePage.css`.
+     - `[UI-E-006]` Medium: Heading Hierarchy and Missing Level-One Landmark Violations in `HomePage.tsx`, `LobbyPage.tsx`, `MatchPage.tsx`, `GuidePage.tsx`.
+
+2. **[`IMPROVEMENTS.md`](IMPROVEMENTS.md):**
+   - Added pointer: `> ℹ️ **Looking for frontend, mobile UX, & accessibility improvements?** See the [# UI Audit](#ui-audit) section below.`
+   - Appended `# UI Audit` containing UI Enhancement Summary Table, 5 detailed entries (`UI-I-001` through `UI-I-005`), and a prioritized recommended order of work.
+
 

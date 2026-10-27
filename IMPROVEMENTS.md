@@ -1,5 +1,7 @@
 # Code Audit Improvements & Architecture Report: `IMPROVEMENTS.md`
 
+> ℹ️ **Looking for frontend, mobile UX, & accessibility improvements?** See the [# UI Audit](#ui-audit) section below.
+
 ## Summary Table
 
 | ID | Status | Priority | Effort | File(s) | Title |
@@ -111,3 +113,118 @@
   3. Added an accessible toggle button (`aria-label`, `aria-pressed`) styled with existing button classes and Lucide `Flashlight` / `FlashlightOff` icons.
   4. Automatically hides the torch control on unsupported devices or desktop browsers.
   5. Resets torch state upon component unmount or camera stop.
+
+---
+
+# UI Audit
+
+This section documents verified frontend, UX, design token, and asset performance enhancements identified during the UI audit of `apps/web`.
+
+## UI Enhancement Summary Table
+
+| ID | Status | Priority | Effort | Area | File(s) | Title |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **[UI-I-001]** | OPEN | High | Small | Performance | [`apps/web/src/theme/fonts.css`](apps/web/src/theme/fonts.css) | Font Asset Subsetting to Eliminate Non-Latin Font Bloat |
+| **[UI-I-002]** | OPEN | High | Medium | Performance | [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) | Component Extraction & Isolated HUD Timer to Prevent Map Re-rendering |
+| **[UI-I-003]** | OPEN | Medium | Small | Visual | [`apps/web/index.html`](apps/web/index.html) | Align Theme-Color Meta Tag with OLED Tactical Background |
+| **[UI-I-004]** | OPEN | Medium | Small | Performance | [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx) | Deep-Value Coordinate Memoization in GameMap |
+| **[UI-I-005]** | OPEN | Low | Small | Visual | [`apps/web/src/index.css`](apps/web/src/index.css), [`tokens.css`](apps/web/src/theme/tokens.css) | Jitter-Free Sunlight Typography and Tabular Numerals |
+
+---
+
+## Detailed UI Enhancements
+
+### [UI-I-001] Font Asset Subsetting to Eliminate Non-Latin Font Bloat
+- **Priority:** High
+- **Effort:** Small
+- **Area:** Performance / Load Time
+- **File(s):** [`apps/web/src/theme/fonts.css`](apps/web/src/theme/fonts.css), [`apps/web/index.html`](apps/web/index.html)
+- **Current situation:**
+  `fonts.css` imports `@fontsource/inter/index.css`. This blanket import pulls in Cyrillic, Greek, Vietnamese, and all 9 numeric font weights, emitting 19 `.woff`/`.woff2` asset files totaling ~340 kB in `dist/assets/`.
+- **Proposed change:**
+  Switch import to `@fontsource/inter/latin.css` (or specific weights 400, 600, 700, 800) and preload the primary Latin regular/bold WOFF2 font in `index.html`.
+- **Expected gain:**
+  Reduces emitted build font assets by ~250 kB and eliminates flash of unstyled text (FOUT) on slow 4G mobile connections.
+- **Risk / caveats:**
+  Ensure standard Latin-ext coverage is preserved for international player display names.
+
+---
+
+### [UI-I-002] Component Extraction & Isolated HUD Timer to Prevent Map Re-rendering
+- **Priority:** High
+- **Effort:** Medium
+- **Area:** Performance / Runtime Render
+- **File(s):** [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx)
+- **Current situation:**
+  Root `MatchPage` maintains the 1s/250ms countdown clock state. Every tick triggers a full re-render of `MatchPage` (854 lines), recreating the `mapData` prop and cascading through `<GameMap />`.
+- **Proposed change:**
+  Extract `<HudTopBar />`, `<HudTimer />`, and `<HudBottomSheet />` into focused subcomponents. Provide the countdown timer to `<HudTimer />` directly, keeping root `MatchPage` and `<GameMap />` from re-rendering on clock ticks.
+- **Expected gain:**
+  Reduces root `MatchPage` renders from 60+ per minute during quiet play down to 0 (only re-rendering on actual GPS/realtime game events).
+- **Risk / caveats:**
+  Props passed to `<GameMap />` must maintain strict reference stability.
+
+---
+
+### [UI-I-003] Align Theme-Color Meta Tag with OLED Tactical Background
+- **Priority:** Medium
+- **Effort:** Small
+- **Area:** Visual / Mobile Shell Polish
+- **File(s):** [`apps/web/index.html`](apps/web/index.html)
+- **Current situation:**
+  `index.html` inline script sets `meta[name="theme-color"]` to `#0d0d18` for dusk theme, whereas `--color-background` in `tokens.css` is `#000000`. On modern Android Chrome and iOS Safari, this causes a discolored top status bar bar.
+- **Proposed change:**
+  Update `index.html` inline script to set `theme-color` to `#000000` for dusk theme and `#F4F8F5` for paper theme, matching the exact `--color-background` CSS token.
+- **Expected gain:**
+  Flawless edge-to-edge pitch-black display on OLED mobile screens.
+- **Risk / caveats:**
+  None.
+
+---
+
+### [UI-I-004] Deep-Value Coordinate Memoization in GameMap
+- **Priority:** Medium
+- **Effort:** Small
+- **Area:** Performance / Map Canvas
+- **File(s):** [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx)
+- **Current situation:**
+  `markerPoints` is computed inside `useMemo` with dependency `[data, localPosition]`. When `data` changes identity (even with identical lat/lon coordinates), `markerPoints` recalculates and triggers MapLibre DOM updates.
+- **Proposed change:**
+  Stabilize marker point identity by checking primitive values (lat, lon, accuracy, staleness) or stringifying keys, preventing effect execution when positions remain stationary.
+- **Expected gain:**
+  Zero MapLibre DOM marker updates when players are stationary in cover.
+- **Risk / caveats:**
+  Ensure moving updates (smooth coordinate interpolation) are not blocked.
+
+---
+
+### [UI-I-005] Jitter-Free Sunlight Typography and Tabular Numerals
+- **Priority:** Low
+- **Effort:** Small
+- **Area:** Visual / Outdoor Sunlight Usability
+- **File(s):** [`apps/web/src/index.css`](apps/web/src/index.css), [`apps/web/src/theme/tokens.css`](apps/web/src/theme/tokens.css)
+- **Current situation:**
+  While `font-variant-numeric: tabular-nums` is present on `body`, individual tactical metric chips in HUD drawers occasionally shift layout widths as distance numerals fluctuate between single and double digits.
+- **Proposed change:**
+  Ensure all metric chips, countdowns, and compass bearings declare fixed minimum widths or `tabular-nums` with monospaced digit formatting.
+- **Expected gain:**
+  Jitter-free, rock-solid numerical readouts when moving quickly in bright sunlight.
+- **Risk / caveats:**
+  None.
+
+---
+
+## Recommended Order of Work
+
+1. **Quick Wins (Load & Visual Shell):**
+   - Font subsetting and preload (`UI-I-001`, `UI-I-003`).
+2. **Critical Defect Remediation:**
+   - Fix `flatMap` undefined crash in sync API (`UI-E-001`).
+   - Fix safe-area insets on HUD overlays (`UI-E-003`).
+   - Fix 16px input font size to eliminate iOS auto-zoom (`UI-E-004`).
+   - Fix 44x44px touch targets on primary navigation controls (`UI-E-005`).
+   - Fix axe heading hierarchy and missing H1 landmarks (`UI-E-006`).
+3. **Runtime Performance Optimization:**
+   - Isolate HUD countdown timer and decouple from `<GameMap />` (`UI-E-002`, `UI-I-002`).
+   - Deep-value memoization in `GameMap` (`UI-I-004`).
+
