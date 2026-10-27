@@ -364,6 +364,7 @@ class SupabaseGameApi implements GameApi {
     }>(`/matches/${encodeURIComponent(id)}/sync`, { last_revision: revision })
     if (!result.ok) return result
     const ownStatus: 'ACTIVE' | 'TAGGED' = result.data.own_status === 'TAGGED' ? 'TAGGED' : 'ACTIVE'
+    const events = Array.isArray(result.data.events) ? result.data.events : []
     const common = {
       state: result.data.state,
       server_now: result.data.server_now,
@@ -385,7 +386,7 @@ class SupabaseGameApi implements GameApi {
           nextShrinkAt: typeof result.data.zone.nextShrinkAt === 'string' ? result.data.zone.nextShrinkAt : null,
           nextRadius: typeof result.data.zone.nextRadius === 'number' ? result.data.zone.nextRadius : null,
         } : null,
-      own_team_positions: result.data.events.flatMap((event) => {
+      own_team_positions: events.flatMap((event) => {
         if (event.type !== 'team.location_live' || !event.data || typeof event.data !== 'object') return []
         const data = event.data as Record<string, unknown>
         if (typeof data.player_id !== 'string' || typeof data.display_name !== 'string'
@@ -396,14 +397,14 @@ class SupabaseGameApi implements GameApi {
       }),
     }
     if (result.data.role === 'RUNNER') {
-      const notice = result.data.events.find((event) => event.type === 'runner.location_revealed')?.data
+      const notice = events.find((event) => event.type === 'runner.location_revealed')?.data
       const value = notice && typeof notice === 'object' ? notice as Record<string, unknown> : null
       const runner_ping_notice = value && typeof value.ping_index === 'number' && typeof value.ping_at === 'string'
         ? { ping_index: value.ping_index, ping_at: value.ping_at } : null
       return { ok: true, data: { ...common, role: 'RUNNER', runner_ping_notice } }
     }
     if (result.data.role !== 'HUNTER') return error('INVALID_ROLE', 'The server did not confirm a match role.')
-    const snapshots = result.data.events.flatMap((event) => {
+    const snapshots = events.flatMap((event) => {
       if (event.type !== 'hunter.runner_ping' || !event.data || typeof event.data !== 'object') return []
       const data = event.data as Record<string, unknown>
       if (typeof data.runner_id !== 'string' || !['OK', 'NO_FIX', 'STALE'].includes(String(data.status))

@@ -407,4 +407,32 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
       useAppStore.setState({ hapticsEnabled: false, reduceEffects: false, soundEnabled: false })
     }
   })
+
+  it('safely handles syncMatch responses where events array is undefined or omitted (UI-E-001)', async () => {
+    const postSpy = vi.spyOn(supabaseGameApi as unknown as { post: (...args: unknown[]) => Promise<unknown> }, 'post')
+    postSpy.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        state: 'ACTIVE',
+        role: 'RUNNER',
+        own_status: 'ACTIVE',
+        server_now: new Date().toISOString(),
+        active_counts: { hunters: 1, runners: 1 },
+        can_end: false,
+        can_claim: false,
+        revision: 1,
+        // events is intentionally undefined
+      },
+    })
+
+    const result = await supabaseGameApi.syncMatch('match-undefined-events')
+    expect(result.ok).toBe(true)
+    if (result.ok && result.data.role === 'RUNNER') {
+      expect(result.data.own_team_positions).toEqual([])
+      expect(result.data.runner_ping_notice).toBeNull()
+    }
+
+    postSpy.mockRestore()
+  })
 })
+

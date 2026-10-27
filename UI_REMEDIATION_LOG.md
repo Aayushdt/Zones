@@ -61,7 +61,7 @@ This document tracks the step-by-step UI audit, accessibility remediation, perfo
 - [x] **Step 2:** Deep UI analysis (read code + measure + record raw findings in the log)
 - [x] **Step 3:** Write findings into ERRORS.md and IMPROVEMENTS.md (docs only)
 - [x] **Step 4:** Plan the fix batches (docs only)
-- [ ] **Step 5:** Responsive and layout foundation
+- [x] **Step 5:** Responsive and layout foundation
 - [ ] **Step 6:** Accessibility
 - [ ] **Step 7:** Runtime render performance
 - [ ] **Step 8:** Map and HUD performance
@@ -258,6 +258,40 @@ Findings are grouped into sequential implementation batches (Steps 5 through 11)
 
 ### Gated Items (Documented in `DEFERRED.md`):
 - **`UI-G-001` (Full GeoJSON Symbol Layer Migration for Map Markers):** Replacing DOM markers entirely with GeoJSON symbol layers and custom SDF icons. Gated on high-density tournament scale (>50 players). For current 2–12 player outdoor games, DOM markers with CSS/RAF smoothing provide superior 60fps interpolation; prop stabilization in Step 7 & 8 completely eliminates the CPU bottleneck without visual regression.
+
+---
+
+## Step 5 Execution: Responsive & Layout Foundation
+
+- **Findings Addressed:**
+  - `UI-E-001` (Critical): Unhandled `TypeError: Cannot read properties of undefined (reading 'flatMap')` in `syncMatch`.
+  - `UI-E-003` (High): HUD overlays and bottom sheet lack safe-area insets.
+  - `UI-E-004` (Medium): Form inputs below 16px causing automatic viewport zoom on iOS Safari.
+  - `UI-E-005` (Medium): Interactive touch targets below 44x44px for primary controls.
+- **Verdict:** FIXED & VERIFIED.
+- **Files Changed:**
+  - [`apps/web/src/services/supabase-api.ts`](apps/web/src/services/supabase-api.ts) (`syncMatch` guarded against undefined `events`).
+  - [`apps/web/src/pages/MatchPage.css`](apps/web/src/pages/MatchPage.css) (added `env(safe-area-inset-top)` to `.hud-top-bar` and `env(safe-area-inset-bottom)` to `.bottom-sheet`).
+  - [`apps/web/src/App.css`](apps/web/src/App.css) (updated `.form-field__input` font-size from 15px to 16px; updated `.app-btn--sm` and `.input-action-btn` to min 44x44px touch target).
+  - [`apps/web/src/pages/LobbyPage.css`](apps/web/src/pages/LobbyPage.css) (updated `.lobby-back-btn` and `.lobby-settings-btn` from 36x36px to 44x44px).
+  - [`apps/web/src/pages/CreatePage.css`](apps/web/src/pages/CreatePage.css) (updated `.create-back-btn` and `.game-mode-nav-btn` from 36x36px to 44x44px).
+  - [`apps/web/src/pages/GuidePage.css`](apps/web/src/pages/GuidePage.css) (updated `.guide-back-btn` from 36x36px to 44x44px).
+  - [`tests/audit/client_logic_audit.test.ts`](tests/audit/client_logic_audit.test.ts) (added unit test for `UI-E-001` undefined `events` handling).
+- **Verification Commands & Results:**
+  - `corepack pnpm typecheck`: PASS (0 errors).
+  - `corepack pnpm lint`: PASS (11 warnings, 0 in game-core, 0 new warnings).
+  - `corepack pnpm test:unit`: PASS (42/42 passed).
+  - `corepack pnpm test:audit`: PASS (34/34 passed, including new `UI-E-001` test).
+  - `corepack pnpm build`: PASS (no chunk size regressions).
+- **Before / After Evidence:**
+  - `create-back-btn`: 36x36px -> 44x44px (measured `{ width: 44, height: 44 }`).
+  - `game-mode-nav-btn`: 36x36px -> 44x44px (measured `{ width: 44, height: 44 }`).
+  - `guide-back-btn`: 36x36px -> 44x44px (measured `{ width: 44, height: 44 }`).
+  - `lobby-back-btn` & `lobby-settings-btn`: 36x36px -> 44x44px (measured in CSS & dist).
+  - `form-field__input`: font-size 15px -> 16px (eliminating iOS auto-zoom).
+  - `.hud-top-bar` & `.bottom-sheet`: safe-area padding verified in compiled CSS (`max(.75rem, env(safe-area-inset-top, 0px))` and `calc(1.5rem + env(safe-area-inset-bottom, 0px))`).
+  - Horizontal overflow check at 320px: PASS (0 overflows).
+
 
 
 
