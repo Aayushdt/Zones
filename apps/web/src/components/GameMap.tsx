@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { Feature, Polygon } from 'geojson'
 import { Radio } from 'lucide-react'
 import { HIDE_AND_SEEK_CONFIG, interpolateMapCoordinate } from '@xzones/game-core'
@@ -81,7 +81,7 @@ function circleGeoJson(zone: GameZone): Feature<Polygon> {
   return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [coordinates] } }
 }
 
-export function GameMap({ data, zone, simulation = false }: { data: GameMapData; zone?: GameZone; simulation?: boolean }) {
+export const GameMap = memo(function GameMap({ data, zone, simulation = false }: { data: GameMapData; zone?: GameZone; simulation?: boolean }) {
   const themePreference = useAppStore((state) => state.theme)
   const mapStyle = useAppStore((state) => state.mapStyle)
   const styleOverride = import.meta.env.VITE_MAP_STYLE_URL?.trim()
@@ -389,4 +389,4 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
       </p>
     </section>
   )
-}
+})

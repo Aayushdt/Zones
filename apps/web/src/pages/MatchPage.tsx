@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Crosshair,
@@ -32,14 +32,93 @@ import { playSound, triggerHaptic } from '../utils/feedback'
 import { useNow, countdownSeconds } from '../hooks/use-now'
 import './MatchPage.css'
 
-function timeLeft(clock: ClockView, anchor: number): number | null {
-  if (clock.ends_at === null) return null
-  const deadline = Date.parse(clock.ends_at)
-  const serverAt = Date.parse(clock.server_now)
-  return Number.isFinite(deadline) && Number.isFinite(serverAt)
-    ? Math.max(0, Math.ceil((deadline - serverAt - (performance.now() - anchor)) / 1000))
-    : 0
-}
+const HudTimer = memo(function HudTimer({
+  clock,
+}: {
+  clock: (ClockView & { received_at?: number }) | null
+}) {
+  const now = useNow(1000, Boolean(clock?.ends_at))
+
+  const seconds = useMemo(() => {
+    if (!clock || !clock.ends_at) return null
+    const deadline = Date.parse(clock.ends_at)
+    const serverAt = Date.parse(clock.server_now)
+    if (!Number.isFinite(deadline) || !Number.isFinite(serverAt)) return 0
+    const elapsed = clock.received_at ? now - clock.received_at : 0
+    return Math.max(0, Math.ceil((deadline - serverAt - elapsed) / 1000))
+  }, [clock, now])
+
+  const timerText =
+    seconds === null
+      ? 'NO LIMIT'
+      : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+
+  return (
+    <div className="hud-timer-badge font-mono" title="Match time remaining">
+      <Clock size={16} className="text-muted" />
+      <span className="hud-timer-val">{timerText}</span>
+    </div>
+  )
+})
+
+const HudMetricsRow = memo(function HudMetricsRow({
+  zone,
+  camoExpiresAt,
+  alarmExpiresAt,
+  accuracyM,
+  isOnline,
+}: {
+  zone: RoleSafeMatchView['zone']
+  camoExpiresAt: number | null
+  alarmExpiresAt: number | null
+  accuracyM: number | null
+  isOnline: boolean
+}) {
+  const now = useNow(1000)
+  const zoneSeconds = countdownSeconds(zone?.nextShrinkAt, now)
+  const camoSeconds = countdownSeconds(camoExpiresAt, now)
+  const alarmSeconds = countdownSeconds(alarmExpiresAt, now)
+
+  return (
+    <div className="hud-metrics-row">
+      {zoneSeconds !== null && (
+        <CountdownRing
+          secondsRemaining={zoneSeconds}
+          totalSeconds={300}
+          label="SHRINK"
+          size={48}
+        />
+      )}
+
+      {zone && (
+        <div className="hud-metric-pill font-mono">
+          <span className="hud-metric-label">STAGE {zone.stage}</span>
+          <span className="hud-metric-val">{Math.round(zone.radius)}m</span>
+        </div>
+      )}
+
+      {camoSeconds !== null && (
+        <div className="hud-metric-pill font-mono hud-item-pill--camo" title="Thermal Camouflage active">
+          <EyeOff size={14} className="text-green" />
+          <span className="hud-metric-label">CAMO</span>
+          <span className="hud-metric-val">{camoSeconds}s</span>
+        </div>
+      )}
+      {alarmSeconds !== null && (
+        <div className="hud-metric-pill font-mono hud-item-pill--alarm" title="Proximity Alarm armed">
+          <Bell size={14} className="text-amber" />
+          <span className="hud-metric-label">ALARM</span>
+          <span className="hud-metric-val">{alarmSeconds}s</span>
+        </div>
+      )}
+
+      <div className="hud-status-chips">
+        <StatusChip kind="gps" accuracyM={accuracyM} />
+        <StatusChip kind="online" isOnline={isOnline} />
+      </div>
+    </div>
+  )
+})
 
 export function MatchPage() {
   const { matchId = '' } = useParams()
@@ -47,8 +126,7 @@ export function MatchPage() {
 
   // Match & Clocks
   const [view, setView] = useState<RoleSafeMatchView | null>(null)
-  const [clock, setClock] = useState<ClockView | null>(null)
-  const [seconds, setSeconds] = useState<number | null>(null)
+  const [clock, setClock] = useState<(ClockView & { received_at?: number }) | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -74,12 +152,6 @@ export function MatchPage() {
   const [radioOpen, setRadioOpen] = useState(false)
   const [liveStatus, setLiveStatus] = useState('Connecting to private team channel...')
 
-  const now = useNow(1000)
-  const zoneSeconds = countdownSeconds(view?.zone?.nextShrinkAt, now)
-  const camoSeconds = countdownSeconds(camouflageExpiresAt, now)
-  const alarmSeconds = countdownSeconds(alarmExpiresAt, now)
-
-  const anchor = useRef(0)
   const stealthExitTimer = useRef<number | null>(null)
 
   const currentFix = useLocationStore((state) => state.ownFix)
@@ -119,9 +191,7 @@ export function MatchPage() {
     setError('')
     setView(matchResult.data)
     if (itemStatus.ok) setItemsEnabled(itemStatus.data.items_enabled)
-    setClock(clockResult.data)
-    anchor.current = performance.now()
-    setSeconds(timeLeft(clockResult.data, anchor.current))
+    setClock({ ...clockResult.data, received_at: Date.now() })
   }, [matchId, navigate, stopSharing])
 
   useEffect(() => {
@@ -188,13 +258,6 @@ export function MatchPage() {
       unsubscribe?.()
     }
   }, [matchId, navigate, stopSharing, currentRole, currentOwnStatus])
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      if (clock) setSeconds(timeLeft(clock, anchor.current))
-    }, 250)
-    return () => window.clearInterval(timer)
-  }, [clock])
 
   useEffect(() => startFallbackSync(() => sync()), [sync])
 
@@ -440,7 +503,48 @@ export function MatchPage() {
     )
   }
 
-  if (!view) {
+  const ownPosition = useMemo(() => (
+    currentFix
+      ? { ...currentFix, player_id: view?.own_player_id ?? currentFix.player_id }
+      : null
+  ), [currentFix, view?.own_player_id])
+
+  const hunterSnapshots = view?.role === 'HUNTER' ? view.runner_snapshots : undefined
+  const mapData: GameMapData | null = useMemo(() => {
+    if (!view) return null
+    return view.role === 'RUNNER'
+      ? { role: 'RUNNER', own_position: ownPosition, own_team_positions: view.own_team_positions }
+      : {
+          role: 'HUNTER',
+          own_position: ownPosition,
+          own_team_positions: view.own_team_positions,
+          runner_snapshots: [
+            ...(hunterSnapshots ?? []),
+            ...scanPositions.map((p) => ({
+              runner_id: p.runner_id,
+              status: 'OK' as const,
+              lat: p.lat,
+              lon: p.lon,
+              age_seconds: p.age_seconds,
+              ping_index: p.ping_index,
+            })),
+          ],
+        }
+  }, [view, ownPosition, hunterSnapshots, scanPositions])
+
+  const zone = view?.zone
+  const mapZone = useMemo(() => (
+    zone
+      ? {
+          lat: zone.center.lat,
+          lon: zone.center.lon,
+          radius_m: zone.radius,
+          ...(zone.nextRadius !== null ? { next_radius_m: zone.nextRadius } : {}),
+        }
+      : undefined
+  ), [zone])
+
+  if (!view || !mapData) {
     return (
       <main className="hud-screen-loading">
         <div className="radar-spinner" aria-hidden="true" />
@@ -452,38 +556,9 @@ export function MatchPage() {
     )
   }
 
-  const ownPosition = currentFix
-    ? { ...currentFix, player_id: view.own_player_id ?? currentFix.player_id }
-    : null
-
-  const mapData: GameMapData =
-    view.role === 'RUNNER'
-      ? { role: 'RUNNER', own_position: ownPosition, own_team_positions: view.own_team_positions }
-      : {
-          role: 'HUNTER',
-          own_position: ownPosition,
-          own_team_positions: view.own_team_positions,
-          runner_snapshots: [
-            ...view.runner_snapshots,
-            ...scanPositions.map((p) => ({
-              runner_id: p.runner_id,
-              status: 'OK' as const,
-              lat: p.lat,
-              lon: p.lon,
-              age_seconds: p.age_seconds,
-              ping_index: p.ping_index,
-            })),
-          ],
-        }
-
   const isSeeker = view.role === 'HUNTER'
   const roleName = isSeeker ? 'Seeker' : 'Hider'
   const RoleIcon = isSeeker ? Crosshair : EyeOff
-
-  const timerText =
-    seconds === null
-      ? 'NO LIMIT'
-      : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 
   const isTagged = view.own_status === 'TAGGED'
 
@@ -492,19 +567,7 @@ export function MatchPage() {
       <h1 className="sr-only">Tactical Match HUD</h1>
       {/* FULL-SCREEN MAP CANVAS */}
       <div className="hud-map-layer">
-        <GameMap
-          data={mapData}
-          zone={
-            view.zone
-              ? {
-                  lat: view.zone.center.lat,
-                  lon: view.zone.center.lon,
-                  radius_m: view.zone.radius,
-                  ...(view.zone.nextRadius !== null ? { next_radius_m: view.zone.nextRadius } : {}),
-                }
-              : undefined
-          }
-        />
+        <GameMap data={mapData} zone={mapZone} />
       </div>
 
       {/* TOP FLOATING HUD BAR */}
@@ -520,10 +583,7 @@ export function MatchPage() {
 
         {/* Large Mono Timer */}
         <div className="hud-top-center">
-          <div className="hud-timer-badge font-mono" title="Match time remaining">
-            <Clock size={16} className="text-muted" />
-            <span className="hud-timer-val">{timerText}</span>
-          </div>
+          <HudTimer clock={clock} />
         </div>
 
         <div className="hud-top-right">
@@ -602,47 +662,13 @@ export function MatchPage() {
           </div>
 
           {/* Quick HUD Metrics & Countdown Rings */}
-          <div className="hud-metrics-row">
-            {/* Zone Shrink Countdown Ring */}
-            {zoneSeconds !== null && (
-              <CountdownRing
-                secondsRemaining={zoneSeconds}
-                totalSeconds={300}
-                label="SHRINK"
-                size={48}
-              />
-            )}
-
-            {/* Zone Stage Info */}
-            {view.zone && (
-              <div className="hud-metric-pill font-mono">
-                <span className="hud-metric-label">STAGE {view.zone.stage}</span>
-                <span className="hud-metric-val">{Math.round(view.zone.radius)}m</span>
-              </div>
-            )}
-
-            {/* Active Tactical Item Status Pills */}
-            {camoSeconds !== null && (
-              <div className="hud-metric-pill font-mono hud-item-pill--camo" title="Thermal Camouflage active">
-                <EyeOff size={14} className="text-green" />
-                <span className="hud-metric-label">CAMO</span>
-                <span className="hud-metric-val">{camoSeconds}s</span>
-              </div>
-            )}
-            {alarmSeconds !== null && (
-              <div className="hud-metric-pill font-mono hud-item-pill--alarm" title="Proximity Alarm armed">
-                <Bell size={14} className="text-amber" />
-                <span className="hud-metric-label">ALARM</span>
-                <span className="hud-metric-val">{alarmSeconds}s</span>
-              </div>
-            )}
-
-            {/* GPS & Connection Chips */}
-            <div className="hud-status-chips">
-              <StatusChip kind="gps" accuracyM={currentFix?.accuracy_m ?? null} />
-              <StatusChip kind="online" isOnline={navigator.onLine} />
-            </div>
-          </div>
+          <HudMetricsRow
+            zone={view.zone}
+            camoExpiresAt={camouflageExpiresAt}
+            alarmExpiresAt={alarmExpiresAt}
+            accuracyM={currentFix?.accuracy_m ?? null}
+            isOnline={navigator.onLine}
+          />
 
           <div className="hud-live-status-bar font-mono text-xs text-muted">
             <span>● {displayLiveStatus}</span>

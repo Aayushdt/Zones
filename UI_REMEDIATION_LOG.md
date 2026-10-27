@@ -317,8 +317,33 @@ Findings are grouped into sequential implementation batches (Steps 5 through 11)
     - Total serious/critical violations: **0**.
 - **Role-Data Privacy Confirmation:**
   - Audited all new DOM elements: Only screen-accessible high-level title landmarks ("XZones — Tactical GPS Hide & Seek", "Match Staging Lobby", "Tactical Match HUD") were added. Zero runner coordinates, player identities, or camouflage state are exposed.
+---
 
+## Step 7 Execution: Runtime Render Performance
 
-
-
-
+- **Findings Addressed:**
+  - `UI-E-002` (High): Full-Page Re-render Storm and Redundant Marker Sync on Clock Ticks in `MatchPage.tsx` and `GameMap.tsx`.
+  - `UI-I-002` (High): Encapsulate Clock Tickers into Isolated Leaf Components.
+- **Verdict:** FIXED & VERIFIED.
+- **Files Changed:**
+  - [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx):
+    - Extracted `<HudTimer />` memoized leaf component driven by `useNow(1000, Boolean(clock?.ends_at))`. Eliminated the 250ms `window.setInterval` and `seconds` state from the root `MatchPage`.
+    - Extracted `<HudMetricsRow />` memoized leaf component housing `useNow(1000)` for zone shrink, camouflage, and alarm countdown timers.
+    - Wrapped `ownPosition`, `mapData`, and `mapZone` in `useMemo` with stable value dependencies.
+    - Eliminated `anchor = useRef(0)` from `MatchPage`, passing `received_at` snapshot timestamp on the clock state.
+  - [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx):
+    - Wrapped `GameMap` in React `memo(...)` to prevent MapLibre DOM updates when props (`data`, `zone`) remain referentially identical.
+- **Verification Commands & Results:**
+  - `corepack pnpm typecheck`: PASS (0 errors).
+  - `corepack pnpm lint`: PASS (11 warnings, matches baseline exactly, 0 new warnings).
+  - `corepack pnpm test:unit`: PASS (42/42 passed).
+  - `corepack pnpm test:audit`: PASS (34/34 passed).
+  - `corepack pnpm build`: PASS (MatchPage bundle size reduced from 30.43 kB / gzip 10.16 kB to 30.34 kB / gzip 10.13 kB).
+- **Before / After Evidence:**
+  - **Before:**
+    - Root `MatchPage` re-rendered 4 times every second (250ms interval) plus once per second (`useNow(1000)`).
+    - Every tick recreated `mapData` and `zone` object literals, invalidating `GameMap`'s internal `useMemo` and triggering marker sync effects even when player coordinates were stationary.
+  - **After:**
+    - Clock countdown ticks are completely isolated inside `<HudTimer />` and `<HudMetricsRow />`.
+    - `MatchPage` root and `GameMap` commit count on clock ticks: **0 re-renders per second**.
+    - MapLibre GL canvas and DOM markers stay completely idle when players are stationary.
