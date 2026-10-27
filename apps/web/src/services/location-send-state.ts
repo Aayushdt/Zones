@@ -1,7 +1,7 @@
 export interface LocationSendState {
   sequence: number
   sentAt: number
-  sentFix: { lat: number; lon: number } | null
+  sentFix: { lat: number; lon: number; accuracy_m?: number } | null
 }
 
 export function createLocationSendState(): LocationSendState {

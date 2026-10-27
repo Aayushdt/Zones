@@ -46,13 +46,42 @@
 - [x] **Step 2:** Deno tooling and CI (E-001 + I-003, merged)
 - [x] **Step 3:** MatchPage timers and status state (E-002 + E-005, solved together)
 - [x] **Step 4:** GameMap center (E-003) + bundle analysis (I-001)
-- [ ] **Step 5:** Location uploads (E-004 + I-004)
+- [x] **Step 5:** Location uploads (E-004 + I-004)
 - [ ] **Step 6:** CameraScanner (E-006 + I-007)
 - [ ] **Step 7:** Haptics (I-006)
 - [ ] **Step 8:** Host presets cloud sync (I-005), GATED
 - [ ] **Step 9:** Offline map tiles (I-002), GATED
 - [ ] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 5 Execution: Location Uploads (E-004 + I-004)
+
+- **Findings:** E-004, I-004
+- **Verdict:**
+  - E-004: PARTIALLY CONFIRMED.
+    - Code Trace of Staleness/Elimination: SQL migrations (`202610180009_live_location.sql:85`, `202610200023_timer_off.sql:96`, `202610220022_zone_exit_enforcement.sql:70`) confirm that stale fixes (>30s on live fix, >60s on scheduled snapshots) mark `is_stale: true` and nullify opposing radar coordinates, but NEVER trigger player elimination. Elimination strictly requires physical boundary exit (`zone_outside_since IS NOT NULL`).
+    - Visibility handling: Kept the visibility guard. Added an immediate fix upload trigger when returning to visible foreground (`if (document.visibilityState === 'visible' && latestFix) void upload(latestFix)`). Confirmed `maintainScreenWakeLock` re-acquires screen lock upon visibility recovery.
+    - UX Warnings: Added explicit in-app reminders in `LobbyPage` and `MatchPage` status bar: *"Keep screen on during match; a locked screen pauses location sharing."*
+  - I-004: CONFIRMED.
+    - Implemented pure, unit-tested stationary movement detector in `packages/game-core/src/map-smoothing.ts` (`isStationaryFix` with dynamic threshold `Math.max(3, accuracy_m)` to handle GPS jitter).
+    - Wired adaptive upload interval in `LocationSharing.tsx`: 2,000 ms during active movement, lengthening to 6,000 ms while stationary (comfortably below the 30s server staleness threshold). Uploads trigger immediately once displacement exceeds threshold.
+    - Note: Battery savings were not measured in a physical device lab and represent theoretical radio duty-cycle reduction.
+- **Files Changed:**
+  - `packages/game-core/src/map-smoothing.ts`: Added `isStationaryFix`, `computeAdaptiveUploadInterval`, constants.
+  - `packages/game-core/src/map-smoothing.test.ts`: Added 6 unit tests covering stationary, moving, jitter/low-accuracy, boundary, and interval calculations.
+  - `packages/game-core/src/index.ts`: Exported stationary functions and types.
+  - `apps/web/src/services/location-send-state.ts`: Added optional `accuracy_m` to `sentFix`.
+  - `apps/web/src/components/LocationSharing.tsx`: Integrated adaptive stationary upload interval and visibility-resume immediate upload.
+  - `apps/web/src/pages/LobbyPage.tsx`: Added screen-wake guidance under GPS readiness badge.
+  - `apps/web/src/pages/MatchPage.tsx`: Added screen-on indicator in HUD live status bar.
+- **Verification Commands & Results:**
+  - `oxlint`: PASS (11 warnings, 0 in touched files, no regressions)
+  - `typecheck`: PASS (0 errors)
+  - `test:unit`: PASS (42/42 passed)
+  - `test:audit`: PASS (32/32 passed)
+  - `build`: PASS (0 warnings)
 
 ---
 

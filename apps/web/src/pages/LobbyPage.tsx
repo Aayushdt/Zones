@@ -402,6 +402,9 @@ export function LobbyPage() {
               }}
             />
           </div>
+          <p className="font-mono text-xs text-muted" style={{ margin: '0.625rem 0 0', opacity: 0.85 }}>
+            Keep your screen on during the match; a locked screen pauses location sharing.
+          </p>
         </Card>
 
         {/* Tactical Actions Bar: Auto-Balance, Neutral How To Play, Spectate, Items */}

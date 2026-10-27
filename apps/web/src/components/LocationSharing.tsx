@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { haversineDistanceMeters } from '@xzones/game-core'
+import { isStationaryFix, computeAdaptiveUploadInterval } from '@xzones/game-core'
 import { supabaseGameApi } from '../services/supabase-api'
 import { useLocationStore } from '../stores/location-store'
 import { maintainDeviceLocation } from '../services/device-lifecycle'
@@ -31,6 +31,7 @@ export function LocationSharing() {
     let disposed = false
     let sending = false
     let retryAfterAt = 0
+    let latestFix: GeolocationPosition | null = null
     const sendState = createLocationSendState()
     const syncOnResume = () => {
       if (document.visibilityState === 'visible' && navigator.onLine) {
@@ -42,6 +43,7 @@ export function LocationSharing() {
       const coords = fix.coords
       const point = { lat: coords.latitude, lon: coords.longitude }
       if (disposed) return
+      latestFix = fix
       setFix({ player_id: 'local-you', display_name: 'You', ...point, accuracy_m: coords.accuracy, captured_at: new Date(fix.timestamp).toISOString() })
       if (coords.accuracy > 100) { setStatus('GPS accuracy is over 100 m; waiting for a clearer fix.') ; return }
       if (document.visibilityState !== 'visible' || !navigator.onLine) {
@@ -52,8 +54,14 @@ export function LocationSharing() {
         setStatus(`Location update paced by the server; retrying in ${Math.ceil((retryAfterAt - Date.now()) / 1000)} seconds.`)
         return
       }
-      const moved = sendState.sentFix ? haversineDistanceMeters(sendState.sentFix.lat, sendState.sentFix.lon, point.lat, point.lon) ?? 0 : Infinity
-      if (sending || (sendState.sentAt && Date.now() - sendState.sentAt < 10_000 && moved < 10)) return
+      const isStationary = sendState.sentFix
+        ? isStationaryFix(
+            { lat: sendState.sentFix.lat, lon: sendState.sentFix.lon, accuracy_m: sendState.sentFix.accuracy_m ?? 5 },
+            { lat: point.lat, lon: point.lon, accuracy_m: coords.accuracy },
+          )
+        : false
+      const uploadInterval = computeAdaptiveUploadInterval(isStationary)
+      if (sending || (sendState.sentAt && Date.now() - sendState.sentAt < uploadInterval)) return
       sending = true
       const sequence = Math.max(Date.now() * 1000, sendState.sequence + 1)
       sendState.sequence = sequence
@@ -78,7 +86,7 @@ export function LocationSharing() {
         return
       }
       sendState.sentAt = Date.now()
-      sendState.sentFix = point
+      sendState.sentFix = { ...point, accuracy_m: coords.accuracy }
       setStatus(result.data.zone_eliminated
         ? 'You were outside the active zone for too long and have been eliminated.'
         : result.data.zone_warning
@@ -103,8 +111,12 @@ export function LocationSharing() {
     const onOffline = () => setStatus('Offline; location uploads paused and match data is not cached.')
     const onPageShow = () => { syncOnResume() }
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') void supabaseGameApi.reportVisibility(matchId, true)
-      else syncOnResume()
+      if (document.visibilityState === 'hidden') {
+        void supabaseGameApi.reportVisibility(matchId, true)
+      } else {
+        syncOnResume()
+        if (latestFix) void upload(latestFix)
+      }
     }
     window.addEventListener('online', onOnline)
     window.addEventListener('offline', onOffline)

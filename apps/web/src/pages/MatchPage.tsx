@@ -645,6 +645,7 @@ export function MatchPage() {
 
           <div className="hud-live-status-bar font-mono text-xs text-muted">
             <span>● {displayLiveStatus}</span>
+            <span style={{ opacity: 0.75 }}>· Screen on required</span>
           </div>
 
           {/* PRIMARY ACTION: BIG HOLD-TO-CONFIRM TAG BUTTON (Seeker) OR REVEAL CODE (Hider) */}
