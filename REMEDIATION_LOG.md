@@ -47,12 +47,29 @@
 - [x] **Step 3:** MatchPage timers and status state (E-002 + E-005, solved together)
 - [x] **Step 4:** GameMap center (E-003) + bundle analysis (I-001)
 - [x] **Step 5:** Location uploads (E-004 + I-004)
-- [ ] **Step 6:** CameraScanner (E-006 + I-007)
+- [x] **Step 6:** CameraScanner (E-006 + I-007)
 - [ ] **Step 7:** Haptics (I-006)
 - [ ] **Step 8:** Host presets cloud sync (I-005), GATED
 - [ ] **Step 9:** Offline map tiles (I-002), GATED
 - [ ] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 6 Execution: CameraScanner (E-006 + I-007)
+
+- **Findings:** E-006, I-007
+- **Verdict:**
+  - E-006: PARTIALLY CONFIRMED. The report's claim that tracks "leak indefinitely" was overstated since modern browser engines clean up tracks when media stream references drop, but hardening was required: captured `videoElement = video.current` locally at effect start to avoid stale ref mutations in cleanup, explicitly set `videoElement.srcObject = null` and called `videoElement.pause()`, guarded `scan()` animation frame rescheduling with `stopped` check and nullified `frame`, protected `videoElement.play()` against unhandled rejection promises, and separated camera permission denials (`NotAllowedError`, `PermissionDeniedError`) from generic device/HTTPS unavailability.
+  - I-007: CONFIRMED. Added safe capability detection for torch support via `track.getCapabilities()?.torch` without any `any` casts (properly typed with `interface TorchCapabilities extends MediaTrackCapabilities`). Added an accessible toggle button with `aria-label`, `aria-pressed`, and Lucide `Flashlight` / `FlashlightOff` icons. Automatically hides the torch control on unsupported devices or desktop web.
+- **Files Changed:**
+  - `apps/web/src/components/CameraScanner.tsx`: Cleaned video element and track lifecycle, hardened animation loop, added torch capability detection and accessible UI toggle.
+- **Verification Commands & Results:**
+  - `oxlint`: PASS (11 warnings, 0 in `CameraScanner.tsx`, no regressions)
+  - `typecheck`: PASS (0 errors)
+  - `test:unit`: PASS (42/42 passed)
+  - `test:audit`: PASS (32/32 passed)
+  - `build`: PASS (0 warnings, `CameraScanner` chunk built cleanly at 133.46 kB)
 
 ---
 
