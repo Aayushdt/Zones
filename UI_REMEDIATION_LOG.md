@@ -422,3 +422,34 @@ Findings are grouped into sequential implementation batches (Steps 5 through 11)
     - Stable min-width bounding boxes (`3.5rem` for timer, `1.5rem` for metric values) and enforced `tabular-nums` prevent any visual jitter.
     - Contrast verified > 15:1 against tactical HUD surfaces in both Dusk and Paper themes.
 
+---
+
+## Step 11 Execution: Guardrails so it Stays Good
+
+- **Findings Addressed:**
+  - Automated Regression Guardrails (Zero horizontal overflow, >=44x44px touch targets, axe zero serious/critical violations, bundle budgets, UI contributor rules).
+- **Verdict:** IMPLEMENTED & VERIFIED.
+- **Files Changed:**
+  - [`tests/e2e/ui-guardrails.spec.ts`](tests/e2e/ui-guardrails.spec.ts):
+    - Automated multi-device suite testing viewports (320px, 390px, 768px, 1440px) across all main routes (`/`, `/create`, `/join`, `/settings`, `/guide`).
+    - Enforces zero horizontal scroll (`scrollWidth <= clientWidth + 2`).
+    - Enforces touch target bounding boxes (>= 44x44px) on primary actions and navigation buttons.
+    - Enforces zero serious or critical axe-core violations on each route.
+  - [`scripts/check-bundle-budget.mjs`](scripts/check-bundle-budget.mjs):
+    - Automated budget checker verifying: Entry JS <= 130 kB gzip, Global CSS <= 30 kB gzip, MapLibre chunk <= 320 kB gzip, and zero unbudgeted non-Latin font subsets in `dist/assets/`.
+  - [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+    - Integrated `node scripts/check-bundle-budget.mjs` immediately following the production web build.
+  - [`docs/UI_CHECKLIST.md`](docs/UI_CHECKLIST.md):
+    - Contributor checklist detailing token usage, safe-area insets, dvh/svh conventions, 16px input fonts, touch targets, screen reader heading structures, reduced motion, and strict zero-role-leak rules.
+- **Verification Commands & Results:**
+  - `corepack pnpm typecheck`: PASS (0 errors).
+  - `corepack pnpm lint`: PASS (11 warnings, 0 new warnings).
+  - `corepack pnpm test:unit`: PASS (42/42 passed).
+  - `corepack pnpm test:audit`: PASS (34/34 passed).
+  - `corepack pnpm build`: PASS (built in 357ms).
+  - `node scripts/check-bundle-budget.mjs`: PASS (all budgets passed).
+  - `corepack pnpm exec playwright test tests/e2e/ui-guardrails.spec.ts`: PASS (4/4 multi-device suites passed in 5.6s).
+- **Negative / Demonstrable Failure Verification:**
+  - Temporarily altered entry JS budget threshold in `check-bundle-budget.mjs` to 10 kB: demonstrably exited with code 1 and logged `❌ Budget violation: Entry JS exceeds 10 kB gzip limit (114.61 kB)!`.
+
+
