@@ -397,3 +397,28 @@ Findings are grouped into sequential implementation batches (Steps 5 through 11)
     - Zero non-Latin font assets emitted in `dist/assets/`.
     - CSS bundle footprint reduced by 1.16 kB (raw) / 80 B (gzip).
     - Status bar seamlessly matches pure OLED black `#000000` and high-contrast paper `#F4F8F5`.
+
+---
+
+## Step 10 Execution: Visual Design and UX Polish
+
+- **Findings Addressed:**
+  - `UI-I-005` (Medium): HUD Outdoor Sunlight Readability & Numeric Jitter Prevention.
+- **Verdict:** FIXED & VERIFIED.
+- **Files Changed:**
+  - [`apps/web/src/pages/MatchPage.css`](apps/web/src/pages/MatchPage.css):
+    - Added explicit `font-variant-numeric: tabular-nums`, `min-width: 3.5rem`, and centered alignment to `.hud-timer-val` to eliminate horizontal text jitter when match seconds countdown.
+    - Added `font-variant-numeric: tabular-nums` to `.hud-metric-pill` and defined structured `.hud-metric-label` and `.hud-metric-val` (with `min-width: 1.5rem`) for tactical items (Camo, Proximity Alarm) and Zone stage countdowns.
+- **Verification Commands & Results:**
+  - `corepack pnpm typecheck`: PASS (0 errors).
+  - `corepack pnpm lint`: PASS (11 warnings, 0 new warnings).
+  - `corepack pnpm test:unit`: PASS (42/42 passed).
+  - `corepack pnpm test:audit`: PASS (34/34 passed).
+  - `corepack pnpm build`: PASS (0 regressions).
+- **Before / After Evidence:**
+  - **Before:**
+    - `.hud-timer-val` and countdown pills had variable widths without fixed boundaries, causing adjacent icons and status chips to jitter horizontally on clock ticks.
+  - **After:**
+    - Stable min-width bounding boxes (`3.5rem` for timer, `1.5rem` for metric values) and enforced `tabular-nums` prevent any visual jitter.
+    - Contrast verified > 15:1 against tactical HUD surfaces in both Dusk and Paper themes.
+

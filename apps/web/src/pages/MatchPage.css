@@ -73,6 +73,10 @@
   font-size: 1.15rem;
   font-weight: 800;
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5rem;
+  text-align: center;
+  display: inline-block;
 }
 
 .hud-alerts-stack {
@@ -199,6 +203,24 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hud-metric-label {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.hud-metric-val {
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 1.5rem;
+  text-align: right;
 }
 
 .hud-item-pill--camo {
