@@ -51,8 +51,35 @@
 - [x] **Step 7:** Haptics (I-006)
 - [x] **Step 8:** Host presets cloud sync (I-005), GATED
 - [x] **Step 9:** Offline map tiles (I-002), GATED
-- [ ] **Step 10:** Gap audit of what the reports did not cover
+- [x] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 10 Execution: Gap Audit of What the Reports Did Not Cover
+
+- **Audit Scope & Review Areas:**
+  1. **Backend API (`backend/supabase/functions/api`):** Authz, input validation, rate limiting, and secret management. Verified all 19 edge tests and 11 hostile audit tests pass (`test:api`). Role projection is strictly deny-by-default, secrets (`JOIN_CODE_HMAC_SECRET`, `RATE_LIMIT_HASH_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`) are kept strictly server-side, and GPS location submissions never echo back coordinates.
+  2. **Database Migrations & RLS:** Verified all 39 SQL migrations apply cleanly on PostgreSQL runner (`test:db`). Match policies enforce role-separated access and host ownership.
+  3. **Dependency Vulnerability Scan (`pnpm audit`):** Executed `corepack pnpm audit`; 0 known vulnerabilities found across all workspace packages.
+  4. **Lint & Client Lifecycle Gaps:** Performed deep inspection of remaining lint warnings:
+     - Fixed `react-hooks/exhaustive-deps` in `apps/web/src/components/ZonePicker.tsx` by capturing `initialCenterRef`, `initialZoomRef`, `remoteStyleUrlRef`, and `mapLoadedRef`, preventing closure-stale references in map error and load handlers.
+     - Fixed `react-hooks/exhaustive-deps` in `apps/web/src/pages/LobbyPage.tsx` by wrapping `handleCopyCode` in `useCallback([lobbyCode])` and adding it to the keydown event listener dependency array.
+     - Total oxlint warnings dropped from 18 at baseline to 11 (0 warnings in `GameMap`, `ZonePicker`, or `LobbyPage`).
+  5. **Baseline Test Analysis:** Re-evaluated the single baseline timeout in Playwright (`tests/e2e/gps-and-tactical-feedback.spec.ts:54`); confirmed it is purely environmental (requires active running local Supabase container to navigate `/create` to `/lobby`).
+- **Files Changed:**
+  - `apps/web/src/components/ZonePicker.tsx`: Latched initial center and zoom in refs; used `mapLoadedRef` to eliminate closure-stale map error listeners.
+  - `apps/web/src/pages/LobbyPage.tsx`: Wrapped `handleCopyCode` in `useCallback` and included in keyboard shortcut hook dependencies.
+- **Verification Commands & Results:**
+  - `pnpm audit`: PASS (0 vulnerabilities)
+  - `test:api`: PASS (19 edge + 11 hostile tests passed)
+  - `test:sim`: PASS (1/1 passed)
+  - `verify:payloads`: PASS (2/2 passed)
+  - `oxlint`: PASS (warnings reduced to 11, 0 exhaustive-deps warnings remaining in entire repo)
+  - `typecheck`: PASS (0 errors)
+  - `test:unit`: PASS (42/42 passed)
+  - `test:audit`: PASS (33/33 passed)
+  - `build`: PASS (0 warnings)
 
 ---
 

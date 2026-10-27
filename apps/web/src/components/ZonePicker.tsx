@@ -29,8 +29,17 @@ export function ZonePicker({
   const remoteStyleUrl = import.meta.env.VITE_MAP_STYLE_URL?.trim() || `https://tiles.openfreemap.org/styles/${resolvedTheme === 'dusk' ? 'dark' : 'bright'}`
   const [message, setMessage] = useState('Click or drag pin to position zone center.')
   const [mapLoaded, setMapLoaded] = useState(false)
+  const mapLoadedRef = useRef(false)
   const centerLat = center?.lat
   const centerLon = center?.lon
+  const initialCenterRef = useRef<[number, number]>(
+    centerLat !== undefined && centerLon !== undefined ? [centerLon, centerLat] : [0, 20],
+  )
+  const initialZoomRef = useRef<number>(center ? 14 : 2)
+  const remoteStyleUrlRef = useRef(remoteStyleUrl)
+  useEffect(() => {
+    remoteStyleUrlRef.current = remoteStyleUrl
+  }, [remoteStyleUrl])
 
   useEffect(() => {
     callback.current = onCenterChange
@@ -59,27 +68,26 @@ export function ZonePicker({
         if (disposed || !container.current) return
         maplibre.setWorkerUrl(workerUrl)
 
-        const initialCenter: [number, number] = centerLon !== undefined && centerLat !== undefined
-          ? [centerLon, centerLat]
-          : [0, 20]
-
+        const initialCenter = initialCenterRef.current
         const initialStyle = fallbackTriggeredRef.current
           ? createTacticalFallbackStyle(resolvedTheme)
-          : remoteStyleUrl
+          : remoteStyleUrlRef.current
 
         instance = new maplibre.Map({
           container: container.current,
           style: initialStyle,
           center: initialCenter,
-          zoom: center ? 14 : 2,
+          zoom: initialZoomRef.current,
           attributionControl: { compact: true },
         })
 
         map.current = instance
         instance.on('load', () => {
+          mapLoadedRef.current = true
           if (!disposed) setMapLoaded(true)
         })
         instance.on('style.load', () => {
+          mapLoadedRef.current = true
           if (!disposed) setMapLoaded(true)
         })
 
@@ -98,7 +106,7 @@ export function ZonePicker({
 
         instance.on('error', (e) => {
           if (disposed) return
-          if (!mapLoaded || !navigator.onLine || e.error?.message?.includes('style') || e.error?.message?.includes('fetch')) {
+          if (!mapLoadedRef.current || !navigator.onLine || e.error?.message?.includes('style') || e.error?.message?.includes('fetch')) {
             switchToFallback()
           }
         })

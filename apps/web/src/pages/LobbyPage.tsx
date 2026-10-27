@@ -73,14 +73,14 @@ export function LobbyPage() {
     ? `${window.location.origin}/join?code=${encodeURIComponent(lobbyCode)}`
     : ''
 
-  async function handleCopyCode() {
+  const handleCopyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(lobbyCode)
       setToastMsg(`Lobby code ${lobbyCode} copied to clipboard!`)
     } catch {
       setToastMsg(`Lobby code is ${lobbyCode}`)
     }
-  }
+  }, [lobbyCode])
 
   async function handleShare() {
     if (navigator.share) {
@@ -136,7 +136,7 @@ export function LobbyPage() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [lobbyCode, qrModalOpen, chatOpen])
+  }, [lobbyCode, qrModalOpen, chatOpen, handleCopyCode])
 
   async function selectTeam(role: Role | 'RANDOM') {
     if (!lobby) return
