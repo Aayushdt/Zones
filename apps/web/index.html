@@ -15,7 +15,7 @@
           const preference = stored?.state?.theme || 'system'
           const dusk = preference === 'dusk' || (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
           document.documentElement.dataset.theme = dusk ? 'dusk' : 'paper'
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', dusk ? '#0d0d18' : '#f0e7d8')
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', dusk ? '#000000' : '#F4F8F5')
         } catch { document.documentElement.dataset.theme = 'dusk' }
       })()
     </script>

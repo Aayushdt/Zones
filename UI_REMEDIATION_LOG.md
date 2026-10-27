@@ -370,3 +370,30 @@ Findings are grouped into sequential implementation batches (Steps 5 through 11)
 - **Role-Data Privacy Confirmation:**
   - Audited diff: Coordinates displayed to Hunters remain strictly limited to Runner ping snapshots (`data.runner_snapshots` filtered by `status === 'OK'`). Live runner coordinates are never transmitted or rendered to Hunter clients.
 
+---
+
+## Step 9 Execution: Load Performance
+
+- **Findings Addressed:**
+  - `UI-I-001` (High): Font Subsetting to Eliminate Unused Non-Latin Character Sets and Weights.
+  - `UI-I-003` (Medium): Align `theme-color` Meta Tag with Design Tokens for OLED Displays.
+- **Verdict:** FIXED & VERIFIED.
+- **Files Changed:**
+  - [`apps/web/src/theme/fonts.css`](apps/web/src/theme/fonts.css):
+    - Substituted blanket `@import '@fontsource/inter/index.css'` with targeted Latin font weight imports (`400`, `600`, `700`, `800`, `900`), directly matching the typographical weights specified across tactical HUD and game screens.
+  - [`apps/web/index.html`](apps/web/index.html):
+    - Corrected inline theme initializer to set `meta[name="theme-color"]` to `#000000` (dusk) and `#F4F8F5` (paper), eliminating the split-tone status bar seam on OLED phones.
+- **Verification Commands & Results:**
+  - `corepack pnpm typecheck`: PASS (0 errors).
+  - `corepack pnpm lint`: PASS (11 warnings, 0 new warnings).
+  - `corepack pnpm test:unit`: PASS (42/42 passed).
+  - `corepack pnpm test:audit`: PASS (34/34 passed).
+  - `corepack pnpm build`: PASS (`index.css` reduced from 135.97 kB / gzip 22.91 kB to 134.81 kB / gzip 22.83 kB; eliminated over 350 kB of unused non-Latin font assets from the dist output).
+- **Before / After Evidence:**
+  - **Before:**
+    - Build output emitted 20+ unused font assets across Cyrillic, Cyrillic-ext, Greek, Greek-ext, Vietnamese, and unused weights (100, 200, 300, 500).
+    - Status bar theme-color was `#0d0d18` on dusk mode, mismatching the `#000000` pure black tactical canvas background.
+  - **After:**
+    - Zero non-Latin font assets emitted in `dist/assets/`.
+    - CSS bundle footprint reduced by 1.16 kB (raw) / 80 B (gzip).
+    - Status bar seamlessly matches pure OLED black `#000000` and high-contrast paper `#F4F8F5`.
