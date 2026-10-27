@@ -104,16 +104,44 @@ export function playSound(type: SoundEffect): void {
 }
 
 /**
+ * Check if the browser natively supports the Web Vibration API.
+ */
+export function isHapticsSupported(): boolean {
+  return typeof navigator !== 'undefined' && 'vibrate' in navigator && typeof navigator.vibrate === 'function'
+}
+
+/**
  * Trigger haptic vibration patterns if supported and enabled.
+ * Progressively enhances:
+ * 1. navigator.vibrate if natively supported.
+ * 2. Subtle Web Audio click if vibration is unsupported (e.g. iOS Safari) and sound is enabled.
+ * 3. Safe no-op otherwise.
+ * Respects user preferences (hapticsEnabled, reduceEffects, prefers-reduced-motion).
  */
 export function triggerHaptic(pattern: number | number[] = 25): void {
-  const hapticsEnabled = useAppStore.getState().hapticsEnabled
-  if (!hapticsEnabled) return
-  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+  const store = useAppStore.getState()
+  if (!store.hapticsEnabled) return
+
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (store.reduceEffects || prefersReduced) return
+
+  if (isHapticsSupported()) {
     try {
       navigator.vibrate(pattern)
     } catch {
       /* ignore */
+    }
+    return
+  }
+
+  // Fallback for environments lacking Web Vibration (e.g. iOS Safari)
+  if (store.soundEnabled) {
+    try {
+      playSound('click')
+    } catch {
+      /* ignore audio exceptions */
     }
   }
 }

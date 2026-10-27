@@ -16,7 +16,7 @@ import { Button } from '../components/ui/Button'
 import { SettingRow } from '../components/ui/SettingRow'
 import { Toggle } from '../components/ui/Toggle'
 import { Input } from '../components/ui/Input'
-import { playSound } from '../utils/feedback'
+import { isHapticsSupported, playSound } from '../utils/feedback'
 import './SettingsPage.css'
 
 export function SettingsPage() {
@@ -72,11 +72,15 @@ export function SettingsPage() {
       setNotice('Turn on vibration feedback first.')
       return
     }
-    if (!('vibrate' in navigator)) {
+    if (!isHapticsSupported()) {
       setNotice('Vibration is not available in this browser.')
       return
     }
-    navigator.vibrate([35, 40, 35])
+    try {
+      navigator.vibrate([35, 40, 35])
+    } catch {
+      /* ignore */
+    }
     setNotice('Vibration test sent to this device.')
   }
 

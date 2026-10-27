@@ -3,9 +3,9 @@ import { mergeLatestPings } from '@xzones/game-core'
 import { Link, useParams } from 'react-router-dom'
 import type { HunterMatchView, RoleSafeMatchView } from '../services/game-api'
 import { supabaseGameApi } from '../services/supabase-api'
-import { useAppStore } from '../stores/app-store'
 import { startFallbackSync } from '../services/fallback-sync'
 import { applyMatchRealtimeEvent, createRealtimeEventGate } from '../services/realtime-events'
+import { triggerHaptic } from '../utils/feedback'
 
 type SeenPing = HunterMatchView['runner_snapshots'][number] & { received_at_mono: number }
 
@@ -54,7 +54,7 @@ export function PingsPage() {
       : result.data.runner_snapshots.reduce((latest, ping) => Math.max(latest, ping.ping_index), -1)
     if (pingIndex > lastNotifiedPing.current) {
       lastNotifiedPing.current = pingIndex
-      if (pingIndex >= 0 && useAppStore.getState().hapticsEnabled) navigator.vibrate?.(45)
+      if (pingIndex >= 0) triggerHaptic(45)
     }
     if (result.data.role === 'HUNTER') {
       const receivedPings = result.data.runner_snapshots
@@ -80,7 +80,7 @@ export function PingsPage() {
         }]))
         if (payload.data.ping_index > lastNotifiedPing.current) {
           lastNotifiedPing.current = payload.data.ping_index
-          if (useAppStore.getState().hapticsEnabled) navigator.vibrate?.(45)
+          triggerHaptic(45)
         }
       }
       setView((current) => current ? applyMatchRealtimeEvent(current, received.payload) ?? current : current)

@@ -48,11 +48,38 @@
 - [x] **Step 4:** GameMap center (E-003) + bundle analysis (I-001)
 - [x] **Step 5:** Location uploads (E-004 + I-004)
 - [x] **Step 6:** CameraScanner (E-006 + I-007)
-- [ ] **Step 7:** Haptics (I-006)
+- [x] **Step 7:** Haptics (I-006)
 - [ ] **Step 8:** Host presets cloud sync (I-005), GATED
 - [ ] **Step 9:** Offline map tiles (I-002), GATED
 - [ ] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 7 Execution: Haptics (I-006)
+
+- **Findings:** I-006
+- **Verdict:** PARTIALLY CONFIRMED.
+  - Capacitor status: Confirmed via repo-wide search that `@capacitor/*` is not a dependency in any package manifest. Native bridge cannot be imported without adding heavy native runtime dependencies, which is deferred to native app porting.
+  - Progressive enhancement: Implemented clean, sync, fire-and-forget progressive enhancement in `triggerHaptic(pattern)` in `apps/web/src/utils/feedback.ts`:
+    1. Checks user preference `hapticsEnabled` (returns early if disabled).
+    2. Respects user motion preferences (`reduceEffects` setting or OS `prefers-reduced-motion: reduce`).
+    3. Calls `navigator.vibrate(pattern)` inside a try/catch block if natively supported (`isHapticsSupported()`).
+    4. Falls back to a subtle Web Audio synthesized click (`playSound('click')`) only if the user has audio enabled (`soundEnabled`), ensuring a tactile/auditory cue on iOS Safari where Web Vibration is absent.
+    5. Safely no-ops in silent / vibration-free environments.
+  - Consolidated call sites: Replaced raw `navigator.vibrate` calls in `PingsPage.tsx` and `SettingsPage.tsx` with `triggerHaptic` and `isHapticsSupported`.
+  - Unit test: Added unit test in `tests/audit/client_logic_audit.test.ts` verifying preference enforcement, native vibration invocation, reduced motion suppression, iOS Safari fallback, and default duration.
+- **Files Changed:**
+  - `apps/web/src/utils/feedback.ts`: Exported `isHapticsSupported()`, enhanced `triggerHaptic()` with progressive enhancement and preferences.
+  - `apps/web/src/pages/PingsPage.tsx`: Replaced direct `navigator.vibrate` calls with `triggerHaptic`.
+  - `apps/web/src/pages/SettingsPage.tsx`: Integrated `isHapticsSupported()` and safe vibration test.
+  - `tests/audit/client_logic_audit.test.ts`: Added unit test covering `triggerHaptic` and `isHapticsSupported`.
+- **Verification Commands & Results:**
+  - `oxlint`: PASS (13 warnings, 0 in touched files, no regressions)
+  - `typecheck`: PASS (0 errors)
+  - `test:unit`: PASS (42/42 passed)
+  - `test:audit`: PASS (33/33 passed, including new haptic regression test)
+  - `build`: PASS (0 warnings)
 
 ---
 

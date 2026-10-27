@@ -10,6 +10,8 @@ import { createLocationSendState } from '../../apps/web/src/services/location-se
 import { createTacticalFallbackStyle } from '../../apps/web/src/utils/map-tactical-style.ts'
 import { GPS_READY_THRESHOLD_METERS, GPS_STALE_AGE_MS } from '../../apps/web/src/components/GpsReadinessBadge.tsx'
 import { countdownSeconds } from '../../apps/web/src/hooks/use-now.ts'
+import { isHapticsSupported, triggerHaptic } from '../../apps/web/src/utils/feedback.ts'
+import { useAppStore } from '../../apps/web/src/stores/app-store.ts'
 
 class TestVisibility {
   hidden = false
@@ -361,5 +363,48 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
     expect(countdownSeconds(null, baseNow)).toBe(null)
     expect(countdownSeconds(undefined, baseNow)).toBe(null)
     expect(countdownSeconds('invalid-date', baseNow)).toBe(null)
+  })
+
+  it('triggerHaptic respects user preferences and progressively enhances with Web Vibration API or audio tick', () => {
+    const originalVibrate = (navigator as unknown as { vibrate?: unknown }).vibrate
+    const vibrateMock = vi.fn()
+
+    try {
+      // 1. When haptics is disabled, vibration is not called
+      useAppStore.setState({ hapticsEnabled: false, reduceEffects: false, soundEnabled: false })
+      Object.defineProperty(navigator, 'vibrate', { value: vibrateMock, configurable: true, writable: true })
+      triggerHaptic(50)
+      expect(vibrateMock).not.toHaveBeenCalled()
+
+      // 2. When haptics is enabled and vibrate is supported
+      useAppStore.setState({ hapticsEnabled: true, reduceEffects: false, soundEnabled: false })
+      expect(isHapticsSupported()).toBe(true)
+      triggerHaptic([30, 20, 30])
+      expect(vibrateMock).toHaveBeenCalledWith([30, 20, 30])
+      vibrateMock.mockClear()
+
+      // 3. When reduceEffects is enabled, haptic vibration is suppressed
+      useAppStore.setState({ hapticsEnabled: true, reduceEffects: true, soundEnabled: false })
+      triggerHaptic(40)
+      expect(vibrateMock).not.toHaveBeenCalled()
+
+      // 4. When navigator.vibrate is absent (e.g. iOS Safari) and sound is disabled
+      useAppStore.setState({ hapticsEnabled: true, reduceEffects: false, soundEnabled: false })
+      delete (navigator as Record<string, unknown>).vibrate
+      expect(isHapticsSupported()).toBe(false)
+      triggerHaptic(40) // safe no-op, does not throw
+
+      // 5. Default pattern defaults to 25ms
+      Object.defineProperty(navigator, 'vibrate', { value: vibrateMock, configurable: true, writable: true })
+      triggerHaptic()
+      expect(vibrateMock).toHaveBeenCalledWith(25)
+    } finally {
+      if (originalVibrate) {
+        Object.defineProperty(navigator, 'vibrate', { value: originalVibrate, configurable: true, writable: true })
+      } else {
+        delete (navigator as Record<string, unknown>).vibrate
+      }
+      useAppStore.setState({ hapticsEnabled: false, reduceEffects: false, soundEnabled: false })
+    }
   })
 })
