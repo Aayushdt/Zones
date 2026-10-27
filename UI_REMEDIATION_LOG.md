@@ -58,7 +58,7 @@ This document tracks the step-by-step UI audit, accessibility remediation, perfo
 
 - [x] **Step 0:** Setup and baseline (no UI code changes)
 - [x] **Step 1:** UI inventory (documentation only)
-- [ ] **Step 2:** Deep UI analysis (read code + measure + record raw findings in the log)
+- [x] **Step 2:** Deep UI analysis (read code + measure + record raw findings in the log)
 - [ ] **Step 3:** Write findings into ERRORS.md and IMPROVEMENTS.md (docs only)
 - [ ] **Step 4:** Plan the fix batches (docs only)
 - [ ] **Step 5:** Responsive and layout foundation
@@ -141,13 +141,80 @@ All routes are declared in [`apps/web/src/app/router.tsx`](apps/web/src/app/rout
 - **Oxlint Rules:** Oxlint runs `react-compiler` checks in linting mode, reporting `set-state-in-effect` notices.
 - **Memoization Strategy:** Because the compiler is not auto-memoizing components, component boundaries that receive frequent clock updates (like `GameMap`) must be carefully decoupled from HUD countdown state to prevent unnecessary re-rendering. Blanket `useMemo`/`useCallback` is avoided; targeted component decoupling is preferred.
 
-- [ ] **Step 3:** Write findings into ERRORS.md and IMPROVEMENTS.md (docs only)
-- [ ] **Step 4:** Plan the fix batches (docs only)
-- [ ] **Step 5:** Responsive and layout foundation
-- [ ] **Step 6:** Accessibility
-- [ ] **Step 7:** Runtime render performance
-- [ ] **Step 8:** Map and HUD performance
-- [ ] **Step 9:** Load performance
-- [ ] **Step 10:** Visual design and UX polish (within existing design language)
-- [ ] **Step 11:** Guardrails so it stays good
-- [ ] **Step 12:** Final verification and report update
+---
+
+## Step 2 Execution: Deep UI Analysis
+
+Seven deep analysis passes were conducted across the frontend codebase, styles, assets, and runtime profiles:
+
+### Pass A: Responsiveness & Layout
+1. **Viewport & Safe Areas:**
+   - `apps/web/index.html` correctly uses `width=device-width, initial-scale=1, viewport-fit=cover` without user zoom restrictions.
+   - `100dvh` is used consistently across containers (`App.css`, `index.css`, `HomePage.css`, `CreatePage.css`, `LobbyPage.css`).
+   - ⚠️ **Defect (UI-E-003):** [`apps/web/src/pages/MatchPage.css`](apps/web/src/pages/MatchPage.css) lacks safe-area insets on fixed HUD overlays:
+     - `.hud-top-bar`: `padding: 0.75rem 1rem;` lacks `env(safe-area-inset-top)`. Causes top controls (back, role badge, clock, radio, stealth) to collide with camera notches and the iOS Dynamic Island.
+     - `.bottom-sheet`: `padding: 0.75rem 1.25rem 1.5rem;` lacks `env(safe-area-inset-bottom)`. Causes the Hold to Tag button and items tray to collide with the home swipe indicator.
+2. **Input Font-Size & iOS Auto-Zoom:**
+   - ⚠️ **Defect (UI-E-004):** [`apps/web/src/App.css:484`](apps/web/src/App.css) defines `.form-field__input { font-size: 15px; }`. On iOS Mobile Safari, any input with font size below 16px triggers an automatic viewport zoom when focused, displacing the tactical layout and requiring manual pinch-zoom outdoors. Must be `16px`.
+3. **Touch Target Dimensions:**
+   - ⚠️ **Defect (UI-E-005):** Several interactive controls fall below the 44x44px mobile touch target standard:
+     - [`apps/web/src/pages/LobbyPage.css:42,93`](apps/web/src/pages/LobbyPage.css): `.lobby-back-btn` and `.lobby-settings-btn` are `36x36px`.
+     - [`apps/web/src/pages/CreatePage.css:54,128`](apps/web/src/pages/CreatePage.css): `.create-back-btn` and `.game-mode-nav-btn` are `36x36px`.
+     - [`apps/web/src/pages/GuidePage.css:28`](apps/web/src/pages/GuidePage.css): `.guide-back-btn` is `36x36px`.
+     - [`apps/web/src/App.css:171`](apps/web/src/App.css): `.app-btn--sm` has `min-height: 36px`.
+
+### Pass B: Load Performance
+1. **Font Asset Bloat:**
+   - ⚠️ **Improvement (UI-I-001):** [`apps/web/src/theme/fonts.css`](apps/web/src/theme/fonts.css) imports `@fontsource/inter/index.css`. This bundles 19 font files (Greek, Cyrillic, Vietnamese, all weights from 100 to 900) totalling ~340 kB in `dist/assets/`. Subsetting to `@fontsource/inter/latin.css` (or specific weights 400, 600, 700, 800) eliminates ~250 kB of unused assets.
+2. **Missing Font Preload & Theme-Color Mismatch:**
+   - ⚠️ **Improvement (UI-I-003):** [`apps/web/index.html`](apps/web/index.html) lacks `<link rel="preload">` for the primary UI font, risking layout shifts on initial paint. Additionally, the inline script sets `meta[name="theme-color"]` to `#0d0d18` for dusk theme, while `--color-background` is `#000000`, causing a visible split-tone status bar on OLED phones.
+
+### Pass C: Runtime & Render Performance
+1. **Realtime Re-render Storm in MatchPage:**
+   - ⚠️ **Defect (UI-E-002):** In [`apps/web/src/pages/MatchPage.tsx:193-195`](apps/web/src/pages/MatchPage.tsx), an interval updates `seconds` state every 250 ms, in addition to `useNow(1000)` running on line 77.
+   - On every tick, `MatchPage` re-renders and re-instantiates inline object literals:
+     - `mapData = view.role === 'RUNNER' ? { ... } : { ... }`
+     - `zone = view.zone ? { ... } : undefined`
+   - Passing new object references into `<GameMap data={mapData} zone={zone} />` invalidates `useMemo` in `GameMap.tsx:123`, which causes the marker synchronization `useEffect` (line 261) to execute up to 4 times per second. This triggers dynamic `import('maplibre-gl')`, DOM marker updates, and zoom coordinate projections even when no player has moved.
+2. **Unhandled TypeError in Sync API:**
+   - ⚠️ **Defect (UI-E-001):** In [`apps/web/src/services/supabase-api.ts:388,406`](apps/web/src/services/supabase-api.ts), `result.data.events.flatMap(...)` throws `TypeError: Cannot read properties of undefined (reading 'flatMap')` if the backend or simulator omits `events` or returns `events: undefined`. This caused 16 unhandled page errors during the Playwright baseline capture.
+
+### Pass D: Map & HUD Performance
+1. **Map Marker Overhead vs GeoJSON Layers:**
+   - `GameMap.tsx` currently renders DOM markers (`pointElement`) for players and snapshots, with RAF coordinate interpolation. For 2–10 players, DOM markers perform adequately; however, marker synchronization must be decoupled from the clock ticker.
+2. **Pointer-Events Layering:**
+   - `.hud-screen` properly isolates pointer events: `.hud-top-bar` and `.hud-bottom-overlay` have `pointer-events: none` on container wrappers and `pointer-events: auto` on interactive buttons, allowing map gestures (pinch, pan, rotate) to pass through to the MapLibre canvas without obstruction.
+
+### Pass E: Visual Design & UX Consistency
+1. **Contrast & Outdoor Readability:**
+   - Dusk theme tokens use high-contrast foregrounds (`#FFFFFF`, `#00FF89`, `#FF3B3C`) against pure black (`#000000`), exceeding 7:1 contrast.
+   - Paper theme tokens use `#06130C` against `#FFFFFF`/`#F4F8F5` (exceeding 12:1 contrast).
+   - `font-variant-numeric: tabular-nums` is globally declared on `body` in `index.css:30`, preventing countdown and distance value jitter.
+2. **State Completeness:**
+   - Loading skeletons and spinners exist on routes (`MatchPage` radar spinner, `HomePage` radar background).
+   - Empty rosters and error states have explicit retry actions (`Retry Link`, `Retry sync`).
+
+### Pass F: Accessibility (axe Scan Findings)
+1. **Missing Level-One Headings (axe: `page-has-heading-one`):**
+   - ⚠️ **Defect (UI-E-006a):** `HomePage.tsx` lacks an `<h1>` (uses `<Logo />` lockup with `<span>` and jumps directly to `<h2 className="card-title">Enter the Zone</h2>`).
+   - ⚠️ **Defect (UI-E-006b):** `LobbyPage.tsx` lacks an `<h1>` (match header has no accessible H1 for screen readers).
+   - ⚠️ **Defect (UI-E-006c):** `MatchPage.tsx` HUD lacks an accessible visually hidden `<h1>` identifying the active match screen.
+2. **Heading Hierarchy Order (axe: `heading-order`):**
+   - ⚠️ **Defect (UI-E-006d):** In [`apps/web/src/pages/GuidePage.tsx:108`](apps/web/src/pages/GuidePage.tsx), step cards use `<h3>` directly beneath the page `<h1>How to play</h1>`, skipping `<h2>`.
+3. **Role-Data Security Audit:**
+   - Confirmed: No hidden runner coordinates or role-leaking titles exist in DOM attributes, tooltips, or aria-labels. Hunter snapshots correctly preserve staleness and obfuscation without exposing live coordinates of camouflaged players.
+
+### Pass G: UI Code Quality
+1. **Component Line Count Flags:**
+   - `MatchPage.tsx` (854 lines): High complexity combining HUD overlays, map rendering, radar modals, audio cues, item triggers, and polling sync.
+   - `CreatePage.tsx` (640 lines): Multi-tab form with dynamic shrink calculations.
+   - `LobbyPage.tsx` (567 lines): Team staging and readiness management.
+2. **Timer Redundancy:**
+   - In `MatchPage.tsx`, both `useNow(1000)` and a 250ms `setInterval` for `setSeconds` run concurrently. They can be unified and encapsulated in a dedicated `<HudTimer />` component.
+
+---
+
+### Needs Verification & Risk Watchlist
+- **Map GeoJSON Transition:** Migrating player markers entirely from DOM elements to a GeoJSON symbol layer would reduce DOM nodes, but may impact smooth 60fps CSS/RAF coordinate interpolation. Verify if prop stabilization alone resolves all map re-render overhead before altering marker architecture.
+- **Font Subsetting:** Verify that removing non-Latin Inter subsets does not break rendering for player display names containing international Unicode characters. (Standard Latin + Latin-ext covers all typical game names).
+
