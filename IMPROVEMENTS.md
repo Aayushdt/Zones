@@ -124,17 +124,18 @@ This section documents verified frontend, UX, design token, and asset performanc
 
 | ID | Status | Priority | Effort | Area | File(s) | Title |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **[UI-I-001]** | OPEN | High | Small | Performance | [`apps/web/src/theme/fonts.css`](apps/web/src/theme/fonts.css) | Font Asset Subsetting to Eliminate Non-Latin Font Bloat |
-| **[UI-I-002]** | OPEN | High | Medium | Performance | [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) | Component Extraction & Isolated HUD Timer to Prevent Map Re-rendering |
-| **[UI-I-003]** | OPEN | Medium | Small | Visual | [`apps/web/index.html`](apps/web/index.html) | Align Theme-Color Meta Tag with OLED Tactical Background |
-| **[UI-I-004]** | OPEN | Medium | Small | Performance | [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx) | Deep-Value Coordinate Memoization in GameMap |
-| **[UI-I-005]** | OPEN | Low | Small | Visual | [`apps/web/src/index.css`](apps/web/src/index.css), [`tokens.css`](apps/web/src/theme/tokens.css) | Jitter-Free Sunlight Typography and Tabular Numerals |
+| **[UI-I-001]** | FIXED @7b9f70d | High | Small | Performance | [`apps/web/src/theme/fonts.css`](apps/web/src/theme/fonts.css) | Font Asset Subsetting to Eliminate Non-Latin Font Bloat |
+| **[UI-I-002]** | FIXED @01b02cc | High | Medium | Performance | [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) | Component Extraction & Isolated HUD Timer to Prevent Map Re-rendering |
+| **[UI-I-003]** | FIXED @7b9f70d | Medium | Small | Visual | [`apps/web/index.html`](apps/web/index.html) | Align Theme-Color Meta Tag with OLED Tactical Background |
+| **[UI-I-004]** | FIXED @fb4d716 | Medium | Small | Performance | [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx) | Deep-Value Coordinate Memoization in GameMap |
+| **[UI-I-005]** | FIXED @6e0b5ce | Low | Small | Visual | [`apps/web/src/index.css`](apps/web/src/index.css), [`tokens.css`](apps/web/src/theme/tokens.css) | Jitter-Free Sunlight Typography and Tabular Numerals |
 
 ---
 
 ## Detailed UI Enhancements
 
 ### [UI-I-001] Font Asset Subsetting to Eliminate Non-Latin Font Bloat
+- **Status:** FIXED @7b9f70d
 - **Priority:** High
 - **Effort:** Small
 - **Area:** Performance / Load Time
@@ -151,6 +152,7 @@ This section documents verified frontend, UX, design token, and asset performanc
 ---
 
 ### [UI-I-002] Component Extraction & Isolated HUD Timer to Prevent Map Re-rendering
+- **Status:** FIXED @01b02cc
 - **Priority:** High
 - **Effort:** Medium
 - **Area:** Performance / Runtime Render
@@ -167,6 +169,7 @@ This section documents verified frontend, UX, design token, and asset performanc
 ---
 
 ### [UI-I-003] Align Theme-Color Meta Tag with OLED Tactical Background
+- **Status:** FIXED @7b9f70d
 - **Priority:** Medium
 - **Effort:** Small
 - **Area:** Visual / Mobile Shell Polish
@@ -183,6 +186,7 @@ This section documents verified frontend, UX, design token, and asset performanc
 ---
 
 ### [UI-I-004] Deep-Value Coordinate Memoization in GameMap
+- **Status:** FIXED @fb4d716
 - **Priority:** Medium
 - **Effort:** Small
 - **Area:** Performance / Map Canvas
@@ -199,6 +203,7 @@ This section documents verified frontend, UX, design token, and asset performanc
 ---
 
 ### [UI-I-005] Jitter-Free Sunlight Typography and Tabular Numerals
+- **Status:** FIXED @6e0b5ce
 - **Priority:** Low
 - **Effort:** Small
 - **Area:** Visual / Outdoor Sunlight Usability

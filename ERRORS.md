@@ -153,25 +153,26 @@ This section documents real frontend, mobile responsiveness, runtime performance
 
 | ID | Status | Severity | Area | File & Symbol | Title |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **[UI-E-001]** | OPEN | Critical | State handling | [`apps/web/src/services/supabase-api.ts`](apps/web/src/services/supabase-api.ts) (`syncMatch`) | Unhandled `TypeError: Cannot read properties of undefined (reading 'flatMap')` |
-| **[UI-E-002]** | OPEN | High | Performance | [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) (`MatchPage`) | Full-Page Re-render Storm and Redundant Marker Sync on Clock Ticks |
-| **[UI-E-003]** | OPEN | High | Responsive | [`apps/web/src/pages/MatchPage.css`](apps/web/src/pages/MatchPage.css) (`.hud-top-bar`, `.bottom-sheet`) | HUD Overlays and Bottom Actions Lack Safe-Area Insets for Notched Phones |
-| **[UI-E-004]** | OPEN | Medium | Responsive | [`apps/web/src/App.css`](apps/web/src/App.css) (`.form-field__input`) | Form Inputs Below 16px Cause Automatic Viewport Zoom on iOS Safari |
-| **[UI-E-005]** | OPEN | Medium | Accessibility | [`apps/web/src/pages/LobbyPage.css`](apps/web/src/pages/LobbyPage.css), [`CreatePage.css`](apps/web/src/pages/CreatePage.css) | Touch Targets Below 44x44px for Primary Navigation & Action Buttons |
-| **[UI-E-006]** | OPEN | Medium | Accessibility | [`apps/web/src/pages/HomePage.tsx`](apps/web/src/pages/HomePage.tsx), [`GuidePage.tsx`](apps/web/src/pages/GuidePage.tsx) | Heading Hierarchy and Missing Level-One Landmark Violations |
+| **[UI-E-001]** | FIXED @46ff095 | Critical | State handling | [`apps/web/src/services/supabase-api.ts`](apps/web/src/services/supabase-api.ts) (`syncMatch`) | Unhandled `TypeError: Cannot read properties of undefined (reading 'flatMap')` |
+| **[UI-E-002]** | FIXED @01b02cc | High | Performance | [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) (`MatchPage`) | Full-Page Re-render Storm and Redundant Marker Sync on Clock Ticks |
+| **[UI-E-003]** | FIXED @46ff095 | High | Responsive | [`apps/web/src/pages/MatchPage.css`](apps/web/src/pages/MatchPage.css) (`.hud-top-bar`, `.bottom-sheet`) | HUD Overlays and Bottom Actions Lack Safe-Area Insets for Notched Phones |
+| **[UI-E-004]** | FIXED @46ff095 | Medium | Responsive | [`apps/web/src/App.css`](apps/web/src/App.css) (`.form-field__input`) | Form Inputs Below 16px Cause Automatic Viewport Zoom on iOS Safari |
+| **[UI-E-005]** | FIXED @46ff095 | Medium | Accessibility | [`apps/web/src/pages/LobbyPage.css`](apps/web/src/pages/LobbyPage.css), [`CreatePage.css`](apps/web/src/pages/CreatePage.css) | Touch Targets Below 44x44px for Primary Navigation & Action Buttons |
+| **[UI-E-006]** | FIXED @7c75260 | Medium | Accessibility | [`apps/web/src/pages/HomePage.tsx`](apps/web/src/pages/HomePage.tsx), [`GuidePage.tsx`](apps/web/src/pages/GuidePage.tsx) | Heading Hierarchy and Missing Level-One Landmark Violations |
 
 ### UI Defect Counts by Severity
-- **Critical:** 1
-- **High:** 2
-- **Medium:** 3
+- **Critical:** 1 (1 Fixed)
+- **High:** 2 (2 Fixed)
+- **Medium:** 3 (3 Fixed)
 - **Low:** 0
-- **Total:** 6
+- **Total:** 6 (6 Fixed)
 
 ---
 
 ## Detailed UI Defects
 
 ### [UI-E-001] Unhandled `TypeError: Cannot read properties of undefined (reading 'flatMap')` in Sync API
+- **Status:** FIXED @46ff095
 - **Severity:** Critical
 - **Area:** State handling / Runtime Crash
 - **File & symbol:** [`apps/web/src/services/supabase-api.ts`](apps/web/src/services/supabase-api.ts) (`syncMatch`)
@@ -188,6 +189,7 @@ This section documents real frontend, mobile responsiveness, runtime performance
 ---
 
 ### [UI-E-002] Full-Page Re-render Storm and Redundant Marker Sync on Clock Ticks
+- **Status:** FIXED @01b02cc
 - **Severity:** High
 - **Area:** Performance / Battery & CPU
 - **File & symbol:** [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) (`MatchPage`), [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx) (`GameMap`)
@@ -200,6 +202,7 @@ This section documents real frontend, mobile responsiveness, runtime performance
 ---
 
 ### [UI-E-003] HUD Overlays and Bottom Actions Lack Safe-Area Insets for Notched Phones
+- **Status:** FIXED @46ff095
 - **Severity:** High
 - **Area:** Responsive / Mobile Layout
 - **File & symbol:** [`apps/web/src/pages/MatchPage.css`](apps/web/src/pages/MatchPage.css) (`.hud-top-bar`, `.bottom-sheet`)
@@ -216,6 +219,7 @@ This section documents real frontend, mobile responsiveness, runtime performance
 ---
 
 ### [UI-E-004] Form Inputs Below 16px Cause Automatic Viewport Zoom on iOS Safari
+- **Status:** FIXED @46ff095
 - **Severity:** Medium
 - **Area:** Responsive / iOS WebKit Quirks
 - **File & symbol:** [`apps/web/src/App.css`](apps/web/src/App.css) (`.form-field__input`)
@@ -228,6 +232,7 @@ This section documents real frontend, mobile responsiveness, runtime performance
 ---
 
 ### [UI-E-005] Touch Targets Below 44x44px for Primary Navigation & Action Buttons
+- **Status:** FIXED @46ff095
 - **Severity:** Medium
 - **Area:** Accessibility / One-Handed Mobile UX
 - **File & symbol:** [`apps/web/src/pages/LobbyPage.css`](apps/web/src/pages/LobbyPage.css), [`CreatePage.css`](apps/web/src/pages/CreatePage.css), [`GuidePage.css`](apps/web/src/pages/GuidePage.css), [`App.css`](apps/web/src/App.css)
@@ -243,6 +248,7 @@ This section documents real frontend, mobile responsiveness, runtime performance
 ---
 
 ### [UI-E-006] Heading Hierarchy and Missing Level-One Landmark Violations
+- **Status:** FIXED @7c75260
 - **Severity:** Medium
 - **Area:** Accessibility / Screen Reader Landmarks
 - **File & symbol:** [`apps/web/src/pages/HomePage.tsx`](apps/web/src/pages/HomePage.tsx), [`LobbyPage.tsx`](apps/web/src/pages/LobbyPage.tsx), [`MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx), [`GuidePage.tsx`](apps/web/src/pages/GuidePage.tsx)
