@@ -44,7 +44,7 @@
 - [x] **Step 0:** Setup and baseline (no code changes)
 - [x] **Step 1:** Triage all 13 findings (documentation only)
 - [x] **Step 2:** Deno tooling and CI (E-001 + I-003, merged)
-- [ ] **Step 3:** MatchPage timers and status state (E-002 + E-005, solved together)
+- [x] **Step 3:** MatchPage timers and status state (E-002 + E-005, solved together)
 - [ ] **Step 4:** GameMap center (E-003) + bundle analysis (I-001)
 - [ ] **Step 5:** Location uploads (E-004 + I-004)
 - [ ] **Step 6:** CameraScanner (E-006 + I-007)
@@ -53,6 +53,26 @@
 - [ ] **Step 9:** Offline map tiles (I-002), GATED
 - [ ] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 3 Execution: MatchPage Timers and Status State (E-002 + E-005)
+
+- **Findings:** E-002, E-005 (Solved together)
+- **Verdict:** CONFIRMED
+- **Files Changed:**
+  - `apps/web/src/hooks/use-now.ts`: Created new hook `useNow` (updates timestamp exclusively inside interval callback) and pure helper `countdownSeconds`.
+  - `apps/web/src/pages/MatchPage.tsx`:
+    - Replaced `Date.now()` calls in render with pure derivations `camoSeconds` and `alarmSeconds`.
+    - Removed `zoneSeconds` state and its synchronous `useEffect` setter; derived `zoneSeconds` during render via `countdownSeconds(view?.zone?.nextShrinkAt, now)`.
+    - Removed synchronous `setLiveStatus('Connected to private team channel.')` inside the subscription effect; derived `displayLiveStatus` during render for missing-role and tagged states.
+  - `tests/audit/client_logic_audit.test.ts`: Added unit test covering `countdownSeconds` calculation, ceiling behavior, positive decrement, boundary values, and zero floor upon expiry.
+- **Verification Commands & Results:**
+  - `oxlint`: PASS (warnings dropped from 18 to 14; all 4 MatchPage warnings for `Date.now` and synchronous effect setState were eliminated)
+  - `typecheck`: PASS (0 errors)
+  - `test:unit`: PASS (36/36 passed)
+  - `test:audit`: PASS (32/32 passed, including new countdown regression test)
+  - `build`: PASS (0 errors)
 
 ---
 

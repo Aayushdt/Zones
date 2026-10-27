@@ -29,6 +29,7 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { HoldButton } from '../components/ui/HoldButton'
 import { CountdownRing } from '../components/ui/CountdownRing'
 import { playSound, triggerHaptic } from '../utils/feedback'
+import { useNow, countdownSeconds } from '../hooks/use-now'
 import './MatchPage.css'
 
 function timeLeft(clock: ClockView, anchor: number): number | null {
@@ -48,7 +49,6 @@ export function MatchPage() {
   const [view, setView] = useState<RoleSafeMatchView | null>(null)
   const [clock, setClock] = useState<ClockView | null>(null)
   const [seconds, setSeconds] = useState<number | null>(null)
-  const [zoneSeconds, setZoneSeconds] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -72,7 +72,12 @@ export function MatchPage() {
   // UI state
   const [stealth, setStealth] = useState(false)
   const [radioOpen, setRadioOpen] = useState(false)
-  const [liveStatus, setLiveStatus] = useState('Syncing role confirmation…')
+  const [liveStatus, setLiveStatus] = useState('Connecting to private team channel...')
+
+  const now = useNow(1000)
+  const zoneSeconds = countdownSeconds(view?.zone?.nextShrinkAt, now)
+  const camoSeconds = countdownSeconds(camouflageExpiresAt, now)
+  const alarmSeconds = countdownSeconds(alarmExpiresAt, now)
 
   const anchor = useRef(0)
   const stealthExitTimer = useRef<number | null>(null)
@@ -129,13 +134,17 @@ export function MatchPage() {
   }, [sync])
   const currentRole = view?.role
   const currentOwnStatus = view?.own_status
+  const displayLiveStatus = !currentRole
+    ? 'Syncing role confirmation…'
+    : currentOwnStatus === 'TAGGED'
+      ? 'Spectator mode (Tagged)'
+      : liveStatus
 
   useEffect(() => {
     if (!currentRole || currentOwnStatus === 'TAGGED') return
     let active = true
     let unsubscribe: (() => void) | undefined
     const gate = createRealtimeEventGate(currentRole)
-    setLiveStatus('Connected to private team channel.')
     void supabaseGameApi
       .subscribe(matchId, currentRole, {
         onEvent: (received) => {
@@ -186,19 +195,6 @@ export function MatchPage() {
     }, 250)
     return () => window.clearInterval(timer)
   }, [clock])
-
-  useEffect(() => {
-    const nextShrinkAt = view?.zone?.nextShrinkAt
-    if (!nextShrinkAt) {
-      setZoneSeconds(null)
-      return
-    }
-    const update = () =>
-      setZoneSeconds(Math.max(0, Math.ceil((Date.parse(nextShrinkAt) - Date.now()) / 1000)))
-    update()
-    const timer = window.setInterval(update, 1000)
-    return () => window.clearInterval(timer)
-  }, [view?.zone?.nextShrinkAt])
 
   useEffect(() => startFallbackSync(() => sync()), [sync])
 
@@ -625,18 +621,18 @@ export function MatchPage() {
             )}
 
             {/* Active Tactical Item Status Pills */}
-            {camouflageExpiresAt !== null && (
+            {camoSeconds !== null && (
               <div className="hud-metric-pill font-mono hud-item-pill--camo" title="Thermal Camouflage active">
                 <EyeOff size={14} className="text-green" />
                 <span className="hud-metric-label">CAMO</span>
-                <span className="hud-metric-val">{Math.max(0, Math.ceil((camouflageExpiresAt - Date.now()) / 1000))}s</span>
+                <span className="hud-metric-val">{camoSeconds}s</span>
               </div>
             )}
-            {alarmExpiresAt !== null && (
+            {alarmSeconds !== null && (
               <div className="hud-metric-pill font-mono hud-item-pill--alarm" title="Proximity Alarm armed">
                 <Bell size={14} className="text-amber" />
                 <span className="hud-metric-label">ALARM</span>
-                <span className="hud-metric-val">{Math.max(0, Math.ceil((alarmExpiresAt - Date.now()) / 1000))}s</span>
+                <span className="hud-metric-val">{alarmSeconds}s</span>
               </div>
             )}
 
@@ -648,7 +644,7 @@ export function MatchPage() {
           </div>
 
           <div className="hud-live-status-bar font-mono text-xs text-muted">
-            <span>● {liveStatus}</span>
+            <span>● {displayLiveStatus}</span>
           </div>
 
           {/* PRIMARY ACTION: BIG HOLD-TO-CONFIRM TAG BUTTON (Seeker) OR REVEAL CODE (Hider) */}

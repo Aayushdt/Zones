@@ -9,6 +9,7 @@ import { fallbackSyncDelay, startFallbackSync } from '../../apps/web/src/service
 import { createLocationSendState } from '../../apps/web/src/services/location-send-state.ts'
 import { createTacticalFallbackStyle } from '../../apps/web/src/utils/map-tactical-style.ts'
 import { GPS_READY_THRESHOLD_METERS, GPS_STALE_AGE_MS } from '../../apps/web/src/components/GpsReadinessBadge.tsx'
+import { countdownSeconds } from '../../apps/web/src/hooks/use-now.ts'
 
 class TestVisibility {
   hidden = false
@@ -336,5 +337,29 @@ describe('AUDIT CHECKLIST I: Client game logic', () => {
     } finally {
       supabaseGameApi.subscribe = originalSubscribe
     }
+  })
+
+  it('countdownSeconds computes ceiling remaining seconds and stops at 0s upon expiry', () => {
+    const baseNow = 1_700_000_000_000
+    const targetMs = baseNow + 12_500 // 12.5 seconds in future
+    const targetIso = new Date(targetMs).toISOString()
+
+    // 12.5s remaining -> ceiling is 13s
+    expect(countdownSeconds(targetMs, baseNow)).toBe(13)
+    expect(countdownSeconds(targetIso, baseNow)).toBe(13)
+
+    // After 10 seconds (2.5s remaining) -> ceiling is 3s
+    expect(countdownSeconds(targetMs, baseNow + 10_000)).toBe(3)
+
+    // After 12.5s -> 0s
+    expect(countdownSeconds(targetMs, baseNow + 12_500)).toBe(0)
+
+    // Past expiry (past target) -> 0s (never negative)
+    expect(countdownSeconds(targetMs, baseNow + 15_000)).toBe(0)
+
+    // Null or undefined target returns null
+    expect(countdownSeconds(null, baseNow)).toBe(null)
+    expect(countdownSeconds(undefined, baseNow)).toBe(null)
+    expect(countdownSeconds('invalid-date', baseNow)).toBe(null)
   })
 })
