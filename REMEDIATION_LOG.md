@@ -45,7 +45,7 @@
 - [x] **Step 1:** Triage all 13 findings (documentation only)
 - [x] **Step 2:** Deno tooling and CI (E-001 + I-003, merged)
 - [x] **Step 3:** MatchPage timers and status state (E-002 + E-005, solved together)
-- [ ] **Step 4:** GameMap center (E-003) + bundle analysis (I-001)
+- [x] **Step 4:** GameMap center (E-003) + bundle analysis (I-001)
 - [ ] **Step 5:** Location uploads (E-004 + I-004)
 - [ ] **Step 6:** CameraScanner (E-006 + I-007)
 - [ ] **Step 7:** Haptics (I-006)
@@ -53,6 +53,24 @@
 - [ ] **Step 9:** Offline map tiles (I-002), GATED
 - [ ] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 4 Execution: GameMap Center (E-003) + Bundle Analysis (I-001)
+
+- **Findings:** E-003, I-001
+- **Verdict:**
+  - E-003: CONFIRMED. Fixed by adopting React's render-adjustment state pattern (`if (center === null && fix) setCenter(...)`), removing the effect that set state and resolving the missing dependency lint warning. Also introduced `mapLoadedRef` to eliminate closure-stale reference in map error listeners.
+  - I-001: PARTIALLY CONFIRMED. Measured chunk graph: `dist/index.html` does NOT preload `maplibre-gl`; it is dynamically imported on demand exclusively in `GameMap.tsx` and `ZonePicker.tsx`. Added `chunkSizeWarningLimit: 1200` with documentation in `vite.config.ts` to silence spurious build alerts without splitting synthetic vendor chunks.
+- **Files Changed:**
+  - `apps/web/src/components/GameMap.tsx`: Latched center state during render without effect; used ref for `mapLoaded`.
+  - `apps/web/vite.config.ts`: Configured `chunkSizeWarningLimit: 1200`.
+- **Verification Commands & Results:**
+  - `oxlint`: PASS (warnings dropped from 14 to 11; all GameMap exhaustive-deps and setState-in-effect warnings resolved)
+  - `typecheck`: PASS (0 errors)
+  - `test:unit`: PASS (36/36 passed)
+  - `test:audit`: PASS (32/32 passed)
+  - `build`: PASS (0 warnings; `maplibre-gl` chunk remains isolated at 1,074 kB and excluded from entry bundle)
 
 ---
 

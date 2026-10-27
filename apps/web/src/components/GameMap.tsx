@@ -98,6 +98,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const [center, setCenter] = useState<[number, number] | null>(initial ? [initial.lon, initial.lat] : null)
   const [mapError, setMapError] = useState('')
   const [mapLoaded, setMapLoaded] = useState(false)
+  const mapLoadedRef = useRef(false)
   const isInitiallyOnline = typeof navigator !== 'undefined' ? navigator.onLine : true
   const [isTacticalOffline, setIsTacticalOffline] = useState(!isInitiallyOnline)
   const fallbackTriggeredRef = useRef(!isInitiallyOnline)
@@ -107,10 +108,11 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
   const markerFramesRef = useRef(new Map<string, number>())
   const zoneRef = useRef(zone)
 
-  useEffect(() => {
-    const fix = data.own_position ?? data.own_team_positions[0]
-    if (fix) setCenter((current) => current ?? [fix.lon, fix.lat])
-  }, [data.own_position?.lat, data.own_position?.lon, data.own_team_positions])
+  // Latch center to the first available fix without an effect that sets state
+  const fix = data.own_position ?? data.own_team_positions[0]
+  if (center === null && fix) {
+    setCenter([fix.lon, fix.lat])
+  }
 
   const markerPoints = useMemo(() => {
     const own = data.own_position ?? localPosition
@@ -159,6 +161,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
 
         map.on('load', () => {
           if (!disposed) {
+            mapLoadedRef.current = true
             setMapLoaded(true)
             if (map) syncZoneLayer(map, zoneRef.current)
           }
@@ -184,7 +187,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
         map.on('error', (e) => {
           if (disposed) return
           // If style or initial fetch failed, switch gracefully to tactical fallback without infinite error loops
-          if (!mapLoaded || !navigator.onLine || e.error?.message?.includes('style') || e.error?.message?.includes('fetch')) {
+          if (!mapLoadedRef.current || !navigator.onLine || e.error?.message?.includes('style') || e.error?.message?.includes('fetch')) {
             switchToFallback()
           } else {
             setMapError('Map tiles could not load. Check the connection or map style URL.')
@@ -203,6 +206,7 @@ export function GameMap({ data, zone, simulation = false }: { data: GameMapData;
       markers.clear()
       map?.remove()
       mapRef.current = null
+      mapLoadedRef.current = false
       setMapLoaded(false)
     }
   }, [center, resolvedMapStyle])
