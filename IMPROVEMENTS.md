@@ -2,190 +2,112 @@
 
 ## Summary Table
 
-| ID | Priority | Effort | File(s) | Title |
-| :--- | :--- | :--- | :--- | :--- |
-| **[I-001]** | High | Medium | [`apps/web/vite.config.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/vite.config.ts), [`apps/web/src/components/GameMap.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/components/GameMap.tsx) | MapLibre Chunk Splitting to Reduce Initial Bundle Size |
-| **[I-002]** | High | Medium | [`apps/web/src/pages/LobbyPage.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/pages/LobbyPage.tsx), [`apps/web/src/utils/map-tactical-style.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/utils/map-tactical-style.ts) | Offline Tactical Tile Pre-Caching in Lobby / Staging |
-| **[I-003]** | High | Small | [`package.json`](file:///home/aayushchoudhary/Downloads/Zones/Zones/package.json), [`.github/workflows/ci.yml`](file:///home/aayushchoudhary/Downloads/Zones/Zones/.github/workflows/ci.yml) | Portable CI Workflow & Deno Test Runner Harmonization |
-| **[I-004]** | Medium | Medium | [`apps/web/src/components/LocationSharing.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/components/LocationSharing.tsx), [`packages/game-core/src/map-smoothing.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/packages/game-core/src/map-smoothing.ts) | Adaptive Battery-Aware GPS Polling & Velocity Smoothing |
-| **[I-005]** | Medium | Medium | [`apps/web/src/services/host-presets.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/services/host-presets.ts), [`apps/web/src/pages/create/GameplayTab.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/pages/create/GameplayTab.tsx) | Cloud Sync for Host Game Presets via Supabase Profiles |
-| **[I-006]** | Low | Small | [`apps/web/src/utils/feedback.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/utils/feedback.ts) | Capacitor Haptics Bridge & iOS Safari Vibration Fallback |
-| **[I-007]** | Low | Small | [`apps/web/src/components/CameraScanner.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/components/CameraScanner.tsx) | Camera Scanner Flashlight / Torch Control for Dusk Matches |
+| ID | Status | Priority | Effort | File(s) | Title |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **[I-001]** | **PARTIALLY CONFIRMED / DOCUMENTED @8d6b1b3** | High | Medium | [`apps/web/vite.config.ts`](apps/web/vite.config.ts) | MapLibre Chunk Splitting to Reduce Initial Bundle Size |
+| **[I-002]** | **DEFERRED (Gated) @85f2d08** | High | Medium | [`apps/web/public/sw.js`](apps/web/public/sw.js), [`DEFERRED.md`](DEFERRED.md) | Offline Tactical Tile Pre-Caching in Lobby / Staging |
+| **[I-003]** | **FIXED @587fe2c** | High | Small | [`package.json`](package.json), [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Portable CI Workflow & Deno Test Runner Harmonization |
+| **[I-004]** | **FIXED @e2c617c** | Medium | Medium | [`packages/game-core/src/map-smoothing.ts`](packages/game-core/src/map-smoothing.ts), [`apps/web/src/components/LocationSharing.tsx`](apps/web/src/components/LocationSharing.tsx) | Adaptive Battery-Aware GPS Polling & Velocity Smoothing |
+| **[I-005]** | **DEFERRED (Gated) @c2e9540** | Medium | Medium | [`apps/web/src/services/host-presets.ts`](apps/web/src/services/host-presets.ts), [`DEFERRED.md`](DEFERRED.md) | Cloud Sync for Host Game Presets via Supabase Profiles |
+| **[I-006]** | **PARTIALLY FIXED @89c3ae8** | Low | Small | [`apps/web/src/utils/feedback.ts`](apps/web/src/utils/feedback.ts) | Capacitor Haptics Bridge & iOS Safari Vibration Fallback |
+| **[I-007]** | **FIXED @67dc862** | Low | Small | [`apps/web/src/components/CameraScanner.tsx`](apps/web/src/components/CameraScanner.tsx) | Camera Scanner Flashlight / Torch Control for Dusk Matches |
 
 ---
 
 ## Detailed Improvements
 
 ### [I-001] MapLibre Chunk Splitting to Reduce Initial Bundle Size
+- **Status:** **PARTIALLY CONFIRMED / DOCUMENTED @8d6b1b3**
 - **Priority:** High
 - **Effort:** Medium
-- **File(s):** [`apps/web/vite.config.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/vite.config.ts), [`apps/web/src/components/GameMap.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/components/GameMap.tsx)
-- **Current situation:**
-  During production build, Vite emits a single large JavaScript chunk for MapLibre GL:
-  ```
-  dist/assets/maplibre-gl-Dq1yKjKz.js  1,074.88 kB │ gzip: 289.42 kB
-  ```
-  Vite warns: *"Some chunks are larger than 500 kB after minification. Consider using dynamic import() to code-split the application."* While route-level code splitting is implemented via `React.lazy` on pages, loading the map bundle on initial navigation to `MatchPage` or `ZonePicker` causes noticeable latency on mobile 4G/3G connections.
-- **Proposed change:**
-  Configure manual chunk splitting in `vite.config.ts` under `build.rollupOptions.output.manualChunks` and ensure `maplibre-gl` is loaded asynchronously with an interactive tactical radar skeleton placeholder while the WebGL canvas initializes.
-- **Example:**
-  ```ts
-  // apps/web/vite.config.ts
-  export default defineConfig({
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules/maplibre-gl')) {
-              return 'maplibre-vendor'
-            }
-            if (id.includes('node_modules/lucide-react')) {
-              return 'icons-vendor'
-            }
-          },
-        },
-      },
-    },
-  })
-  ```
+- **File(s):** [`apps/web/vite.config.ts`](apps/web/vite.config.ts), [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx)
+- **Investigation & Measurement:**
+  Build bundle analysis confirmed that `maplibre-gl` emits a 1,074 kB (289 kB gzip) chunk. However, inspecting `dist/index.html` and entry imports proved `maplibre-gl` is **already completely isolated** to dynamic chunks (`GameMap.tsx`, `ZonePicker.tsx`) and is **never** preloaded on the initial landing route.
+  The audit report's suggestion to split `lucide-react` into a separate chunk would degrade performance without shrinking MapLibre (MapLibre alone cannot be shrunk below 500 kB minified).
+- **Remediation:** Configured `chunkSizeWarningLimit: 1200` in `apps/web/vite.config.ts` accompanied by clear architectural documentation, eliminating spurious build alerts while maintaining route-isolated dynamic imports.
 
 ---
 
 ### [I-002] Offline Tactical Tile Pre-Caching in Lobby / Staging
+- **Status:** **DEFERRED (Gated) @85f2d08**
 - **Priority:** High
 - **Effort:** Medium
-- **File(s):** [`apps/web/src/pages/LobbyPage.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/pages/LobbyPage.tsx), [`apps/web/src/utils/map-tactical-style.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/utils/map-tactical-style.ts)
-- **Current situation:**
-  Outdoor matches frequently take place in urban parks or rural campuses where cellular data connectivity can be intermittent or spotty. Currently, MapLibre fetches vector tiles from Stadia Maps / OpenMapTiles on demand as the user pans or zooms. If a player loses data connectivity mid-match, the radar map background renders blank grey tiles.
-- **Proposed change:**
-  Add a *"Pre-download Map Area"* action in `LobbyPage` or the zone configuration screen. Once the host establishes the game boundary circle, compute the bounding box (zooms 13–17) and pre-populate the browser's `CacheStorage` via the service worker before the match starts.
-- **Example:**
-  ```ts
-  export async function precacheZoneTiles(center: [number, number], radiusMeters: number): Promise<number> {
-    const cache = await caches.open('tactical-tiles-v1')
-    const tileUrls = computeTilesInBoundingBox(center, radiusMeters, [14, 15, 16])
-    let cachedCount = 0
-    await Promise.all(tileUrls.map(async (url) => {
-      try {
-        const res = await fetch(url, { mode: 'cors' })
-        if (res.ok) { await cache.put(url, res); cachedCount++ }
-      } catch { /* Continue best-effort tile caching */ }
-    }))
-    return cachedCount
-  }
-  ```
+- **File(s):** [`apps/web/public/sw.js`](apps/web/public/sw.js), [`apps/web/src/utils/map-tactical-style.ts`](apps/web/src/utils/map-tactical-style.ts), [`DEFERRED.md`](DEFERRED.md)
+- **Gating Evaluation:**
+  1. *ToS Restrictions:* The application's default tile provider is OpenFreeMap (`https://tiles.openfreemap.org`), a public community-funded service. Bulk automated prefetching across zoom levels 13–17 for bounding boxes risks IP throttling and violates public API usage terms.
+  2. *Existing SW Caching:* Verified `apps/web/public/sw.js` already intercepts OpenFreeMap requests, caching viewed tiles with stale-while-revalidate and an LRU entry cap of 1,200 tiles (`HIDE_AND_SEEK_CONFIG.map.tileCacheEntries.default`).
+  3. *Per-Player Scope:* `CacheStorage` is device-local; host downloads do not populate runners' or hunters' phones.
+  4. *Offline Fallback:* `apps/web/src/utils/map-tactical-style.ts` provides `createTacticalFallbackStyle()`, which functions 100% offline without remote fonts or vector tiles.
+- **Remediation:** Full architectural specification and future self-hosted PMTiles alternative documented in `DEFERRED.md`.
 
 ---
 
 ### [I-003] Portable CI Workflow & Deno Test Runner Harmonization
+- **Status:** **FIXED @587fe2c** (Merged with **[E-001]**)
 - **Priority:** High
 - **Effort:** Small
-- **File(s):** [`package.json`](file:///home/aayushchoudhary/Downloads/Zones/Zones/package.json), [`.github/workflows/ci.yml`](file:///home/aayushchoudhary/Downloads/Zones/Zones/.github/workflows/ci.yml)
-- **Current situation:**
-  The project utilizes Deno for Edge Functions and payload validation (`test:edge`, `verify:payloads`, `test:api`, `test:sim`), while `apps/web` and `packages/game-core` use pnpm and Vitest. If Deno is missing in developer environments, commands like `pnpm verify:payloads` fail abruptly.
-- **Proposed change:**
-  Add a clear step in `.github/workflows/ci.yml` using `denoland/setup-deno@v1`, and provide a fallback script or install instruction in `README.md` and `package.json` so that all test suites can run seamlessly across local and CI environments.
-- **Example:**
-  ```yaml
-  # .github/workflows/ci.yml
-  - name: Setup Deno
-    uses: denoland/setup-deno@v1
-    with:
-      deno-version: v1.x
-
-  - name: Run Payload Verification & Simulator Tests
-    run: pnpm test:all
-  ```
+- **File(s):** [`package.json`](package.json), [`.github/workflows/ci.yml`](.github/workflows/ci.yml), [`scripts/run-deno.mjs`](scripts/run-deno.mjs)
+- **Investigation:**
+  Identified that E-001 and I-003 describe the exact same underlying requirement: seamless, portable execution of Deno-backed edge and payload tests across local and CI environments.
+- **Remediation:**
+  1. Added zero-dependency Node preflight runner `scripts/run-deno.mjs` that verifies Deno is available on PATH and provides user-friendly installation instructions.
+  2. Updated `package.json` test scripts to invoke the preflight runner.
+  3. Confirmed `.github/workflows/ci.yml` configures `denoland/setup-deno@v2` with `deno-version: v2.9.6` and runs tests in discrete stages.
+  4. Documented Deno >= 2.9 prerequisite in `README.md`.
 
 ---
 
 ### [I-004] Adaptive Battery-Aware GPS Polling & Velocity Smoothing
+- **Status:** **FIXED @e2c617c**
 - **Priority:** Medium
 - **Effort:** Medium
-- **File(s):** [`apps/web/src/components/LocationSharing.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/components/LocationSharing.tsx), [`packages/game-core/src/map-smoothing.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/packages/game-core/src/map-smoothing.ts)
-- **Current situation:**
-  `LocationSharing.tsx` queries the HTML5 Geolocation API with continuous high accuracy. While stationary (e.g. hiding behind a wall for 5 minutes), the GPS radio continuously draws peak power, causing phone heating and rapid battery drain during hour-long matches.
-- **Proposed change:**
-  Implement adaptive GPS pacing: when consecutive fixes indicate the player has moved less than 3 meters over a 30-second window, dynamically relax `maximumAge` or reduce transmission frequency from 2s to 6s, immediately ramping back to real-time high frequency when accelerometer / device orientation detects rapid movement.
-- **Example:**
-  ```ts
-  const isStationary = consecutiveDisplacements.every((d) => d < 3.0)
-  const uploadPacingInterval = isStationary ? 6_000 : 2_000
-  ```
+- **File(s):** [`packages/game-core/src/map-smoothing.ts`](packages/game-core/src/map-smoothing.ts), [`packages/game-core/src/map-smoothing.test.ts`](packages/game-core/src/map-smoothing.test.ts), [`apps/web/src/components/LocationSharing.tsx`](apps/web/src/components/LocationSharing.tsx)
+- **Investigation & Caveats:**
+  A fixed 3m threshold falls below standard GPS jitter (3–15m), risking false movement triggers. Modifying `maximumAge` does not affect `watchPosition` radio duty cycles in mobile browsers. Accelerometer APIs require explicit iOS permission prompts.
+- **Remediation:**
+  1. Implemented a pure, unit-tested stationary movement detector `isStationaryFix` in `packages/game-core/src/map-smoothing.ts` with a dynamic threshold (`Math.max(3, accuracy_m)`).
+  2. Added `computeAdaptiveUploadInterval`: lengthens upload interval to 6,000 ms while stationary (comfortably below the 30s server staleness threshold) and returns immediately to 2,000 ms upon movement.
+  3. Integrated into `apps/web/src/components/LocationSharing.tsx` with immediate upload on visibility recovery.
+  4. Added 6 unit tests in `packages/game-core/src/map-smoothing.test.ts`. *(Note: Battery savings were not measured on physical devices and represent theoretical radio pacing).*
 
 ---
 
 ### [I-005] Cloud Sync for Host Game Presets via Supabase Profiles
+- **Status:** **DEFERRED (Gated) @c2e9540**
 - **Priority:** Medium
 - **Effort:** Medium
-- **File(s):** [`apps/web/src/services/host-presets.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/services/host-presets.ts), [`apps/web/src/pages/create/GameplayTab.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/pages/create/GameplayTab.tsx)
-- **Current situation:**
-  `host-presets.ts` serializes custom game configurations (speed zones, radar intervals, camouflage rules, player counts) solely to browser `localStorage` (`xzones_host_presets_v1`). If a host configures complex game boundaries or rules on a desktop/laptop before switching to a phone in the field, presets are inaccessible.
-- **Proposed change:**
-  Store host presets in Supabase under a `host_presets` table scoped to `auth_user_id`, syncing bidirectionally with `localStorage` so presets seamlessly transfer across organizer devices.
+- **File(s):** [`apps/web/src/services/host-presets.ts`](apps/web/src/services/host-presets.ts), [`DEFERRED.md`](DEFERRED.md)
+- **Gating Evaluation:**
+  - *Persistent Authenticated Users:* **FAIL**. Verified via `apps/web/src/services/supabase-api.ts:61-103` that `xzones` relies entirely on anonymous guest sessions (`auth.signInAnonymously()`) persisted under `xzones.guest_session`. Users have no cross-device identity or accounts; a second device generates a distinct anonymous UID. Cross-device synchronization cannot function without user identity linking.
+- **Remediation:**
+  Preserved stable `localStorage` implementation in `apps/web/src/services/host-presets.ts`. Authored full architectural specification in `DEFERRED.md` including database migration with owner-only RLS, Edge Function API endpoints, payload validation, quota limits (16 KB max, 20 preset cap), last-write-wins conflict resolution by `updated_at`, and open product questions.
 
 ---
 
 ### [I-006] Capacitor Haptics Bridge & iOS Safari Vibration Fallback
+- **Status:** **PARTIALLY FIXED @89c3ae8** (Native Capacitor bridge deferred)
 - **Priority:** Low
 - **Effort:** Small
-- **File(s):** [`apps/web/src/utils/feedback.ts`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/utils/feedback.ts)
-- **Current situation:**
-  `feedback.ts` invokes `navigator.vibrate?.(ms)`. On iOS Safari and WKWebView, the Web Vibration API is disabled by Apple for privacy reasons, meaning iPhone players receive no tactile feedback on pings, tags, or proximity alarms.
-- **Proposed change:**
-  Check for `@capacitor/haptics` or audio synthesis click fallbacks when running on WebKit/iOS, providing equivalent tactile/audio response for tag and radar events.
-- **Example:**
-  ```ts
-  export async function triggerHaptic(pattern: number | number[]) {
-    if ('vibrate' in navigator) {
-      navigator.vibrate(pattern)
-      return
-    }
-    // Capacitor native bridge check
-    if ((window as any).Capacitor?.isPluginAvailable('Haptics')) {
-      const { Haptics, ImpactStyle } = (window as any).Capacitor.Plugins
-      await Haptics.impact({ style: ImpactStyle.Medium })
-    }
-  }
-  ```
+- **File(s):** [`apps/web/src/utils/feedback.ts`](apps/web/src/utils/feedback.ts), [`tests/audit/client_logic_audit.test.ts`](tests/audit/client_logic_audit.test.ts)
+- **Investigation:**
+  Grep confirmed `@capacitor/*` is not installed in the workspace. Adding native Capacitor plugins to an SPA web app is out of scope and requires native shell wrappers.
+- **Remediation:**
+  1. Kept the synchronous fire-and-forget API signature `triggerHaptic(pattern: number | number[] = 25): void`.
+  2. Added clean feature detection `isHapticsSupported()`.
+  3. Enforced user preferences (`hapticsEnabled`, `reduceEffects`, `prefers-reduced-motion`).
+  4. Implemented progressive enhancement: uses `navigator.vibrate(pattern)` when natively supported; falls back to subtle synthesized Web Audio click (`playSound('click')`) on iOS Safari only if sound is enabled; safely no-ops otherwise.
+  5. Added unit tests in `tests/audit/client_logic_audit.test.ts`.
 
 ---
 
 ### [I-007] Camera Scanner Flashlight / Torch Control for Dusk Matches
+- **Status:** **FIXED @67dc862**
 - **Priority:** Low
 - **Effort:** Small
-- **File(s):** [`apps/web/src/components/CameraScanner.tsx`](file:///home/aayushchoudhary/Downloads/Zones/Zones/apps/web/src/components/CameraScanner.tsx)
-- **Current situation:**
-  `CameraScanner.tsx` opens the back-facing camera to scan runner QR codes during tags. In evening matches or indoor/shadowed environments, low-light makes QR detection sluggish or impossible.
-- **Proposed change:**
-  Query track capabilities for `torch: true` and display a flashlight toggle icon button in the camera modal.
-- **Example:**
-  ```tsx
-  const track = stream?.getVideoTracks()[0]
-  const capabilities = track?.getCapabilities?.() as { torch?: boolean } | undefined
-  const supportsTorch = Boolean(capabilities?.torch)
-
-  const toggleTorch = async () => {
-    if (!track) return
-    const next = !torchOn
-    await track.applyConstraints({ advanced: [{ torch: next } as any] })
-    setTorchOn(next)
-  }
-  ```
-
----
-
-## Recommended Order of Work
-
-### Phase 1: Quick Wins (Immediate Value & Stability)
-1. **[I-003] Harmonize CI & Deno setup:** Add `denoland/setup-deno` in CI workflow so allEdge Function tests run automatically.
-2. **[I-007] Camera torch control:** Add torch toggle in `CameraScanner.tsx` for reliable low-light tagging.
-3. **[I-006] iOS haptics bridge:** Add Capacitor/Audio fallback in `feedback.ts` for iOS vibration support.
-
-### Phase 2: Core Performance & UX (Match Day Readiness)
-4. **[I-001] MapLibre vendor chunk splitting:** Configure Rollup manual chunks in `vite.config.ts` to drop initial chunk size under 500 kB.
-5. **[I-002] Tactical tile pre-caching:** Allow downloading game area vector tiles in lobby to prevent blank map tiles during cellular dead-zones.
-
-### Phase 3: Architectural Maturation
-6. **[I-004] Adaptive GPS power pacing:** Reduce battery consumption during stationary hiding periods.
-7. **[I-005] Supabase host presets cloud sync:** Enable cross-device preset portability between host desktop planning and mobile match execution.
+- **File(s):** [`apps/web/src/components/CameraScanner.tsx`](apps/web/src/components/CameraScanner.tsx)
+- **Remediation:**
+  1. Query video track capabilities for `torch` via `track.getCapabilities()?.torch` without `any` casts (properly typed with `interface TorchCapabilities extends MediaTrackCapabilities`).
+  2. Kept active track in a ref and managed torch state via `applyConstraints`.
+  3. Added an accessible toggle button (`aria-label`, `aria-pressed`) styled with existing button classes and Lucide `Flashlight` / `FlashlightOff` icons.
+  4. Automatically hides the torch control on unsupported devices or desktop browsers.
+  5. Resets torch state upon component unmount or camera stop.
