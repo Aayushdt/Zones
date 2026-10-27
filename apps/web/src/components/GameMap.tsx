@@ -106,6 +106,7 @@ export const GameMap = memo(function GameMap({ data, zone, simulation = false }:
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
   const markersRef = useRef(new Map<string, import('maplibre-gl').Marker>())
   const markerFramesRef = useRef(new Map<string, number>())
+  const markerClassRef = useRef<typeof import('maplibre-gl').Marker | null>(null)
   const zoneRef = useRef(zone)
 
   // Latch center to the first available fix without an effect that sets state
@@ -142,6 +143,7 @@ export const GameMap = memo(function GameMap({ data, zone, simulation = false }:
     void (async () => {
       try {
         const maplibre = await import('maplibre-gl')
+        markerClassRef.current = maplibre.Marker
         const workerUrl = (await import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url')).default
         if (disposed || !mapContainer.current) return
         maplibre.setWorkerUrl(workerUrl)
@@ -262,7 +264,8 @@ export const GameMap = memo(function GameMap({ data, zone, simulation = false }:
     const map = mapRef.current
     if (!map || !mapLoaded) return
     const markerFrames = markerFramesRef.current
-    void import('maplibre-gl').then(({ Marker }) => {
+
+    const syncMarkers = (Marker: typeof import('maplibre-gl').Marker) => {
       if (mapRef.current !== map) return
       const points = new Map<string, { kind: 'you' | 'teammate' | 'snapshot'; label: string; coordinates: [number, number]; opacity?: number; accuracyPixels?: number }>()
       if (markerPoints.own) {
@@ -297,31 +300,59 @@ export const GameMap = memo(function GameMap({ data, zone, simulation = false }:
           markersRef.current.set(key, marker)
         }
         const previousFrame = markerFrames.get(key)
-        if (previousFrame !== undefined) cancelAnimationFrame(previousFrame)
-        markerFrames.delete(key)
-        if (isNewMarker || point.kind !== 'you' || ownMarkerSmoothingMs === 0) {
-          marker.setLngLat(point.coordinates)
-        } else {
-          const startCoordinate = marker.getLngLat()
-          const from: [number, number] = [startCoordinate.lng, startCoordinate.lat]
-          const startedAt = performance.now()
-          const animate = (now: number) => {
-            const progress = (now - startedAt) / ownMarkerSmoothingMs
-            marker.setLngLat(interpolateMapCoordinate(from, point.coordinates, progress))
-            if (progress < 1) markerFrames.set(key, requestAnimationFrame(animate))
-            else markerFrames.delete(key)
+        const currentCoord = marker.getLngLat()
+        const [targetLon, targetLat] = point.coordinates
+        const hasMoved = isNewMarker || Math.abs(currentCoord.lng - targetLon) > 0.000001 || Math.abs(currentCoord.lat - targetLat) > 0.000001
+
+        if (hasMoved) {
+          if (previousFrame !== undefined) cancelAnimationFrame(previousFrame)
+          markerFrames.delete(key)
+          if (isNewMarker || point.kind !== 'you' || ownMarkerSmoothingMs === 0 || document.hidden) {
+            marker.setLngLat(point.coordinates)
+          } else {
+            const from: [number, number] = [currentCoord.lng, currentCoord.lat]
+            const startedAt = performance.now()
+            const animate = (now: number) => {
+              if (document.hidden) {
+                marker.setLngLat(point.coordinates)
+                markerFrames.delete(key)
+                return
+              }
+              const progress = (now - startedAt) / ownMarkerSmoothingMs
+              marker.setLngLat(interpolateMapCoordinate(from, point.coordinates, progress))
+              if (progress < 1) markerFrames.set(key, requestAnimationFrame(animate))
+              else markerFrames.delete(key)
+            }
+            markerFrames.set(key, requestAnimationFrame(animate))
           }
-          markerFrames.set(key, requestAnimationFrame(animate))
         }
+
         const element = marker.getElement()
-        element.className = `game-marker game-marker--${point.kind}`
-        element.setAttribute('aria-label', point.label)
-        element.textContent = point.kind === 'snapshot' ? '⌖' : point.kind === 'you' ? '●' : '✦'
-        element.style.opacity = point.opacity === undefined || point.opacity === 1 ? '' : String(point.opacity)
-        if (point.accuracyPixels === undefined) element.style.removeProperty('--accuracy-px')
-        else element.style.setProperty('--accuracy-px', `${point.accuracyPixels}px`)
+        const targetClass = `game-marker game-marker--${point.kind}`
+        if (element.className !== targetClass) element.className = targetClass
+        if (element.getAttribute('aria-label') !== point.label) element.setAttribute('aria-label', point.label)
+        const glyph = point.kind === 'snapshot' ? '⌖' : point.kind === 'you' ? '●' : '✦'
+        if (element.textContent !== glyph) element.textContent = glyph
+        const targetOpacity = point.opacity === undefined || point.opacity === 1 ? '' : String(point.opacity)
+        if (element.style.opacity !== targetOpacity) element.style.opacity = targetOpacity
+        if (point.accuracyPixels === undefined) {
+          if (element.style.getPropertyValue('--accuracy-px')) element.style.removeProperty('--accuracy-px')
+        } else {
+          const accVal = `${point.accuracyPixels}px`
+          if (element.style.getPropertyValue('--accuracy-px') !== accVal) element.style.setProperty('--accuracy-px', accVal)
+        }
       }
-    })
+    }
+
+    if (markerClassRef.current) {
+      syncMarkers(markerClassRef.current)
+    } else {
+      void import('maplibre-gl').then(({ Marker }) => {
+        markerClassRef.current = Marker
+        syncMarkers(Marker)
+      })
+    }
+
     return () => {
       for (const frame of markerFrames.values()) cancelAnimationFrame(frame)
       markerFrames.clear()

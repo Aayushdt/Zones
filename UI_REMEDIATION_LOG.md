@@ -347,3 +347,26 @@ Findings are grouped into sequential implementation batches (Steps 5 through 11)
     - Clock countdown ticks are completely isolated inside `<HudTimer />` and `<HudMetricsRow />`.
     - `MatchPage` root and `GameMap` commit count on clock ticks: **0 re-renders per second**.
     - MapLibre GL canvas and DOM markers stay completely idle when players are stationary.
+
+---
+
+## Step 8 Execution: Map and HUD Performance
+
+- **Findings Addressed:**
+  - `UI-I-004` (Medium): Deep-Value Coordinate Memoization & Marker Optimization for `GameMap.tsx`.
+- **Verdict:** FIXED & VERIFIED.
+- **Files Changed:**
+  - [`apps/web/src/components/GameMap.tsx`](apps/web/src/components/GameMap.tsx):
+    - Cached `maplibre.Marker` class reference in `markerClassRef` upon initialization, eliminating dynamic `import('maplibre-gl')` promise resolutions during marker sync.
+    - Added coordinate movement delta threshold check (`> 0.000001` deg / ~11 cm) before triggering coordinate updates or allocating RAF interpolation animations.
+    - Added `document.hidden` check to immediately place markers without queueing background RAF loops when the tab or phone screen is locked.
+    - Added strict DOM write guards for `className`, `aria-label`, `textContent`, `opacity`, and `--accuracy-px` to avoid layout thrashing when marker attributes are unchanged.
+- **Verification Commands & Results:**
+  - `corepack pnpm typecheck`: PASS (0 errors).
+  - `corepack pnpm lint`: PASS (11 warnings, 0 new warnings).
+  - `corepack pnpm test:unit`: PASS (42/42 passed).
+  - `corepack pnpm test:audit`: PASS (34/34 passed).
+  - `corepack pnpm build`: PASS (no regressions).
+- **Role-Data Privacy Confirmation:**
+  - Audited diff: Coordinates displayed to Hunters remain strictly limited to Runner ping snapshots (`data.runner_snapshots` filtered by `status === 'OK'`). Live runner coordinates are never transmitted or rendered to Hunter clients.
+
