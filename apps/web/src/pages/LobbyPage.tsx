@@ -324,6 +324,7 @@ export function LobbyPage() {
       <div className="lobby-content-wrap">
         {/* Header pattern: Back, Big Mono Code + Copy, Version Chip, Share, QR, Settings */}
         <header className="lobby-header">
+          <h1 className="sr-only">Match Staging Lobby</h1>
           <div className="lobby-header__top">
             <Link to="/" className="lobby-back-btn" title="Back to Home" aria-label="Back">
               <ArrowLeft size={20} />

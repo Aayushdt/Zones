@@ -62,7 +62,7 @@ This document tracks the step-by-step UI audit, accessibility remediation, perfo
 - [x] **Step 3:** Write findings into ERRORS.md and IMPROVEMENTS.md (docs only)
 - [x] **Step 4:** Plan the fix batches (docs only)
 - [x] **Step 5:** Responsive and layout foundation
-- [ ] **Step 6:** Accessibility
+- [x] **Step 6:** Accessibility
 - [ ] **Step 7:** Runtime render performance
 - [ ] **Step 8:** Map and HUD performance
 - [ ] **Step 9:** Load performance
@@ -291,6 +291,33 @@ Findings are grouped into sequential implementation batches (Steps 5 through 11)
   - `form-field__input`: font-size 15px -> 16px (eliminating iOS auto-zoom).
   - `.hud-top-bar` & `.bottom-sheet`: safe-area padding verified in compiled CSS (`max(.75rem, env(safe-area-inset-top, 0px))` and `calc(1.5rem + env(safe-area-inset-bottom, 0px))`).
   - Horizontal overflow check at 320px: PASS (0 overflows).
+
+---
+
+## Step 6 Execution: Accessibility
+
+- **Findings Addressed:**
+  - `UI-E-006` (Medium): Heading hierarchy and missing level-one landmark violations (`page-has-heading-one`, `heading-order`).
+- **Verdict:** FIXED & VERIFIED.
+- **Files Changed:**
+  - [`apps/web/src/App.css`](apps/web/src/App.css) (aliased `.visually-hidden` with `.sr-only` to ensure standard off-screen clipping).
+  - [`apps/web/src/pages/HomePage.tsx`](apps/web/src/pages/HomePage.tsx) (added `<h1 className="sr-only">XZones — Tactical GPS Hide &amp; Seek</h1>`).
+  - [`apps/web/src/pages/LobbyPage.tsx`](apps/web/src/pages/LobbyPage.tsx) (added `<h1 className="sr-only">Match Staging Lobby</h1>`).
+  - [`apps/web/src/pages/MatchPage.tsx`](apps/web/src/pages/MatchPage.tsx) (added `<h1 className="sr-only">Tactical Match HUD</h1>`).
+  - [`apps/web/src/pages/GuidePage.tsx`](apps/web/src/pages/GuidePage.tsx) (changed step card titles from `<h3>` to `<h2>`, resolving skipped heading levels).
+- **Verification Commands & Results:**
+  - `corepack pnpm typecheck`: PASS (0 errors).
+  - `corepack pnpm lint`: PASS (11 warnings, 0 new warnings).
+  - `corepack pnpm test:unit`: PASS (42/42 passed).
+  - `corepack pnpm test:audit`: PASS (34/34 passed).
+  - `corepack pnpm build`: PASS (0 regressions).
+  - Automated `axe-core` scan via Playwright:
+    - `HomePage`: `page-has-heading-one` (1 moderate violation -> **ZERO violations**).
+    - `GuidePage`: `heading-order` (1 moderate violation -> **ZERO violations**).
+    - Total serious/critical violations: **0**.
+- **Role-Data Privacy Confirmation:**
+  - Audited all new DOM elements: Only screen-accessible high-level title landmarks ("XZones — Tactical GPS Hide & Seek", "Match Staging Lobby", "Tactical Match HUD") were added. Zero runner coordinates, player identities, or camouflage state are exposed.
+
 
 
 

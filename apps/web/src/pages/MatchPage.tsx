@@ -489,6 +489,7 @@ export function MatchPage() {
 
   return (
     <main className={`hud-screen ${stealth ? 'hud-screen--stealth' : ''}`}>
+      <h1 className="sr-only">Tactical Match HUD</h1>
       {/* FULL-SCREEN MAP CANVAS */}
       <div className="hud-map-layer">
         <GameMap

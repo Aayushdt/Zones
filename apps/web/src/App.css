@@ -54,7 +54,8 @@ input, select, textarea {
 .text-xs { font-size: 12px; }
 .text-center { text-align: center; }
 
-.sr-only {
+.sr-only,
+.visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;

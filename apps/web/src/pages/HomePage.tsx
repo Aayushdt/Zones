@@ -89,6 +89,7 @@ export function HomePage() {
       <div className="home-column">
         {/* Logo with green glow & tagline */}
         <header className="home-header">
+          <h1 className="sr-only">XZones — Tactical GPS Hide &amp; Seek</h1>
           <Logo markSize={54} showTagline={true} />
         </header>
 

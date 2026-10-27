@@ -105,7 +105,7 @@ export function GuidePage() {
               <Radar size={28} />
             </div>
             <span className="guide-step-number font-mono">STEP 01</span>
-            <h3 className="guide-step-title">Disperse & Hide</h3>
+            <h2 className="guide-step-title">Disperse & Hide</h2>
             <p className="guide-step-desc">
               Hiders use the head start timer to scatter across the permitted park zone. Seekers stay frozen at spawn.
             </p>
@@ -116,7 +116,7 @@ export function GuidePage() {
               <ShieldAlert size={28} />
             </div>
             <span className="guide-step-number font-mono">STEP 02</span>
-            <h3 className="guide-step-title">Scheduled Pings</h3>
+            <h2 className="guide-step-title">Scheduled Pings</h2>
             <p className="guide-step-desc">
               Seekers hunt using periodic radar snapshots. Stationary play warns first before pinging; it does not itself eliminate them.
             </p>
@@ -127,7 +127,7 @@ export function GuidePage() {
               <QrCode size={28} />
             </div>
             <span className="guide-step-number font-mono">STEP 03</span>
-            <h3 className="guide-step-title">In-Person QR Tag</h3>
+            <h2 className="guide-step-title">In-Person QR Tag</h2>
             <p className="guide-step-desc">
               When caught, the Seeker scans the Hider’s match-bound QR code. Proximity never tags automatically.
             </p>
@@ -138,7 +138,7 @@ export function GuidePage() {
               <Trophy size={28} />
             </div>
             <span className="guide-step-number font-mono">STEP 04</span>
-            <h3 className="guide-step-title">Survive the Clock</h3>
+            <h2 className="guide-step-title">Survive the Clock</h2>
             <p className="guide-step-desc">
               If any Hider stays untagged when the timer expires, Hiders win! If all are tagged, Seekers claim victory.
             </p>
