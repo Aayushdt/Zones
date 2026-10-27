@@ -49,10 +49,27 @@
 - [x] **Step 5:** Location uploads (E-004 + I-004)
 - [x] **Step 6:** CameraScanner (E-006 + I-007)
 - [x] **Step 7:** Haptics (I-006)
-- [ ] **Step 8:** Host presets cloud sync (I-005), GATED
+- [x] **Step 8:** Host presets cloud sync (I-005), GATED
 - [ ] **Step 9:** Offline map tiles (I-002), GATED
 - [ ] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 8 Execution: Host Presets Cloud Sync (I-005, GATED)
+
+- **Findings:** I-005
+- **Verdict:** DEFERRED (Failed Gate 1).
+- **Gating Evaluation:**
+  - Gate 1 (Persistent Authenticated Users): **FAIL**. Verified via `apps/web/src/services/supabase-api.ts:61-103` that `xzones` relies entirely on anonymous guest sessions (`auth.signInAnonymously()`) persisted under `xzones.guest_session`. Users have no cross-device identity or accounts; a second device generates a distinct anonymous UID. Cross-device synchronization cannot function without user identity linking.
+  - Gate 2 (Data-access pattern): Edge Function API under `backend/supabase/functions/api` with strict schema validation and hostile audit patterns.
+  - Gate 3 (Database testing): Local Postgres migration runner verified.
+- **Action Taken:**
+  - Preserved existing stable local storage implementation in `apps/web/src/services/host-presets.ts`.
+  - Authored comprehensive architectural specification in `DEFERRED.md`: database migration with owner-only RLS, Edge Function API endpoints, payload validation, quota limits (16 KB max, 20 preset cap), last-write-wins conflict resolution by `updated_at`, and open product questions.
+- **Verification Commands & Results:**
+  - Static review of data access and auth architecture recorded in `DEFERRED.md`.
+  - `typecheck`, `lint`, `test:unit`, `test:audit`, `build`: All PASS (0 errors, 0 regressions).
 
 ---
 
