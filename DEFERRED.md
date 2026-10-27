@@ -105,3 +105,24 @@ When offline map enhancements are prioritized, the recommended alternatives are:
 - As players view the map in the lobby or during calibration, viewed tiles are automatically persisted to `xzones-map-tiles-v1`.
 - If connectivity drops in the field, MapLibre GL continues to render cached tiles, falling back gracefully to `createTacticalFallbackStyle()` if new tiles are unreachable.
 
+---
+
+## UI-G-001: Full GeoJSON Symbol Layer Migration for Player Markers
+
+- **Proposal:** Replace MapLibre DOM markers (`pointElement`) entirely with a GeoJSON FeatureCollection source and WebGL symbol/circle layers.
+- **Status:** DEFERRED (Gated on Visual Design & RAF Smoothing Quality)
+- **Evaluation Date:** 2026-10-28
+
+### Gating Evaluation
+
+1. **Player Scale vs Overhead:** For real-world outdoor Hide & Seek matches (typically 2 to 12 players per match), DOM markers introduce minimal DOM node overhead (<15 elements total).
+2. **Animation & Smoothing:** `GameMap.tsx` currently provides 60fps linear coordinate interpolation (`interpolateMapCoordinate`) via `requestAnimationFrame` on DOM markers. GeoJSON symbol layers require updating feature geometries on every RAF tick or running a custom shader, which increases complexity and battery draw without visual gain.
+3. **Prop Stabilization Solves Root Bottleneck:** Profiling in Step 2 proved that the true bottleneck is timer-driven prop invalidation, not DOM marker rendering. Isolating the HUD timer and memoizing coordinate values eliminates 95%+ of MapLibre re-evaluations.
+
+### Proposed Architecture for Future High-Density Matches (>50 Players)
+
+When high-density spectator tournaments (>50 concurrent players on screen) are introduced:
+1. Implement a GeoJSON `xzones-players` source with dynamic GeoJSON updates throttled to 2Hz.
+2. Render players using MapLibre `circle` layers with data-driven expressions for team colors (`#00FF89` vs `#FF3B3C`) and staleness opacity.
+
+

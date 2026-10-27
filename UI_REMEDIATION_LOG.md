@@ -60,7 +60,7 @@ This document tracks the step-by-step UI audit, accessibility remediation, perfo
 - [x] **Step 1:** UI inventory (documentation only)
 - [x] **Step 2:** Deep UI analysis (read code + measure + record raw findings in the log)
 - [x] **Step 3:** Write findings into ERRORS.md and IMPROVEMENTS.md (docs only)
-- [ ] **Step 4:** Plan the fix batches (docs only)
+- [x] **Step 4:** Plan the fix batches (docs only)
 - [ ] **Step 5:** Responsive and layout foundation
 - [ ] **Step 6:** Accessibility
 - [ ] **Step 7:** Runtime render performance
@@ -237,5 +237,27 @@ Both repository audit reports were updated with dedicated, non-colliding `# UI A
 2. **[`IMPROVEMENTS.md`](IMPROVEMENTS.md):**
    - Added pointer: `> ℹ️ **Looking for frontend, mobile UX, & accessibility improvements?** See the [# UI Audit](#ui-audit) section below.`
    - Appended `# UI Audit` containing UI Enhancement Summary Table, 5 detailed entries (`UI-I-001` through `UI-I-005`), and a prioritized recommended order of work.
+
+---
+
+## Step 4 Execution: Plan the Fix Batches
+
+Findings are grouped into sequential implementation batches (Steps 5 through 11). Overlapping files are consolidated into common steps to prevent merge conflicts or intermediate broken states:
+
+### Batch Mapping:
+
+| Batch / Step | Findings Addressed | Primary Files Touched | Dependencies & Notes |
+| :--- | :--- | :--- | :--- |
+| **Step 5: Responsive & Layout Foundation** | `UI-E-001` (Critical crash guard)<br>`UI-E-003` (Safe areas)<br>`UI-E-004` (Input font zoom)<br>`UI-E-005` (Touch targets) | `supabase-api.ts`<br>`MatchPage.css`<br>`App.css`<br>`LobbyPage.css`<br>`CreatePage.css`<br>`GuidePage.css` | Fixes critical runtime sync crash; ensures HUD overlays respect notches/home bars; fixes 16px input font size; expands touch targets to >= 44x44px. |
+| **Step 6: Accessibility** | `UI-E-006` (Headings structure) | `HomePage.tsx`<br>`LobbyPage.tsx`<br>`MatchPage.tsx`<br>`GuidePage.tsx`<br>`App.css` | Injects semantic and visually-hidden `<h1>` landmarks on core screens; fixes `GuidePage` `<h3>` -> `<h2>` hierarchy. Audits and confirms zero role-data leaks. |
+| **Step 7: Runtime Render Performance** | `UI-E-002`<br>`UI-I-002` | `MatchPage.tsx`<br>`MatchPage.css`<br>`HudTimer.tsx` (or colocated) | Isolates countdown timer state into a leaf component; stabilizes `mapData` and `zone` prop references using `useMemo` with coordinate-primitive dependencies to eliminate render storms. |
+| **Step 8: Map & HUD Performance** | `UI-I-004` | `GameMap.tsx` | Implements deep-value coordinate memoization for marker points in `GameMap.tsx` so stationary players do not trigger MapLibre DOM marker updates or zoom calculations. |
+| **Step 9: Load Performance** | `UI-I-001`<br>`UI-I-003` | `fonts.css`<br>`index.html` | Subsets Inter to Latin weights (400, 600, 700, 800) saving ~250 kB; adds `<link rel="preload">` for primary Latin WOFF2 font; synchronizes theme-color to `#000000` / `#F4F8F5`. |
+| **Step 10: Visual Design & UX Polish** | `UI-I-005` | `index.css`<br>`tokens.css`<br>`App.css` | Verifies `tabular-nums` and layout stability on all HUD chips; validates sunlight contrast; polishes empty/error/loading fallback states. |
+| **Step 11: Guardrails** | Regression testing | `tests/e2e/ui_guardrails.spec.ts`<br>`scripts/check-bundle-budget.mjs` | Automated Playwright tests for zero horizontal overflow, 44x44px touch targets, axe accessibility check, and bundle size budget. |
+
+### Gated Items (Documented in `DEFERRED.md`):
+- **`UI-G-001` (Full GeoJSON Symbol Layer Migration for Map Markers):** Replacing DOM markers entirely with GeoJSON symbol layers and custom SDF icons. Gated on high-density tournament scale (>50 players). For current 2–12 player outdoor games, DOM markers with CSS/RAF smoothing provide superior 60fps interpolation; prop stabilization in Step 7 & 8 completely eliminates the CPU bottleneck without visual regression.
+
 
 
