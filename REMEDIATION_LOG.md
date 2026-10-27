@@ -50,9 +50,29 @@
 - [x] **Step 6:** CameraScanner (E-006 + I-007)
 - [x] **Step 7:** Haptics (I-006)
 - [x] **Step 8:** Host presets cloud sync (I-005), GATED
-- [ ] **Step 9:** Offline map tiles (I-002), GATED
+- [x] **Step 9:** Offline map tiles (I-002), GATED
 - [ ] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 9 Execution: Offline Map Tiles (I-002, GATED)
+
+- **Findings:** I-002
+- **Verdict:** DEFERRED (Failed Gates 1 & 3; Existing runtime caching + tactical fallback confirmed).
+- **Gating Evaluation:**
+  - Gate 1 (Tile source/ToS): **FAIL**. The application uses public OpenFreeMap (`https://tiles.openfreemap.org`), a community-donated endpoint. Mass recursive pre-fetching of vector tiles and font glyphs across zoom levels violates fair-use policies and risks IP blocks.
+  - Gate 2 (Service worker interception): **PASS (Existing)**. Verified that `apps/web/public/sw.js` already intercepts OpenFreeMap requests and caches them with stale-while-revalidate and an LRU entry cap configured via `HIDE_AND_SEEK_CONFIG.map.tileCacheEntries.default` (1,200 tiles).
+  - Gate 3 (Player UX): **FAIL**. CacheStorage is per device; host-only download does not populate runners' or hunters' phones, and mandatory cellular pre-caching before a match degrades mobile UX.
+  - Zero-network fallback: **PASS (Existing)**. `apps/web/src/utils/map-tactical-style.ts` provides `createTacticalFallbackStyle()`, which functions 100% offline without remote fonts or vector tiles.
+- **Action Taken:**
+  - Documented complete architectural evaluation and future self-hosted PMTiles alternative in `DEFERRED.md`.
+- **Verification Commands & Results:**
+  - `oxlint`: PASS (13 warnings, 0 in touched files, no regressions)
+  - `typecheck`: PASS (0 errors)
+  - `test:unit`: PASS (42/42 passed)
+  - `test:audit`: PASS (33/33 passed)
+  - `build`: PASS (0 warnings)
 
 ---
 

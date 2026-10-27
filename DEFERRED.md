@@ -76,3 +76,32 @@ CREATE POLICY "Host presets owner delete"
 
 1. Should anonymous hosts be allowed to transfer presets via QR code export/import prior to full account linking?
 2. Maximum preset quota per host (recommended: 20 presets).
+
+---
+
+## I-002: Offline Map Tiles Pre-Caching
+
+- **Audit Lead:** IMPROVEMENTS.md (I-002: Offline map tile pre-caching)
+- **Status:** DEFERRED (Gated on Tile Provider ToS & Architecture)
+- **Evaluation Date:** 2026-10-28
+
+### Gating Evaluation
+
+1. **Tile Source & ToS Permissibility:** **FAIL**. The application default tile provider is OpenFreeMap (`https://tiles.openfreemap.org`), a community-funded public service. Mass automated pre-fetching of hundreds of vector tiles and glyphs across zoom ranges (e.g. 13–17) for geometric bounding boxes violates terms of use for public hosted endpoints and risks IP throttling.
+2. **Service Worker Interception:** **PASS (Existing)**. Verified in `apps/web/public/sw.js:29-50` that the app already features a production service worker that transparently intercepts OpenFreeMap GET requests, serves cached tiles with stale-while-revalidate semantics, and bounds storage using an LRU eviction cap (`tileCacheLimit` derived from `HIDE_AND_SEEK_CONFIG.map.tileCacheEntries.default` = 1200).
+3. **Player UX & Cross-Device Scope:** **FAIL**. `CacheStorage` is local to each player's individual device browser. A host downloading tiles on their device provides zero cache benefits to hunters or runners on their respective phones. Requiring every player to execute a multi-megabyte prefetch on field cellular networks before game start is unviable.
+4. **Offline Fallback:** **PASS (Existing)**. `apps/web/src/utils/map-tactical-style.ts` provides `createTacticalFallbackStyle()`, a zero-network vector style that functions 100% offline without remote fonts or sprites, allowing full GPS navigation and boundary rendering even in total network dead zones.
+
+### Proposed Architecture & Strategic Alternatives
+
+When offline map enhancements are prioritized, the recommended alternatives are:
+
+#### Alternative A: Self-Hosted PMTiles (Recommended for Native/Offline)
+- Package local metropolitan or regional vector tiles as a single `.pmtiles` archive served via HTTP range requests or embedded into the native app assets (Phase B).
+- Eliminates third-party ToS violations and provides instant, zero-latency vector rendering without recursive tile pre-fetching.
+
+#### Alternative B: Enhanced Runtime LRU Caching (Current Web Pattern)
+- Rely on the active service worker cache in `apps/web/public/sw.js`.
+- As players view the map in the lobby or during calibration, viewed tiles are automatically persisted to `xzones-map-tiles-v1`.
+- If connectivity drops in the field, MapLibre GL continues to render cached tiles, falling back gracefully to `createTacticalFallbackStyle()` if new tiles are unreachable.
+
