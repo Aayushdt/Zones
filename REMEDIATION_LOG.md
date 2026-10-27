@@ -43,7 +43,7 @@
 
 - [x] **Step 0:** Setup and baseline (no code changes)
 - [x] **Step 1:** Triage all 13 findings (documentation only)
-- [ ] **Step 2:** Deno tooling and CI (E-001 + I-003, merged)
+- [x] **Step 2:** Deno tooling and CI (E-001 + I-003, merged)
 - [ ] **Step 3:** MatchPage timers and status state (E-002 + E-005, solved together)
 - [ ] **Step 4:** GameMap center (E-003) + bundle analysis (I-001)
 - [ ] **Step 5:** Location uploads (E-004 + I-004)
@@ -53,3 +53,23 @@
 - [ ] **Step 9:** Offline map tiles (I-002), GATED
 - [ ] **Step 10:** Gap audit of what the reports did not cover
 - [ ] **Step 11:** Final verification and report update
+
+---
+
+## Step 2 Execution: Deno Tooling and CI (E-001 + I-003)
+
+- **Findings:** E-001, I-003 (Merged)
+- **Verdict:** CONFIRMED
+- **Files Changed:**
+  - `scripts/run-deno.mjs`: Added native Node preflight script that verifies Deno is available on PATH and provides user-friendly install instructions before invoking tests.
+  - `package.json`: Updated Deno test scripts (`test:edge`, `verify:payloads`, `test:api`, `test:sim`) to invoke `node scripts/run-deno.mjs test ...`.
+  - `README.md`: Documented Deno >= 2.9.x prerequisite in setup guide.
+  - `.github/workflows/ci.yml`: Inspected and confirmed CI already specifies `denoland/setup-deno@v2` with `deno-version: v2.9.6` and executes tests as dedicated steps.
+- **Verification Commands & Results:**
+  - `verify:payloads`: PASS (19/19 schema checks passed)
+  - `test:edge`: PASS (19/19 tests passed)
+  - `test:api`: PASS (19 edge + 11 hostile audit tests passed)
+  - `test:sim`: PASS (1/1 scenario tests passed)
+  - Simulated missing Deno (`PATH="/usr/bin"`): PASS (exited with code 1 and printed helpful install guide)
+  - Workflow YAML validation: PASS (parsed cleanly)
+  - `typecheck`, `lint`, `test:unit`, `test:audit`, `build`: All PASS (0 errors, 0 regressions)

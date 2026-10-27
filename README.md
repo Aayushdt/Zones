@@ -31,6 +31,7 @@ xzones.md                  Authoritative implementation plan (sections 19–29)
 ## Prerequisites
 
 - Node.js 24.19.x (version in `.nvmrc`) and Corepack with pnpm 12.14.0 (pinned in `package.json`).
+- Deno >= 2.9.x (v2.9.6 recommended; required for Edge Function tests and payload verification: `curl -fsSL https://deno.land/install.sh | sh`).
 - Docker only for the full local Supabase stack. The isolated SQL smoke harness needs PostgreSQL and `psql`.
 - Chromium for Playwright: install it with `corepack pnpm exec playwright install chromium`.
 - Supabase CLI 2.121.0 is pinned as a workspace dependency.
