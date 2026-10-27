@@ -19,10 +19,30 @@
 
 ---
 
+## Step 1: Triage Table for All 13 Findings
+
+| Finding ID | Classification | Evidence & Real Code Analysis |
+| :--- | :--- | :--- |
+| **E-001** | **CONFIRMED** | Package scripts (`test:edge`, `verify:payloads`, `test:api`, `test:sim`, `test:all`) invoke `deno` via `corepack pnpm exec deno test ...`, which fails with `Command "deno" not found` when Deno is not pre-installed on PATH. (Merged with I-003). |
+| **E-002** | **CONFIRMED** | `apps/web/src/pages/MatchPage.tsx` lines 632 and 639 directly invoke `Date.now()` inside JSX rendering for tactical countdown pills, violating React Compiler purity and causing unstable render cycles. |
+| **E-003** | **CONFIRMED** | `apps/web/src/components/GameMap.tsx` line 110 accesses `data.own_position ?? data.own_team_positions[0]` in an effect setting state with incomplete deps `[data.own_position?.lat, data.own_position?.lon, data.own_team_positions]`, triggering oxlint `react-hooks/exhaustive-deps`. |
+| **E-004** | **PARTIALLY CONFIRMED** | `apps/web/src/components/LocationSharing.tsx` lines 47–50 halts GPS uploads when `document.visibilityState !== 'visible'`. The web restriction is genuine, but removing the guard or playing audio heartbeats is unviable on mobile web; need a visible-change immediate fix trigger, wake-lock reacquisition, and in-app UX warnings. Game balance changes deferred. |
+| **E-005** | **CONFIRMED** | `apps/web/src/pages/MatchPage.tsx` lines 138 and 193/198 call `setLiveStatus` and `setZoneSeconds` synchronously inside `useEffect` bodies, triggering oxlint `set-state-in-effect`. Can be solved together with E-002 using a unified ticker hook and derived render values. |
+| **E-006** | **PARTIALLY CONFIRMED** | `apps/web/src/components/CameraScanner.tsx` lines 36–45 stops tracks on unmount, but fails to nullify `video.current.srcObject`, accesses a mutable ref in cleanup, and has undifferentiated error handling. Needs clean resource release and error separation. |
+| **I-001** | **PARTIALLY CONFIRMED** | `dist/assets/maplibre-gl-*.js` is ~1,075 kB (289 kB gzip) and already isolated to a separate vendor chunk. MapLibre GL cannot be shrunk below 500 kB minified without breaking GIS capabilities. Ensure `GameMap` routes are code-split and adjust chunk size warning threshold with clear documentation. |
+| **I-002** | **DEFERRED** | Client-side `cache.put` without a custom service worker cache interception layer will not be consumed by MapLibre GL, and bulk prefetching violates third-party tile ToS. Requires a dedicated architectural decision (PMTiles or self-hosted vector tiles). |
+| **I-003** | **CONFIRMED** | Merged with E-001. CI workflow and repo scripts lack explicit Deno setup and user-friendly preflight diagnostics for missing runtime binaries. |
+| **I-004** | **CONFIRMED** | Mobile GPS polling at maximum frequency while stationary wastes battery. A pure, unit-tested stationary detector in `packages/game-core` can safely pace transmissions up to 6s without affecting active movement accuracy or rule thresholds. |
+| **I-005** | **DEFERRED** | Host presets in `apps/web/src/services/host-presets.ts` are stored in `localStorage`. Cross-device cloud sync requires user authentication and profile linking, which does not exist in the anonymous guest session model. |
+| **I-006** | **PARTIALLY CONFIRMED** | `@capacitor` is not installed in the repository. Web Vibration is disabled on iOS Safari. Progressive enhancement with clean feature detection and safe no-ops is appropriate without adding heavy native bridge packages. |
+| **I-007** | **CONFIRMED** | `apps/web/src/components/CameraScanner.tsx` lacks video track torch capability detection and `applyConstraints` toggle, impeding tag QR code scanning in evening/dusk matches on supported Android/Chromium devices. |
+
+---
+
 ## Remediation Checklist
 
 - [x] **Step 0:** Setup and baseline (no code changes)
-- [ ] **Step 1:** Triage all 13 findings (documentation only)
+- [x] **Step 1:** Triage all 13 findings (documentation only)
 - [ ] **Step 2:** Deno tooling and CI (E-001 + I-003, merged)
 - [ ] **Step 3:** MatchPage timers and status state (E-002 + E-005, solved together)
 - [ ] **Step 4:** GameMap center (E-003) + bundle analysis (I-001)
