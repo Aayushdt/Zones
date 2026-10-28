@@ -75,7 +75,7 @@ This document tracks the step-by-step repository cleanup of `Zones`. Every delet
 ## Cleanup Step Checklist
 
 - [x] **Step 0:** Setup and baseline (no deletions)
-- [ ] **Step 1:** Build the KEEP LIST (documentation only)
+- [x] **Step 1:** Build the KEEP LIST (documentation only)
 - [ ] **Step 2:** Automated detection (raw hints, saved outside repo)
 - [ ] **Step 3:** Verify and classify every candidate, then write CLEANUP_REPORT.md
 - [ ] **Step 4:** Junk and stray files (repo hygiene)
@@ -87,6 +87,106 @@ This document tracks the step-by-step repository cleanup of `Zones`. Every delet
 - [ ] **Step 10:** Dependencies, scripts and tooling config
 - [ ] **Step 11:** Stale docs and tests
 - [ ] **Step 12:** Final verification and report
+
+---
+
+## Step 1: Reachability Keep List (Protected Entry Points and Invariants)
+
+Every candidate considered for deletion must be checked against this Keep List. Items connected to these entry points, cross-runtime bridges, dynamic selectors, or protected files must NEVER be deleted.
+
+### 1. Web Application Entry Points (`apps/web`)
+- **HTML & Boot:** `apps/web/index.html` mounts `apps/web/src/main.tsx` -> `apps/web/src/App.tsx` -> `apps/web/src/app/router.tsx`.
+- **Primary Routes (Static):**
+  - `/`: `apps/web/src/pages/HomePage.tsx`
+  - `/create`: `apps/web/src/pages/CreatePage.tsx` (includes subcomponents in `apps/web/src/pages/create/`)
+  - `/join`: `apps/web/src/pages/JoinPage.tsx`
+  - `/lobby/:matchId`: `apps/web/src/pages/LobbyPage.tsx`
+  - `/match/:matchId/head-start`: `apps/web/src/pages/HeadStartPage.tsx`
+- **Lazy-Loaded Route Chunks:**
+  - `/match/:matchId`: `apps/web/src/pages/MatchPage.tsx`
+  - `/match/:matchId/pings`: `apps/web/src/pages/PingsPage.tsx`
+  - `/match/:matchId/tag`: `apps/web/src/pages/TagPage.tsx`
+  - `/match/:matchId/results`: `apps/web/src/pages/ResultsPage.tsx`
+  - `/match/:matchId/host-claim`: `apps/web/src/pages/HostClaimPage.tsx`
+  - `/settings`: `apps/web/src/pages/SettingsPage.tsx`
+  - `/guide`: `apps/web/src/pages/GuidePage.tsx`
+  - `/bug-report`: `apps/web/src/pages/BugReportPage.tsx`
+  - `/dev/sim` (DEV only): `apps/web/src/pages/SimulatorPage.tsx`
+  - Catch-all fallback (`*`): `apps/web/src/pages/RouteShell.tsx` (`kind="not-found"`)
+
+### 2. Shared Packages & Cross-Runtime Consumers
+- **`@xzones/game-core` (`packages/game-core`):**
+  - Package entry point: `packages/game-core/src/index.ts` (configured in `package.json` exports map).
+  - Web consumers: `apps/web/src/` imports rules, configs, smoothing, and ping models.
+  - Deno Backend Edge Function consumers (`backend/supabase/functions/api/index.ts`):
+    - Imports `packages/game-core/src/config.ts` (`isValidMatchConfig`, `isValidZoneConfig`).
+    - Imports `packages/game-core/src/hideAndSeekConfig.ts` (`HIDE_AND_SEEK_CONFIG`).
+  - Deno Simulator consumers (`tools/simulator/scenario.ts`):
+    - Imports `packages/game-core/src/rules.ts` (`balanceTeams`).
+  - Deno Test consumers (`tests/review/privacy-leak-check_test.ts`):
+    - Imports `packages/game-core/src/payloads.ts` (`projectEventForRole`).
+  - Audit Test consumers (`tests/audit/client_logic_audit.test.ts`):
+    - Imports `packages/game-core/src/index.ts` (`mergeLatestPings`).
+
+### 3. Backend Edge Functions & Database
+- **Supabase Configuration:** `backend/supabase/config.toml` declares `[functions.api]` entrypoint `./functions/api/index.ts`.
+- **API Function Entry Points & Handlers:**
+  - `backend/supabase/functions/api/index.ts` (Request router and action handlers: create, join, ready, start, pings, tag, heartbeat, location, items).
+  - `backend/supabase/functions/api/broadcast.ts` (Realtime event publishing).
+  - `backend/supabase/functions/api/payloads.ts` (Role-safe payload projection).
+  - `backend/supabase/functions/api/index_test.ts` (Edge unit test suite).
+  - `backend/supabase/functions/api/deno.json` (Deno task configuration).
+- **Database Migrations (STRICT KEEP):**
+  - `backend/supabase/migrations/202610180001_core.sql` through `202610200039_runner_camouflage.sql` (39 files).
+
+### 4. Scripts, Simulator & Test Suites
+- **Executable Scripts:**
+  - `scripts/check-bundle-budget.mjs` (CI asset budget enforcement).
+  - `scripts/run-deno.mjs` (Cross-platform Deno runner).
+  - `scripts/verify-payloads.ts` (Target for role payload privacy verification).
+  - `scripts/run-audit.sh`, `scripts/run-load-test.sh`, `scripts/test-audit-db.sh`, `scripts/test-schema.sh`, `scripts/test-tag-races.sh`.
+- **Tools:**
+  - `tools/capture-ui.mjs` (UI screenshot visual baseline generator).
+  - `tools/simulator/headless_sim.ts`, `tools/simulator/scenario.ts`, `tools/simulator/scenario_test.ts`, `tools/simulator/sim_test.ts`.
+- **Test Suites:**
+  - Unit: `packages/game-core/src/*.test.ts`
+  - Audits: `tests/audit/rules_audit.test.ts`, `tests/audit/client_logic_audit.test.ts`, `tests/audit/api_hostile_audit_test.ts`
+  - Realtime: `tests/realtime/integration.mjs`
+  - Privacy: `tests/privacy/verify-payloads.ts`, `tests/review/privacy-leak-check_test.ts`
+  - E2E: `tests/e2e/app.spec.ts`, `tests/e2e/ui-guardrails.spec.ts`
+
+### 5. Public Assets & PWA Infrastructure
+- `apps/web/public/favicon.svg` (Linked in `index.html`, precached by `sw.js`).
+- `apps/web/public/manifest.webmanifest` (Linked in `index.html`, precached by `sw.js`, validated by E2E).
+- `apps/web/public/icons-192.png` (Referenced by PWA manifest, precached by `sw.js`).
+- `apps/web/public/icons-512.png` (Referenced by PWA manifest, precached by `sw.js`).
+- `apps/web/public/icons.svg` (Referenced by PWA manifest, precached by `sw.js`).
+- `apps/web/public/contour-grid.svg` (Referenced in `apps/web/src/index.css`).
+- `apps/web/public/sw.js` (Registered in `apps/web/src/main.tsx` for offline map tile caching).
+
+### 6. Environment Variables
+- Client: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MAP_STYLE_URL`.
+- Backend/Deno: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `JOIN_CODE_HMAC_SECRET`, `RATE_LIMIT_HASH_SECRET`.
+- CI/Automation: `CI`, `PW_USE_SYSTEM_CHROME`, `DATABASE_URL`, `API_URL`, `DB_URL`, `ANON_KEY`, `SUPABASE_API_URL`, `SUPABASE_DB_URL`, `XZONES_UI_URL`.
+
+### 7. Dynamic Class Patterns & UI Invariants
+- Dynamic CSS BEM modifiers:
+  - Buttons: `app-btn--${variant}`, `app-btn--${size}`, `app-btn--full`
+  - Cards & Chips: `app-card--${variant}`, `app-card--interactive`, `app-chip--${variant}`, `app-chip--${size}`, `app-chip--pulse`
+  - Hold Button: `hold-btn--${variant}`, `is-holding`
+  - Icon Buttons: `icon-btn--${size}`, `icon-btn--${variant}`
+  - Tabs: `app-tabs-wrap--${orientation}`, `app-tabs--${orientation}`
+  - Teams & Badges: `team-card--${variant}`, `gps-badge--${state}`
+  - HUD & Banners: `hud-screen--stealth`, `results-hero-banner--${winnerVariant}`, `ping-card--${status}`
+- State Modifiers:
+  - `is-open`, `is-closed`, `is-active`, `is-selected`, `is-ready`, `is-not-ready`, `is-self`, `is-disabled`, `has-error`, `is-on`, `is-off`, `is-seeker`, `is-hider`, `is-critical-pulse`, `game-map-canvas--tactical`.
+
+### 8. Protected Files (NEVER DELETE OR MODIFY)
+- All migration files: `backend/supabase/migrations/*.sql`
+- Supabase configuration: `backend/supabase/config.toml`
+- License & env template: `LICENSE`, `.env.example`
+- Core audit & log docs: `ERRORS.md`, `IMPROVEMENTS.md`, `REMEDIATION_LOG.md`, `UI_REMEDIATION_LOG.md`, `DEFERRED.md`, `CLEANUP_REPORT.md`, `CLEANUP_LOG.md`
+- Lockfile (`pnpm-lock.yaml`) except when regenerating after dependency removals.
 
 ---
 
