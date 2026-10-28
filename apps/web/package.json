@@ -29,7 +29,7 @@
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
     "@types/geojson": "7946.0.16",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.6.5",
     "@types/qrcode": "1.5.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
