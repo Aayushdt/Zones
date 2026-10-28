@@ -356,17 +356,6 @@
     transform: none;
     overflow-y: auto;
   }
-  .hud-actions-drawer {
-    top: 0.5rem;
-    right: 0.5rem;
-    bottom: 0.5rem;
-    left: auto;
-    width: 340px;
-    max-height: calc(100dvh - 1rem);
-    border-radius: var(--radius-card);
-    transform: none;
-    overflow-y: auto;
-  }
   .hud-metrics-row {
     flex-wrap: wrap;
     gap: 0.5rem;

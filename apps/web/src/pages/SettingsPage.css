@@ -51,12 +51,6 @@
   color: var(--color-muted);
 }
 
-.settings-haptics-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
 .settings-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

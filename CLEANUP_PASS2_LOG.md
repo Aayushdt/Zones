@@ -86,7 +86,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [x] **Step 5:** Dependencies: account for ALL of them (G2)
 - [x] **Step 6:** `game-core` and shared exports, per symbol (G5, G7)
 - [x] **Step 7:** `RouteShell` dead branches (C-016, G4)
-- [ ] **Step 8:** CSS with coverage evidence (G3)
+- [x] **Step 8:** CSS with coverage evidence (G3)
 - [ ] **Step 9:** Dead backend surface (REPORT-ONLY) (G9)
 - [ ] **Step 10:** Repo hygiene (G7, G9)
 - [ ] **Step 11:** Final verification and report
@@ -361,8 +361,58 @@ Every exported symbol in `packages/game-core/src/*.ts` was systematically analyz
   - All 47 Playwright E2E tests passed cleanly across all 7 test specifications.
   - `corepack pnpm typecheck`, `lint`, `test:unit`, `test:audit`, and `build` all green.
 
+---
+
+## Step 8: CSS with Coverage Evidence (G3)
+
+An unminified production CSS build was generated into `/tmp/cleanup2/dist-unminified/`. A full Chromium CSS coverage suite was executed across all routes (`/`, `/create`, `/join`, `/settings`, `/guide`, `/bug-report`, `/non-existent-screen`, `/dev/sim`), across viewports (320x568, 390x844, 768x1024, 844x390 landscape, 1440x900), both selectable themes (`dusk`, `paper`), motion preferences (`reduce`, `no-preference`), and interactive element states (`:hover`, `:focus-visible`, active tab switching, modal open/close). 300 CSS coverage reports were aggregated into `/tmp/cleanup2/css-coverage-raw.json`.
+
+### 1. Zero-Coverage Candidates and Cross-Validation
+Every rule with zero coverage in the union was evaluated against static source code grep and dynamic component modifier builders:
+- **Dynamic Classes Confirmed Active (KEEP):**
+  - `Button.tsx`: `app-btn--${variant}` (`primary-green`, `seeker-red`, `secondary-outline`, `ghost`, `destructive`), `app-btn--${size}` (`sm`, `md`, `lg`).
+  - `Card.tsx`: `app-card--${variant}` (`surface`, `raised`, `glow-green`, `glow-red`, `outline`).
+  - `Chip.tsx`: `app-chip--${variant}` (`green`, `red`, `amber`, `blue`, `neutral`, `pulse`).
+  - `IconButton.tsx`: `icon-btn--${variant}` (`ghost`, `outline`, `filled`).
+  - `HoldButton.tsx`: `hold-btn--${variant}` (`seeker-red`, `primary-green`).
+  - `Toast.tsx`: `app-toast--${type}` (`info`, `success`, `warning`, `error`).
+  - `GameMap.tsx`: `game-marker--${kind}` (`you`, `teammate`, `snapshot`).
+  - `TeamCard.tsx`: `team-card--${variant}` (`seeker`, `hider`).
+  - Third-party MapLibre controls (`.maplibregl-*`).
+
+- **Provably Dead CSS Rules Identified & Removed (SAFE):**
+  1. `apps/web/src/App.css`:
+     - `.route-shell__nav`: Removed selector from `.state-panel__actions, .route-shell__nav`. Only historical consumer was in `RouteShell.tsx:52` pruned in Step 7.
+     - `.segmented-control__item`: Removed unreferenced selector alias from `.segmented-control__item, .segment` and `.segmented-control__item.is-selected, .segment.is-selected` (`SettingsPage.tsx` uses `.segment`).
+  2. `apps/web/src/pages/CreatePage.css`:
+     - `.create-title-wrap`: Removed unused heading wrap rule (lines 69-72).
+     - `.collapsible-card__subtitle`: Removed dead rule (lines 275-279); `CollapsibleCard.tsx` has no subtitle prop.
+     - `.create-screen__split` & `.create-preview-sticky`: Removed dead desktop grid query (lines 481-492); layout uses `.create-layout`.
+     - `.create-container`: Removed dead wide-screen rule (lines 494-499).
+  3. `apps/web/src/pages/MatchPage.css`:
+     - `.hud-actions-drawer`: Removed unused duplicate clone of `.hud-bottom-sheet` (lines 359-369).
+  4. `apps/web/src/pages/SettingsPage.css`:
+     - `.settings-haptics-row`: Removed dead row styling (lines 54-58); replaced by modern `<SettingRow>`.
+
+### 2. Sizing and Performance Impact
+- **Tracked CSS Lines Removed:** 52 lines (4 files).
+- **Global Stylesheet (`dist/assets/index-*.css`):** Reduced from 134.81 kB (22.83 kB gzip) to 134.34 kB (22.72 kB gzip) — 470 B raw / 110 B gzip reduction.
+- **MatchPage Stylesheet:** Reduced from 9.14 kB to 8.98 kB raw.
+- **SettingsPage Stylesheet:** Reduced from 2.92 kB to 2.85 kB raw.
+- **Bundle Budget Check:** All asset budgets PASSED (`scripts/check-bundle-budget.mjs`).
+
+### 3. Verification
+- **E2E Tests:** All 47 Playwright tests passed cleanly (41.9s).
+- **Screenshots:** Pixel-identical across all routes; 404 and static page snapshots match baseline 100%.
+- `typecheck`, `lint`, `test:unit`, and `test:audit` all green.
+
 ## Pass 2 Deletions Manifest Table
 
 | Step | ID | Category | Path / Symbol | Confidence | Evidence Summary | Last-Touched Commit | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Step 7 | C-016 | Dead Code | `apps/web/src/pages/RouteShell.tsx` (11 unused `screenCopy` keys & navigation blocks) | SAFE | Provably unreachable; router mounts only `kind="not-found"`; 404 route pixel-identical | `046cb4b` | **DELETED** |
+| Step 8 | C-019 | CSS | `apps/web/src/App.css` (`.route-shell__nav`, `.segmented-control__item`) | SAFE | Zero coverage; zero consumers; pruned alias & dead prototype class | `046cb4b` | **DELETED** |
+| Step 8 | C-020 | CSS | `apps/web/src/pages/CreatePage.css` (`.create-title-wrap`, `.collapsible-card__subtitle`, `.create-screen__split`, `.create-preview-sticky`, `.create-container`) | SAFE | Zero coverage; zero consumers; superseded Phase A layout classes | `3557d84` | **DELETED** |
+| Step 8 | C-021 | CSS | `apps/web/src/pages/MatchPage.css` (`.hud-actions-drawer`) | SAFE | Zero coverage; unused duplicate selector block | `3557d84` | **DELETED** |
+| Step 8 | C-022 | CSS | `apps/web/src/pages/SettingsPage.css` (`.settings-haptics-row`) | SAFE | Zero coverage; unused prototype row rule | `3557d84` | **DELETED** |
+
