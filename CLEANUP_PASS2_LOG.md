@@ -80,7 +80,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 
 - [x] **Step 0:** Setup and a trustworthy baseline
 - [x] **Step 1:** Audit the audit (documentation only) (G1–G10)
-- [ ] **Step 2:** `docs/` inventory and cleanup (G1)
+- [x] **Step 2:** `docs/` inventory and cleanup (G1)
 - [ ] **Step 3:** Template leftovers, public assets, and the service worker (G3, G5)
 - [ ] **Step 4:** Scripts, tools, and tests: prove invocation (G6)
 - [ ] **Step 5:** Dependencies: account for ALL of them (G2)
@@ -114,6 +114,33 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 
 ---
 
+## Step 2: `docs/` Inventory and Analysis (G1)
+
+An exhaustive analysis of all 240 tracked files in `docs/` and root documentation was conducted:
+
+### 1. Whole-Repository Blob Hash Duplication
+- **Probe:** `git ls-files -s` blob SHA-1 cross-check across the entire repository.
+- **Finding:** **0 duplicate blobs** across all directories. Every tracked file in `docs/` is a unique object.
+
+### 2. Sizing by Subfolder
+
+| Subfolder | File Count | Total Sizing | Purpose & Category |
+| :--- | :--- | :--- | :--- |
+| `docs/screenshots/` | 192 files | 10.16 MB | Generated multi-device Playwright screenshots from `tests/e2e/visual-a11y-audit.spec.ts` |
+| `docs/design/` | 14 files | 2.75 MB | Visual design board (`XZONES_Dusk_Contour_Game_UI_Board.png`, 2.24 MB), UI specs, and `tools/capture-ui.mjs` outputs |
+| `docs/review/` | 4 files | 0.18 MB | Phase 3 function registry and invariant audit records (`FUNCTION-REGISTRY.md`, etc.) |
+| `docs/(root)` | 11 files | 0.15 MB | Core project specs (`DECISIONS.md`, `PROGRESS.md`, `FIX-LOG.md`, `TECH_DEBT.md`) |
+| `docs/db-audit/` | 13 files | 0.02 MB | Historical SQL migration and RPC audit logs |
+| `docs/verification/` | 6 files | 0.02 MB | Test matrix records and implementation confirmations |
+| **Total `docs/`** | **240 files** | **13.29 MB** | - |
+
+### 3. Markdown Link & Embed Resolution
+- **Probe:** Scanned all 171 local markdown links and image embeds (`[text](path)` and `![alt](path)`) across the repository.
+- **Result:** **0 broken links**. Every link targets an active, valid file.
+
+### 4. Classification & Action
+- Per Global Rules and Step 2 instructions, historical audit records and test-generated screenshots are strictly **KEEP** (propose Git LFS or lossless WebP compression under Out of Scope findings).
+- **Deletions:** 0 files (no duplicate or orphan files found).
 
 ---
 
