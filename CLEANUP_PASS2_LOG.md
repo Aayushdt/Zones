@@ -81,7 +81,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [x] **Step 0:** Setup and a trustworthy baseline
 - [x] **Step 1:** Audit the audit (documentation only) (G1–G10)
 - [x] **Step 2:** `docs/` inventory and cleanup (G1)
-- [ ] **Step 3:** Template leftovers, public assets, and the service worker (G3, G5)
+- [x] **Step 3:** Template leftovers, public assets, and the service worker (G3, G5)
 - [ ] **Step 4:** Scripts, tools, and tests: prove invocation (G6)
 - [ ] **Step 5:** Dependencies: account for ALL of them (G2)
 - [ ] **Step 6:** `game-core` and shared exports, per symbol (G5, G7)
@@ -141,6 +141,39 @@ An exhaustive analysis of all 240 tracked files in `docs/` and root documentatio
 ### 4. Classification & Action
 - Per Global Rules and Step 2 instructions, historical audit records and test-generated screenshots are strictly **KEEP** (propose Git LFS or lossless WebP compression under Out of Scope findings).
 - **Deletions:** 0 files (no duplicate or orphan files found).
+
+---
+
+## Step 3: Template Leftovers, Public Assets, and Service Worker (G3, G5)
+
+A comprehensive audit of public assets, service worker precache lists, and Vite template leftovers was conducted:
+
+### 1. `apps/web/public/` Asset Inventory & Concrete Consumers
+
+| Asset File | Size | Concrete Consumer | Is Sprite? / Standard Compliance | Classification |
+| :--- | :--- | :--- | :--- | :--- |
+| `contour-grid.svg` | 1,100 B | `apps/web/src/index.css:20` (`background: url('/contour-grid.svg')`) | Tactical background tile pattern (not a sprite) | **KEEP** |
+| `favicon.svg` | 9,522 B | `apps/web/index.html:7` (`<link rel="icon" ... href="/favicon.svg" />`), `sw.js` precache | Browser tab favicon | **KEEP** |
+| `icons.svg` | 280 B | `manifest.webmanifest:12` (`sizes: "any"`, `type: "image/svg+xml"`), `sw.js` precache | Standalone SVG vector icon (W3C standard for scalable PWA icons; not a sprite sheet) | **KEEP** |
+| `icons-192.png` | 19,212 B | `manifest.webmanifest:18` (192x192 raster icon), `sw.js` precache | PWA home screen icon | **KEEP** |
+| `icons-512.png` | 27,329 B | `manifest.webmanifest:24` (512x512 raster icon), `sw.js` precache | PWA splash screen icon | **KEEP** |
+| `manifest.webmanifest` | 666 B | `apps/web/index.html:8` (`<link rel="manifest" ... />`), `tests/e2e/app.spec.ts:16` | PWA manifest definition | **KEEP** |
+| `sw.js` | 2,707 B | `apps/web/src/main.tsx:18` (`navigator.serviceWorker.register('/sw.js')`) | Runtime tile caching and offline app shell caching | **KEEP** |
+
+### 2. Service Worker (`sw.js`) Precache Verification
+- Precache list: `['/', '/manifest.webmanifest', '/favicon.svg', '/icons.svg', '/icons-192.png', '/icons-512.png']`.
+- Every entry has a verified external consumer (either `index.html` or `manifest.webmanifest`). Zero unreferenced entries in `sw.js`.
+
+### 3. Vite Template Artifacts Audit
+- **`apps/web/src/assets/`:** Directory does not exist (0 template images).
+- **Template SVG files:** Grep for `vite.svg` or `react.svg` returned 0 matches across the entire repo.
+- **`apps/web/src/App.css`:** Grep for Vite default template selectors (`.counter`, `.hero`, `#center`, `#next-steps`, `#docs`, `#social`, `#spacer`, `.ticks`) returned 0 matches.
+- **`apps/web/README.md`:** Contains custom XZones web app documentation, not Vite scaffolding template text.
+- **Exact duplicate blobs:** 0 duplicates repo-wide.
+
+### 4. Classification & Action
+- All assets, icons, manifest entries, and stylesheets are active and verified.
+- **Deletions:** 0 items.
 
 ---
 
