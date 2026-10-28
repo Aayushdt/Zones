@@ -87,7 +87,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [x] **Step 6:** `game-core` and shared exports, per symbol (G5, G7)
 - [x] **Step 7:** `RouteShell` dead branches (C-016, G4)
 - [x] **Step 8:** CSS with coverage evidence (G3)
-- [ ] **Step 9:** Dead backend surface (REPORT-ONLY) (G9)
+- [x] **Step 9:** Dead backend surface (REPORT-ONLY) (G9)
 - [ ] **Step 10:** Repo hygiene (G7, G9)
 - [ ] **Step 11:** Final verification and report
 
@@ -405,6 +405,81 @@ Every rule with zero coverage in the union was evaluated against static source c
 - **E2E Tests:** All 47 Playwright tests passed cleanly (41.9s).
 - **Screenshots:** Pixel-identical across all routes; 404 and static page snapshots match baseline 100%.
 - `typecheck`, `lint`, `test:unit`, and `test:audit` all green.
+
+---
+
+## Step 9: Dead Backend Surface (REPORT-ONLY) (G9)
+
+In accordance with the global rules, no database migrations or Edge API functions were deleted or modified. The full backend surface (Edge API router and Supabase PostgreSQL schema) was statically and dynamically mapped against client, test, and script consumers.
+
+### 1. Edge API Routes & Callers Matrix (`backend/supabase/functions/api/index.ts`)
+
+| Method | Route Pattern | Action / Handler Role | Web / Client Callers (`apps/web`) | Tests & Script Callers | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/lobbies` | Create private lobby with HMAC join code | `supabase-api.ts:createLobby` | `api_hostile_audit_test.ts`, `index_test.ts` | **ACTIVE** |
+| `POST` | `/lobbies/join` | Join lobby by 6-char normalized code | `supabase-api.ts:joinLobby` | `api_hostile_audit_test.ts`, `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/team` | Select role (`HUNTER` or `RUNNER`) | `supabase-api.ts:selectTeam` | `index_test.ts`, `scenario_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/hunter-count` | Set target Hunter count for lobby | `supabase-api.ts:setHunterCount` | E2E lobby test suites | **ACTIVE** |
+| `POST` | `/matches/:id/ready` | Toggle player readiness | `supabase-api.ts:setReady` | `index_test.ts`, E2E test suites | **ACTIVE** |
+| `POST` | `/matches/:id/start` | Host starts match with revision check | `supabase-api.ts:startMatch` | `api_hostile_audit_test.ts`, `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/sync` | Role-projected state synchronization | `supabase-api.ts:syncMatch` | `index_test.ts`, `verify-payloads.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/location` | Upload GPS fix with dead-man timeout | `supabase-api.ts:uploadLocation` | `api_hostile_audit_test.ts`, `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/qr` | Issue single-use opaque tag QR token | `supabase-api.ts:issueTagQr` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/qr/scan` | Hunter scans Runner QR token | `supabase-api.ts:scanTagQr` | `api_hostile_audit_test.ts`, `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/tag/gps` | Proximity GPS tag attempt | `supabase-api.ts:tagGps` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/tag/confirm` | Runner self-reports tag confirmation | `supabase-api.ts:confirmTag` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/leave` | Player gracefully departs lobby/match | `supabase-api.ts:leaveMatch` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/host-claim` | Claim abandoned host controller role | `supabase-api.ts:claimHost` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/end` | Host manually terminates match | `supabase-api.ts:endMatch` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/result` | Fetch authoritative finalized result | `supabase-api.ts:fetchResult` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/visibility` | Background/foreground visibility ping | `supabase-api.ts:reportVisibility` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/chat/send` | Send tactical/in-game chat | `supabase-api.ts:sendChatMessage` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/chat/list` | Fetch match chat history | `supabase-api.ts:listChatMessages` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/items/enabled` | Toggle power-up items configuration | `supabase-api.ts:setItemsEnabled` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/items` | Trigger power-up item action | `supabase-api.ts:activateItem` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/matches/:id/items/alerts` | Poll tactical items alerts | `supabase-api.ts:listItemAlerts` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/bug-reports` | Submit user bug report | `supabase-api.ts:submitBugReport` | `index_test.ts` | **ACTIVE** |
+| `POST` | `/rejoinable` | Query active match for session | `supabase-api.ts:findRejoinableMatch` | `index_test.ts` | **ACTIVE** |
+| `DELETE`| `/matches/:id/players/:pId` | Host kicks unstarted lobby player | `supabase-api.ts:removePlayer` | `api_hostile_audit_test.ts`, `index_test.ts` | **ACTIVE** |
+
+All 25 Edge API route actions have concrete callers in `apps/web/src/services/supabase-api.ts` and dedicated automated tests. **Zero dead routes.**
+
+---
+
+### 2. Database Schema Reconstruction (39 Migrations)
+
+- **Tables (14):** `matches`, `players`, `latest_fix`, `ping_snapshots`, `tags`, `qr_challenges`, `rate_limits`, `match_results`, `xzones_cleanup_state`, `suspicious_events`, `chat_messages`, `bug_reports`, `item_uses`, `item_alerts`. All 14 tables actively participate in foreign key graphs, Edge API RPCs, or security audit logs.
+- **Stored Procedures / Functions (45):**
+  - **34 Edge RPC Targets:** Directly called by `api/index.ts` via `supabase.rpc(...)`.
+  - **6 Trigger Functions:** Invoked by PostgreSQL database triggers:
+    - `xzones_enforce_player_limit` (trigger `xzones_player_limit_guard` on `players`)
+    - `xzones_track_zone_sample` (trigger `xzones_track_zone_sample` on `latest_fix`)
+    - `xzones_track_stationary_sample` (trigger `xzones_track_stationary_sample` on `latest_fix`)
+    - `xzones_purge_chat_on_finish` (trigger `xzones_purge_chat_on_finish` on `matches`)
+    - `xzones_evaluate_proximity_alarms` (trigger `xzones_evaluate_proximity_alarms` on `latest_fix`)
+    - `xzones_hide_camouflaged_ping` (trigger `xzones_hide_camouflaged_ping` on `ping_snapshots`)
+  - **5 Internal Sub-functions:** Called directly within PL/pgSQL routines:
+    - `xzones_zone_at`: Pure mathematical circle schedule generator called by `xzones_sync_match`, `xzones_track_zone_sample`, `xzones_zone_status`.
+    - `xzones_finish_match`: Terminal state transition called by `xzones_end_match` and `xzones_resolve_match`.
+    - `xzones_resolve_match`: Outcome evaluator called inside `xzones_sync_match`.
+    - `xzones_lobby_status`: Team balance validation called by `xzones_start_match` and `xzones_sync_lobby`.
+    - `xzones_can_receive_realtime_topic`: RLS security policy function for Realtime channels.
+- **Indexes (12):** All 12 indexes cover composite lookup keys (`match_id, role, status`, `match_id, received_at`, `expires_at`, `cleanup_after`) used in high-frequency queries.
+
+---
+
+### 3. Maintainer Questions & Long-Term Backend Surface Observations
+
+1. **Scheduled Cleanup Maintenance (`xzones_cleanup`):**
+   - The stored procedure `xzones_cleanup(p_now timestamptz)` handles batch purging of expired matches, dead rate limit records, and stale snapshots. It is currently called during test runs and manual operations.
+   - *Maintainer Question:* Should an automated pg_cron job (e.g. `select cron.schedule('xzones-cleanup-hourly', '0 * * * *', 'SELECT xzones_cleanup(now());')`) be formalized in a future migration, or is external cron invocation via a scheduled Edge Function preferred?
+   - *Risk of Removal:* High. Expired lobbies, rate limits, and GPS fixes would accumulate in the database without periodic invocation.
+2. **Bug Report Admin Visibility (`bug_reports` table):**
+   - Bug reports submitted via `POST /bug-reports` insert into the `bug_reports` table with HMAC rate limiting. There is currently no administrative UI or webhook to export these to GitHub Issues or Discord/Slack.
+   - *Maintainer Question:* Would maintainers prefer a Supabase webhook trigger (sending new rows to an alert webhook) or an admin-only dashboard query?
+3. **Forensic Audit Log Retention (`suspicious_events` table):**
+   - Hostile probes, rate limit breaches, and invalid tokens are recorded in `suspicious_events`.
+   - *Maintainer Question:* Is there an intended UI view for hosts to inspect flagged events (e.g., via `xzones_host_suspicious_events`), or should this remain exclusively for backend security reviews?
 
 ## Pass 2 Deletions Manifest Table
 
