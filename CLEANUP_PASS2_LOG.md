@@ -84,7 +84,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [x] **Step 3:** Template leftovers, public assets, and the service worker (G3, G5)
 - [x] **Step 4:** Scripts, tools, and tests: prove invocation (G6)
 - [x] **Step 5:** Dependencies: account for ALL of them (G2)
-- [ ] **Step 6:** `game-core` and shared exports, per symbol (G5, G7)
+- [x] **Step 6:** `game-core` and shared exports, per symbol (G5, G7)
 - [ ] **Step 7:** `RouteShell` dead branches (C-016, G4)
 - [ ] **Step 8:** CSS with coverage evidence (G3)
 - [ ] **Step 9:** Dead backend surface (REPORT-ONLY) (G9)
@@ -277,6 +277,58 @@ Every dependency and devDependency across the entire workspace, plus Deno import
 - **KEEP:** All 29 dependencies across root, web, and game-core.
 - `corepack pnpm install --frozen-lockfile` completed in 18ms with 0 peer warnings.
 - `corepack pnpm typecheck`, `lint`, `test:unit`, `test:audit`, `build` all pass cleanly with no regressions.
+
+---
+
+## Step 6: `game-core` and Shared Exports, Per Symbol (G5, G7)
+
+Every exported symbol in `packages/game-core/src/*.ts` was systematically analyzed against consumers across `apps/web`, `backend/supabase/functions/api`, simulator tools, scripts, and tests, as well as for internal module use.
+
+### 1. `game-core` Export Inventory and Consumer Matrix
+
+| Source File | Exported Symbol | Type/Value | Concrete Consumers & Callers | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `src/config.ts` | `DEFAULT_MATCH_CONFIG` | Value | `apps/web/src/services/mock-api.ts:2`, `apps/web/src/pages/LobbyPage.tsx` | **KEEP** |
+| `src/config.ts` | `DEFAULT_ZONE_CONFIG` | Value | `apps/web/src/components/ZonePicker.tsx:3`, `apps/web/src/pages/LobbyPage.tsx` | **KEEP** |
+| `src/config.ts` | `isValidMatchConfig` | Value | `backend/supabase/functions/api/index.ts:3` (Edge API config validator) | **KEEP** |
+| `src/config.ts` | `isValidZoneConfig` | Value | `backend/supabase/functions/api/index.ts:3` (Edge API config validator) | **KEEP** |
+| `src/config.ts` | `MatchConfig`, `ZoneConfig` | Type | Domain configuration type contracts | **KEEP** |
+| `src/hideAndSeekConfig.ts` | `HIDE_AND_SEEK_CONFIG` | Value | `apps/web` (`JoinPage`, `LobbyPage`, `MatchPage`), `backend/supabase/functions/api/index.ts`, `config.ts`, `rules.ts` | **KEEP** |
+| `src/hideAndSeekConfig.ts` | `HIDE_AND_SEEK_MODE`, `isWithinSetting` | Value | Configuration bounds tests and schema validators | **KEEP** |
+| `src/map-smoothing.ts` | `interpolateMapCoordinate` | Value | `apps/web/src/components/GameMap.tsx:7`, `map-smoothing.test.ts` | **KEEP** |
+| `src/map-smoothing.ts` | `isStationaryFix` | Value | `apps/web/src/components/LocationSharing.tsx:4`, `map-smoothing.test.ts` | **KEEP** |
+| `src/map-smoothing.ts` | `computeAdaptiveUploadInterval` | Value | `apps/web/src/components/LocationSharing.tsx:4`, `map-smoothing.test.ts` | **KEEP** |
+| `src/map-smoothing.ts` | `UPLOAD_INTERVAL_MOVING_MS`, `UPLOAD_INTERVAL_STATIONARY_MS` | Value | Internal calibration constants in `map-smoothing.ts`, tested in unit tests | **KEEP** |
+| `src/payloads.ts` | `projectEventForRole` | Value | `apps/web/src/services/realtime-events.ts:3`, `apps/web/src/services/supabase-api.ts:17`, `backend/supabase/functions/api/broadcast.ts:3` | **KEEP** |
+| `src/payloads.ts` | `EventEnvelope`, `RecipientRole` | Type | Cross-runtime realtime payload type contracts | **KEEP** |
+| `src/pings.ts` | `mergeLatestPings` | Value | `apps/web/src/pages/PingsPage.tsx:4`, `apps/web/src/services/realtime-events.ts:2` | **KEEP** |
+| `src/realtime.ts` | `privateMatchTopic` | Value | `apps/web/src/services/supabase-api.ts:15`, `realtime.test.ts` | **KEEP** |
+| `src/rules.ts` | `haversineDistanceMeters` | Value | `packages/game-core/src/map-smoothing.ts:8`, `golden_master.test.ts` | **KEEP** |
+| `src/rules.ts` | `canStartLobby` | Value | `apps/web/src/services/mock-api.ts:1,69,89`, `rules_audit.test.ts` | **KEEP** |
+| `src/rules.ts` | `nextRandomRole` | Value | `apps/web/src/services/mock-api.ts:1,64`, `golden_master.test.ts` | **KEEP** |
+| `src/rules.ts` | `zoneAt` | Value | Pure timestamp-derived circle schedule; verified by `golden_master.test.ts` & `rules.test.ts` | **UNCERTAIN** |
+| `src/rules.ts` | `classifyZoneSample` | Value | Accuracy-aware circle boundary classifier; verified by `golden_master.test.ts` | **UNCERTAIN** |
+| `src/rules.ts` | `advanceZoneConfirmation` | Value | State machine for zone entry/exit debounce; verified by `golden_master.test.ts` | **UNCERTAIN** |
+| `src/rules.ts` | `balanceTeams` | Value | Deterministic role allocation logic; verified by `rules_audit.test.ts` & `rules.test.ts` | **UNCERTAIN** |
+| `src/rules.ts` | `didTagMeetDeadline` | Value | Authoritative tag timestamp verification; verified by `rules_audit.test.ts` | **UNCERTAIN** |
+| `src/rules.ts` | `resolveActiveOutcome` | Value | Terminal win/loss resolution logic; verified by `golden_master.test.ts` | **UNCERTAIN** |
+| `src/rules.ts` | `latestDuePingIndex` | Value | Deterministic ping slot calculation; verified by `golden_master.test.ts` | **UNCERTAIN** |
+| `src/types.ts` | `Role`, `MatchState`, `ActiveCounts`, etc. | Type | Core domain type definitions | **KEEP** |
+
+### 2. Internal Use Re-Check of Pass 1 Candidates C-004..C-008
+- **C-004 (`GPS_READY_THRESHOLD_METERS`):** Used internally twice in `GpsReadinessBadge.tsx` (lines 62, 119) for calibration state determination, and verified in `client_logic_audit.test.ts`. **KEEP**.
+- **C-005 (`GPS_STALE_AGE_MS`):** Used internally twice in `GpsReadinessBadge.tsx` (lines 115, 130) for stale fix timeout checking, and verified in `client_logic_audit.test.ts`. **KEEP**.
+- **C-006 (`watchDeviceLocation`):** Pure wrapper around `navigator.geolocation.watchPosition` in `device-lifecycle.ts:23`, verified in `client_logic_audit.test.ts:140`. **KEEP**.
+- **C-007 (`fallbackSyncDelay`):** Called internally in `fallback-sync.ts:68` for jittered exponential backoff, and verified in `client_logic_audit.test.ts`. **KEEP**.
+- **C-008 (`parseApiError`):** Called internally in `supabase-api.ts:384, 439` for error payload normalization, and verified in `client_logic_audit.test.ts`. **KEEP**.
+
+### 3. Explicit Decision on Type-Only Exports (C-009..C-015)
+- In accordance with the project guidelines, the `export` keyword was **NOT** stripped from type-only exports in `Button.tsx`, `Chip.tsx`, `Tabs.tsx`, `Toast.tsx`, `device-lifecycle.ts`, `game-api.ts`, or `location-store.ts`. TypeScript erases type declarations completely during compilation; stripping the `export` keyword yields 0 byte reduction in JavaScript bundles and introduces churn.
+
+### 4. Classification & Action
+- **Rule-Logic Symbols:** Per the evidence rules, game-rule logic symbols with 0 web consumers (`zoneAt`, `classifyZoneSample`, `advanceZoneConfirmation`, `balanceTeams`, `didTagMeetDeadline`, `resolveActiveOutcome`, `latestDuePingIndex`) are classified as **UNCERTAIN** with maintainer questions, rather than deleted.
+- **SAFE to delete:** 0 symbols.
+- **Unit test count:** Unchanged from baseline (42/42 `test:unit`, 34/34 `test:audit`, 19/19 `test:edge`, 19/19 `test:api`, 2/2 `verify:payloads`, 1/1 `test:sim`).
 
 ## Pass 2 Deletions Manifest Table
 
