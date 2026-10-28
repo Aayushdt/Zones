@@ -85,7 +85,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [x] **Step 4:** Scripts, tools, and tests: prove invocation (G6)
 - [x] **Step 5:** Dependencies: account for ALL of them (G2)
 - [x] **Step 6:** `game-core` and shared exports, per symbol (G5, G7)
-- [ ] **Step 7:** `RouteShell` dead branches (C-016, G4)
+- [x] **Step 7:** `RouteShell` dead branches (C-016, G4)
 - [ ] **Step 8:** CSS with coverage evidence (G3)
 - [ ] **Step 9:** Dead backend surface (REPORT-ONLY) (G9)
 - [ ] **Step 10:** Repo hygiene (G7, G9)
@@ -330,8 +330,39 @@ Every exported symbol in `packages/game-core/src/*.ts` was systematically analyz
 - **SAFE to delete:** 0 symbols.
 - **Unit test count:** Unchanged from baseline (42/42 `test:unit`, 34/34 `test:audit`, 19/19 `test:edge`, 19/19 `test:api`, 2/2 `verify:payloads`, 1/1 `test:sim`).
 
+---
+
+## Step 7: `RouteShell` Dead Branches (C-016, G4)
+
+`apps/web/src/pages/RouteShell.tsx` originally contained 12 dictionary entries and conditional prototype navigation links from Phase A scaffolding. In modern code, `router.tsx:61` mounts `RouteShell` exclusively for the catch-all `*` route with `kind="not-found"`. The other 11 dictionary keys and conditional navigation blocks were completely unreachable.
+
+### 1. Minimal Dead-Branch Pruning
+- **Unreachable Screen Copy Entries Removed:**
+  - `home`, `create`, `join`, `lobby`, `head-start`, `match`, `pings`, `tag`, `results`, `settings`, `simulator` (11 dictionary entries).
+- **Unreachable Conditional Blocks Removed:**
+  - `kind === "home"` navigation block (`welcome__action` and `welcome__secondary` links).
+  - `kind === "settings"` back link.
+  - `kind === "home" && import.meta.env.DEV` simulator link.
+- **Type Narrowing:**
+  - `Screen` narrowed to `"not-found"`, preserving strict typing and zero behavior change.
+- **Export & Component Name Preserved:**
+  - `RouteShell` remains exported, retaining exact contract with `apps/web/src/app/router.tsx:3,61`.
+- **Lines Removed:** 21 lines (from 72 down to 51 lines). Last-touched commit: `046cb4b`.
+
+### 2. Verification
+- **Pixel-Identical Screenshots:**
+  - `not-found-404-dusk-mobile-390x844.png`: Exact byte match (22,407 B == 22,407 B).
+  - `not-found-404-dusk-desktop-1440x900.png`: Exact byte match (29,548 B == 29,548 B).
+  - `not-found-404-paper-mobile-390x844.png`: Exact byte match (25,597 B == 25,597 B).
+  - `not-found-404-paper-desktop-1440x900.png`: Exact byte match (32,279 B == 32,279 B).
+- **Build & Bundle Impact:**
+  - Entry JS (`dist/assets/index-*.js`) reduced from 378.19 kB (118.49 kB gzip) to 376.93 kB (118.09 kB gzip) — 1.26 kB raw / 400 B gzip reduction.
+- **Test Results:**
+  - All 47 Playwright E2E tests passed cleanly across all 7 test specifications.
+  - `corepack pnpm typecheck`, `lint`, `test:unit`, `test:audit`, and `build` all green.
+
 ## Pass 2 Deletions Manifest Table
 
 | Step | ID | Category | Path / Symbol | Confidence | Evidence Summary | Last-Touched Commit | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| - | - | - | - | - | Initializing Pass 2 | - | - |
+| Step 7 | C-016 | Dead Code | `apps/web/src/pages/RouteShell.tsx` (11 unused `screenCopy` keys & navigation blocks) | SAFE | Provably unreachable; router mounts only `kind="not-found"`; 404 route pixel-identical | `046cb4b` | **DELETED** |
