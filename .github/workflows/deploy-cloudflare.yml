@@ -26,7 +26,7 @@ jobs:
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.settings.outputs.configured == 'true'
 
       - uses: pnpm/action-setup@v4
