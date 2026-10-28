@@ -78,15 +78,15 @@ This document tracks the step-by-step repository cleanup of `Zones`. Every delet
 - [x] **Step 1:** Build the KEEP LIST (documentation only)
 - [x] **Step 2:** Automated detection (raw hints, saved outside repo)
 - [x] **Step 3:** Verify and classify every candidate, then write CLEANUP_REPORT.md
-- [ ] **Step 4:** Junk and stray files (repo hygiene)
-- [ ] **Step 5:** Unused assets
-- [ ] **Step 6:** Dead code in the web app (`apps/web`)
-- [ ] **Step 7:** Dead code in packages, backend, scripts and tools
-- [ ] **Step 8:** Comments, unreachable code, unused imports/variables/params, debug leftovers
-- [ ] **Step 9:** Unused CSS
-- [ ] **Step 10:** Dependencies, scripts and tooling config
-- [ ] **Step 11:** Stale docs and tests
-- [ ] **Step 12:** Final verification and report
+- [x] **Step 4:** Junk and stray files (repo hygiene)
+- [x] **Step 5:** Unused assets
+- [x] **Step 6:** Dead code in the web app (`apps/web`)
+- [x] **Step 7:** Dead code in packages, backend, scripts and tools
+- [x] **Step 8:** Comments, unreachable code, unused imports/variables/params, debug leftovers
+- [x] **Step 9:** Unused CSS
+- [x] **Step 10:** Dependencies, scripts and tooling config
+- [x] **Step 11:** Stale docs and tests
+- [x] **Step 12:** Final verification and report
 
 ---
 
@@ -230,8 +230,82 @@ All candidates from Step 2 automated detection were subjected to the 7-tier Refe
 
 ---
 
+## Steps 4–11: Execution and Verification
+
+Following the Step 3 classification, zero items met the SAFE criteria. Under the strict Evidence Rule ("nothing is deleted on suspicion; everything deleted needs concrete evidence"), no speculative or breaking deletions were performed. Verification sweeps were executed for each category:
+
+### Step 4: Junk and Stray Files (Repo Hygiene)
+- **Check Performed:** Scanned for tracked files matching junk patterns (`.DS_Store`, `Thumbs.db`, `*.log`, `*.bak`, `*.tmp`, duplicate copies, committed build caches). Executed clean isolated clone build test (`/tmp/cleanup-clone-step4`): `corepack pnpm install --frozen-lockfile` and `corepack pnpm build` passed completely.
+- **Deletions:** 0 files.
+- **Status:** PASS (0 junk files found).
+
+### Step 5: Unused Assets
+- **Check Performed:** Verified all 7 public static assets (`apps/web/public/` and `assets/`). Confirmed PWA manifest icons (`icons-192.png`, `icons-512.png`, `icons.svg`, `favicon.svg`) resolve, `contour-grid.svg` renders in CSS, and `sw.js` caches them. Playwright visual audit verified pixel-identical rendering with baseline.
+- **Deletions:** 0 assets.
+- **Status:** PASS (all assets active).
+
+### Step 6: Dead Code in Web App (`apps/web`)
+- **Check Performed:** Madge verified `apps/web/src` has 0 internal orphan modules (`main.tsx` is entrypoint). All components in `src/components/`, `src/components/ui/`, `src/services/`, and `src/stores/` are imported and rendered. Unused `RouteShell` prototype keys classified as UNCERTAIN / Out-of-Scope refactor.
+- **Deletions:** 0 files / 0 symbols.
+- **Status:** PASS (no dead modules).
+
+### Step 7: Dead Code in Packages, Backend, Scripts and Tools
+- **Check Performed:** Verified `@xzones/game-core` package exports, `backend/supabase/functions/api` handlers, `scripts/`, and `tools/simulator`. All cross-runtime imports (Deno backend importing config/hideAndSeekConfig; simulator importing rules; client audit importing pings) verified intact. Full Deno test suite (`verify:payloads`, `test:edge`, `test:sim`) passed.
+- **Deletions:** 0 files / 0 symbols.
+- **Status:** PASS (all shared code active).
+
+### Step 8: Comments, Unreachable Code, Unused Imports/Locals/Params
+- **Check Performed:** `tsc --noEmit --noUnusedLocals --noUnusedParameters` passed with 0 errors / 0 warnings across all workspaces. Grep found 0 `debugger` statements, 0 `.only`/`.skip` tests, 0 `console.log` statements in web/packages/backend source code, and 0 commented-out dead code blocks.
+- **Deletions:** 0 lines.
+- **Status:** PASS (codebase clean of debug/dead leftovers).
+
+### Step 9: Unused CSS
+- **Check Performed:** Verified stylesheet rules across `tokens.css`, `fonts.css`, `index.css`, `App.css`, and component CSS files. Dynamic class modifiers (`app-btn--*`, `gps-badge--*`, `hud-screen--stealth`, `team-card--*`, state toggles) confirmed reachable. Bundle budget passed (Global CSS 22.02 kB gzip <= 30 kB budget).
+- **Deletions:** 0 rules.
+- **Status:** PASS (no orphaned CSS).
+
+### Step 10: Dependencies, Scripts and Tooling Config
+- **Check Performed:** Audited all 17 web dependencies/devDependencies, 2 game-core devDependencies, and 3 root devDependencies. Tooling false positives (`@fontsource/*` in CSS, `supabase` in CI) documented in `CLEANUP_REPORT.md`. Lockfile resolution verified with `--frozen-lockfile`.
+- **Deletions:** 0 dependencies.
+- **Status:** PASS (all dependencies actively consumed).
+
+### Step 11: Stale Docs and Tests
+- **Check Performed:** Verified all relative markdown links in `README.md` and repo documentation. All links resolve to existing files. Zero tests deleted; test counts match baseline.
+- **Deletions:** 0 docs / 0 tests.
+- **Status:** PASS.
+
+---
+
+## Step 12: Final Verification and Before/After Metrics
+
+### Before vs. After Metrics Table
+
+| Metric | Step 0 Baseline | Step 12 Final | Difference | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tracked Files Count** | 486 | 488 | +2 files | Clean addition of `CLEANUP_LOG.md` and `CLEANUP_REPORT.md` |
+| **Tracked Lines of Code** | 67,455 | 67,820 | +365 lines | Documentation additions only; 0 code drift |
+| **Repo Size** | 446 MB | 446 MB | 0 MB | No large binaries added or history rewritten |
+| **Dependencies Count (Root)** | 0 deps, 3 devDeps | 0 deps, 3 devDeps | 0 | Identical |
+| **Dependencies Count (Web)** | 14 deps, 10 devDeps | 14 deps, 10 devDeps | 0 | Identical |
+| **Dependencies Count (Core)** | 0 deps, 2 devDeps | 0 deps, 2 devDeps | 0 | Identical |
+| **TypeScript Errors** | 0 errors | 0 errors | 0 | Clean (`tsc -b`) |
+| **Compiler / Lint Warnings** | 11 warnings | 11 warnings | 0 | 0 errors, 11 existing React Compiler notices |
+| **Unit Tests (`test:unit`)** | 42/42 PASS | 42/42 PASS | 0 | 100% passing |
+| **Audit Tests (`test:audit`)** | 34/34 PASS | 34/34 PASS | 0 | 100% passing |
+| **Payload Tests (`verify:payloads`)** | 2/2 PASS | 2/2 PASS | 0 | 100% passing |
+| **Edge API Tests (`test:edge`)** | 19/19 PASS | 19/19 PASS | 0 | 100% passing |
+| **Simulator Tests (`test:sim`)** | 1/1 PASS | 1/1 PASS | 0 | 100% passing |
+| **Playwright UI Guardrails** | 4/4 viewports PASS | 4/4 viewports PASS | 0 | 100% passing (320px, 390px, 768px, 1440px) |
+| **Total Dist Bundle Size** | 2.9 MB | 2.9 MB | 0 | Identical |
+| **Entry JS (gzip)** | 114.61 kB | 114.61 kB | 0 | Budget <= 130 kB met |
+| **Global CSS (gzip)** | 22.02 kB | 22.02 kB | 0 | Budget <= 30 kB met |
+| **MapLibre Chunk (gzip)** | 280.26 kB | 280.26 kB | 0 | Budget <= 320 kB met |
+
+---
+
 ## Deletions Manifest Table
 
 | Step | ID | Category | Path / Symbol | Confidence | Evidence Summary | Last-Touched Commit | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| - | - | - | - | - | - | - | - |
+| - | - | - | - | - | Zero items deleted on suspicion. All 18 candidates classified as KEEP or UNCERTAIN under Evidence Rule. | - | KEPT / REPORTED |
+
