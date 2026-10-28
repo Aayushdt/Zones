@@ -77,7 +77,7 @@ This document tracks the step-by-step repository cleanup of `Zones`. Every delet
 - [x] **Step 0:** Setup and baseline (no deletions)
 - [x] **Step 1:** Build the KEEP LIST (documentation only)
 - [x] **Step 2:** Automated detection (raw hints, saved outside repo)
-- [ ] **Step 3:** Verify and classify every candidate, then write CLEANUP_REPORT.md
+- [x] **Step 3:** Verify and classify every candidate, then write CLEANUP_REPORT.md
 - [ ] **Step 4:** Junk and stray files (repo hygiene)
 - [ ] **Step 5:** Unused assets
 - [ ] **Step 6:** Dead code in the web app (`apps/web`)
@@ -209,6 +209,24 @@ Raw detection outputs were captured into `/tmp/cleanup-detect/` outside the repo
 | Gitignore audit (`git ls-files -ci`) | Tracked vs ignored | **0 tracked ignored files** | `/tmp/cleanup-detect/stray-files.txt` | Clean separation between tracked files and `.gitignore` |
 | Large files search (> 500 kB) | Tracked repository files | **1 tracked design asset** | `/tmp/cleanup-detect/stray-files.txt` | `docs/design/XZONES_Dusk_Contour_Game_UI_Board.png` (2.2 MB, referenced by README and docs) |
 | Debug & Hygiene Grep | Entire repository code | **0 debuggers, 0 skipped tests** | `/tmp/cleanup-detect/code-hygiene.txt` | Zero `debugger` statements, 0 `.only`/`.skip` tests, 0 `console.log` in app code (CLI tools only), 0 dead code comments |
+
+---
+
+## Step 3: Candidate Verification and Classification (CLEANUP_REPORT.md)
+
+All candidates from Step 2 automated detection were subjected to the 7-tier Reference Search:
+1. Static imports / exports / re-exports.
+2. Plain-text and symbol grep across the entire repository.
+3. Dynamic references (`import()`, template literals, CSS selectors, `data-*` attributes).
+4. Configs, scripts, CI workflows, and `.env` files.
+5. Unit, audit, privacy, simulator, and E2E test suites.
+6. Cross-runtime consumers (Deno Edge Functions and scripts).
+7. Git history and recency context.
+
+### Classification Outcome
+- **SAFE Candidates (0 items):** Zero candidates met the SAFE criteria (no files or symbols had concrete proof of non-use).
+- **UNCERTAIN Candidates (1 item):** `C-016` (Historical unused `screenCopy` dictionary keys in `apps/web/src/pages/RouteShell.tsx`). Retained without change to avoid violating the Zero Behavior Change and No Refactors rules.
+- **KEEP Candidates (17 items):** Verified active usage across code, CSS font imports, unit tests, and CI tooling. Detailed justifications documented in `CLEANUP_REPORT.md`.
 
 ---
 
