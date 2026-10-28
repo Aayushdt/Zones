@@ -88,7 +88,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [x] **Step 7:** `RouteShell` dead branches (C-016, G4)
 - [x] **Step 8:** CSS with coverage evidence (G3)
 - [x] **Step 9:** Dead backend surface (REPORT-ONLY) (G9)
-- [ ] **Step 10:** Repo hygiene (G7, G9)
+- [x] **Step 10:** Repo hygiene (G7, G9)
 - [ ] **Step 11:** Final verification and report
 
 ---
@@ -480,6 +480,58 @@ All 25 Edge API route actions have concrete callers in `apps/web/src/services/su
 3. **Forensic Audit Log Retention (`suspicious_events` table):**
    - Hostile probes, rate limit breaches, and invalid tokens are recorded in `suspicious_events`.
    - *Maintainer Question:* Is there an intended UI view for hosts to inspect flagged events (e.g., via `xzones_host_suspicious_events`), or should this remain exclusively for backend security reviews?
+
+---
+
+## Step 10: Repo Hygiene (G7, G9)
+
+Repository hygiene analysis was conducted covering ignore rules, environment configuration, obsolete configs, git history blobs, and stale branch tracking.
+
+### 1. `.gitignore` & `.env.example` Audit
+- **`.gitignore` Validation:**
+  - Standard development artifacts (`node_modules/`, `dist/`, `coverage/`, `*.tsbuildinfo`, `playwright-report/`, `test-results/`, `.env*`, `supabase/.temp/`, `.DS_Store`, `.vscode/`, `.idea/`) are strictly covered.
+  - `git ls-files -ci --exclude-standard` returns **0 files** (zero tracked-but-ignored files).
+- **`.env.example` Validation:**
+  - All 8 environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MAP_STYLE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `JOIN_CODE_HMAC_SECRET`, `RATE_LIMIT_HASH_SECRET`) have active concrete consumers in client services, Edge functions, or NPM test scripts. Zero unreferenced variables.
+
+### 2. Tool & Config Hygiene
+- **Duplicate Tool Configs:** Zero duplicate linting or formatting configs (no leftover Babel, Webpack, ESLint, or Jest configs). Linter is unified on Oxlint (`.oxlintrc.json`); test runners are unified on Vitest and Playwright.
+- **TypeScript Config References:** All 4 tsconfigs (`tsconfig.base.json`, `tsconfig.app.json`, `tsconfig.node.json`, `packages/game-core/tsconfig.json`) participate in project reference trees.
+
+---
+
+### 3. Report-Only Observations
+
+#### A. Stale Merged Branches (Report-Only: Do Not Delete)
+The following 17 local and 14 remote branches are fully merged into `origin/main` and can be safely pruned by repository administrators:
+- **Local merged branches:** `audit/code-review-20261027`, `audit/game-logic`, `audit/supabase-db`, `cleanup/slim-2`, `feat/complete-page-upgrade`, `feat/hide-and-seek-web`, `feat/neon-redesign`, `feat/phase-a`, `feat/responsive-motion-upgrade`, `feat/ui-dusk-paper`, `fix/audit-findings`, `fix/audit-remediation-20261028`, `fix/layout-compactness-correction`, `fix/review-findings`, `fix/supabase-db-audit`, `ui/audit-improvements-20261028`, `verification`.
+- **Remote merged branches:** `origin/audit/game-logic`, `origin/audit/supabase-db`, `origin/feat/hide-and-seek-web`, `origin/feat/neon-redesign`, `origin/feat/phase-a`, `origin/feat/responsive-motion-upgrade`, `origin/feat/ui-dusk-paper`, `origin/fix/audit-findings`, `origin/fix/audit-remediation-20261028`, `origin/fix/layout-compactness-correction`, `origin/fix/review-findings`, `origin/fix/supabase-db-audit`, `origin/ui/audit-improvements-20261028`, `origin/verification`.
+
+#### B. Top 10 Largest Blobs in Git History
+1. `docs/design/XZONES_Dusk_Contour_Game_UI_Board.png` (2,241,235 B — 2.24 MB)
+2. `docs/verification/screens/G1.1/home-mobile.traffic.json` (385,801 B — 385 kB)
+3. `docs/screenshots/home-desktop-1920-paper.png` (184,127 B — 184 kB)
+4. `docs/screenshots/home-desktop-1920-paper.png` (historical commit) (183,969 B — 184 kB)
+5. `docs/screenshots/home-desktop-1920-dusk.png` (160,488 B — 160 kB)
+6. `docs/screenshots/home-desktop-1920-dusk.png` (historical commit) (160,466 B — 160 kB)
+7. `docs/screenshots/home-desktop-1920-paper.png` (historical commit) (159,577 B — 160 kB)
+8. `docs/screenshots/home-desktop-1920-paper.png` (historical commit) (159,574 B — 160 kB)
+9. `docs/screenshots/home-desktop-1920-paper.png` (historical commit) (158,823 B — 159 kB)
+10. `docs/screenshots/home-desktop-1440-paper.png` (145,123 B — 145 kB)
+
+#### C. React Compiler Linter Warnings (G10 - Follow-up Task)
+The baseline contains 11 static analysis warnings:
+- 10 instances of `react(set-state-in-effect)`:
+  - `apps/web/src/pages/LobbyPage.tsx:92, 198`
+  - `apps/web/src/pages/MatchPage.tsx:173, 226, 269, 276, 283`
+  - `apps/web/src/components/GpsReadinessBadge.tsx:65, 87`
+  - `apps/web/src/components/LocationSharing.tsx:39`
+- 1 instance of `eslint(no-extra-boolean-cast)`: `apps/web/src/components/ui/Button.tsx:35`
+*Recommendation:* Refactor state synchronization in these hooks to derive values during render or fire inside discrete event handlers as a dedicated follow-up feature task.
+
+#### D. Repository Root Process Documents Consolidation Proposal
+Currently, 9 process logs and specifications reside in the root directory: `CLEANUP_LOG.md`, `CLEANUP_REPORT.md`, `CLEANUP_PASS2_LOG.md`, `ERRORS.md`, `IMPROVEMENTS.md`, `REMEDIATION_LOG.md`, `UI_REMEDIATION_LOG.md`, `DEFERRED.md`, and `error.md`.
+*Recommendation:* In a future administrative maintenance pass, relocate these historical audit and remediation logs under a unified `docs/audit-history/` directory to streamline the repo root.
 
 ## Pass 2 Deletions Manifest Table
 
