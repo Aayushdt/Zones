@@ -76,7 +76,7 @@ This document tracks the step-by-step repository cleanup of `Zones`. Every delet
 
 - [x] **Step 0:** Setup and baseline (no deletions)
 - [x] **Step 1:** Build the KEEP LIST (documentation only)
-- [ ] **Step 2:** Automated detection (raw hints, saved outside repo)
+- [x] **Step 2:** Automated detection (raw hints, saved outside repo)
 - [ ] **Step 3:** Verify and classify every candidate, then write CLEANUP_REPORT.md
 - [ ] **Step 4:** Junk and stray files (repo hygiene)
 - [ ] **Step 5:** Unused assets
@@ -187,6 +187,28 @@ Every candidate considered for deletion must be checked against this Keep List. 
 - License & env template: `LICENSE`, `.env.example`
 - Core audit & log docs: `ERRORS.md`, `IMPROVEMENTS.md`, `REMEDIATION_LOG.md`, `UI_REMEDIATION_LOG.md`, `DEFERRED.md`, `CLEANUP_REPORT.md`, `CLEANUP_LOG.md`
 - Lockfile (`pnpm-lock.yaml`) except when regenerating after dependency removals.
+
+---
+
+## Step 2: Automated Detection (Raw Tool Hints)
+
+Raw detection outputs were captured into `/tmp/cleanup-detect/` outside the repository tree.
+
+### Summary of Detection Counts
+
+| Tool / Probe | Target Scope | Findings Count | Raw Output File | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| `tsc --noEmit --noUnusedLocals --noUnusedParameters` | `@xzones/game-core`, `@xzones/web` | **0 errors, 0 unused** | `/tmp/cleanup-detect/tsc-*.log` | Clean compiler check; zero unused locals or parameters |
+| `knip` (workspace config) | Workspaces, entries, projects | **2 deps, 5 exports, 12 types** | `/tmp/cleanup-detect/knip-output.txt` | Both dependencies (`@fontsource/*`) are used in CSS; all 5 exports are imported & tested in client audit; 12 types are internal |
+| `depcheck` | Workspace roots | **1 devDep (root), 2 deps (web)** | `/tmp/cleanup-detect/depcheck-*.txt` | `supabase` in root is invoked in CI and local dev; `@fontsource/*` in web are imported in `fonts.css` |
+| `madge --orphans` | `apps/web/src`, `packages/game-core/src` | **1 orphan (web), 7 (game-core)** | `/tmp/cleanup-detect/madge-orphans-*.txt` | `web/src/main.tsx` is entrypoint mounted by `index.html`; 7 game-core orphans are test suites |
+| `madge --circular` | Entire project source | **0 circular dependencies** | `/tmp/cleanup-detect/madge-circular-*.txt` | Zero import cycles detected across the repository |
+| `jscpd` | Web & game-core source | **18 clones (1.30% duplication)** | `/tmp/cleanup-detect/jscpd-output.txt` | Report-only; tokens, button variants, and small CSS layouts across themes |
+| `deno check` & `deno lint` | `backend/supabase/functions/api/` | **0 check errors, 20 test notes** | `/tmp/cleanup-detect/deno-*.txt` | All 20 lint warnings are mock fetch handlers in `index_test.ts` missing `await`; 0 unused imports/vars |
+| Junk patterns search | Tracked repository files | **0 junk matches** | `/tmp/cleanup-detect/stray-files.txt` | No `.DS_Store`, `Thumbs.db`, `*.orig`, `*.bak`, `*.tmp`, duplicate copies |
+| Gitignore audit (`git ls-files -ci`) | Tracked vs ignored | **0 tracked ignored files** | `/tmp/cleanup-detect/stray-files.txt` | Clean separation between tracked files and `.gitignore` |
+| Large files search (> 500 kB) | Tracked repository files | **1 tracked design asset** | `/tmp/cleanup-detect/stray-files.txt` | `docs/design/XZONES_Dusk_Contour_Game_UI_Board.png` (2.2 MB, referenced by README and docs) |
+| Debug & Hygiene Grep | Entire repository code | **0 debuggers, 0 skipped tests** | `/tmp/cleanup-detect/code-hygiene.txt` | Zero `debugger` statements, 0 `.only`/`.skip` tests, 0 `console.log` in app code (CLI tools only), 0 dead code comments |
 
 ---
 
