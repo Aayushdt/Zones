@@ -83,7 +83,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [x] **Step 2:** `docs/` inventory and cleanup (G1)
 - [x] **Step 3:** Template leftovers, public assets, and the service worker (G3, G5)
 - [x] **Step 4:** Scripts, tools, and tests: prove invocation (G6)
-- [ ] **Step 5:** Dependencies: account for ALL of them (G2)
+- [x] **Step 5:** Dependencies: account for ALL of them (G2)
 - [ ] **Step 6:** `game-core` and shared exports, per symbol (G5, G7)
 - [ ] **Step 7:** `RouteShell` dead branches (C-016, G4)
 - [ ] **Step 8:** CSS with coverage evidence (G3)
@@ -222,6 +222,61 @@ Every file across `scripts/`, `tools/`, and `tests/` was mapped to its concrete 
 - **Deletions:** 0 items.
 
 ---
+
+---
+
+## Step 5: Dependencies: Account for ALL of Them (G2)
+
+Every dependency and devDependency across the entire workspace, plus Deno imports and pnpm workspace configuration, was individually audited and mapped to concrete file:line callers and build configurations.
+
+### 1. Workspace Dependency Accounting Table (29 Total)
+
+| Workspace / Scope | Type | Dependency Name | Concrete Consumer / Caller | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Root** | dev | `@axe-core/playwright` | `tests/e2e/compliance-audit.spec.ts:2`, `tests/e2e/visual-a11y-audit.spec.ts:2` (automated WCAG a11y testing) | **KEEP** |
+| **Root** | dev | `@playwright/test` | `playwright.config.ts:1`, all 7 E2E test specs in `tests/e2e/*.spec.ts` | **KEEP** |
+| **Root** | dev | `supabase` | Local CLI harness: `scripts/setup-local-supabase.sh:8`, `scripts/run-load-test.sh:31`, `scripts/test-audit-db.sh:21`, CI `.github/workflows/ci.yml:37` | **KEEP** |
+| **apps/web** | prod | `@fontsource-variable/jetbrains-mono` | `apps/web/src/index.css:1` (`@import "@fontsource-variable/jetbrains-mono";`) - monospace tactical HUD font | **KEEP** |
+| **apps/web** | prod | `@fontsource/inter` | `apps/web/src/index.css:2` (`@import "@fontsource/inter/400.css";` etc.) - UI primary sans font | **KEEP** |
+| **apps/web** | prod | `@formkit/auto-animate` | `apps/web/src/components/ui/Toast.tsx:1`, `apps/web/src/pages/Lobby.tsx:2` (smooth DOM list transitions) | **KEEP** |
+| **apps/web** | prod | `@supabase/realtime-js` | `apps/web/src/services/realtime.ts:1` (WebSocket real-time subscription client) | **KEEP** |
+| **apps/web** | prod | `@xzones/game-core` | Workspace dependency imported across `apps/web/src/components/*`, `pages/*`, `stores/*` | **KEEP** |
+| **apps/web** | prod | `canvas-confetti` | `apps/web/src/pages/Results.tsx:3` (match victory celebration particle effects) | **KEEP** |
+| **apps/web** | prod | `jsqr` | `apps/web/src/components/CameraScannerModal.tsx:1` (real-time camera QR video stream decoder) | **KEEP** |
+| **apps/web** | prod | `lucide-react` | `apps/web/src/components/ui/Icon.tsx:1`, `apps/web/src/pages/Home.tsx:1` (UI tactical icon pack) | **KEEP** |
+| **apps/web** | prod | `maplibre-gl` | `apps/web/src/components/LiveMap.tsx:1`, `apps/web/src/components/ZonePicker.tsx:1`, `apps/web/src/pages/MatchHud.tsx:1` | **KEEP** |
+| **apps/web** | prod | `qrcode` | `apps/web/src/pages/Lobby.tsx:3` (match invite QR code generation) | **KEEP** |
+| **apps/web** | prod | `react` | `apps/web/src/main.tsx:1`, React hooks throughout `apps/web/src/` | **KEEP** |
+| **apps/web** | prod | `react-dom` | `apps/web/src/main.tsx:2` (`react-dom/client`) | **KEEP** |
+| **apps/web** | prod | `react-router-dom` | `apps/web/src/router.tsx:1`, `apps/web/src/main.tsx:3` | **KEEP** |
+| **apps/web** | prod | `zustand` | `apps/web/src/stores/gameStore.ts:1`, `apps/web/src/stores/authStore.ts:1` | **KEEP** |
+| **apps/web** | dev | `@types/canvas-confetti` | TypeScript type declarations for `canvas-confetti` | **KEEP** |
+| **apps/web** | dev | `@types/geojson` | TypeScript GeoJSON definitions used in `LiveMap.tsx`, `ZonePicker.tsx`, `types.ts` | **KEEP** |
+| **apps/web** | dev | `@types/node` | TypeScript definitions for Node built-ins in `apps/web/vite.config.ts` | **KEEP** |
+| **apps/web** | dev | `@types/qrcode` | TypeScript type declarations for `qrcode` | **KEEP** |
+| **apps/web** | dev | `@types/react` | TypeScript type declarations for React | **KEEP** |
+| **apps/web** | dev | `@types/react-dom` | TypeScript type declarations for React DOM | **KEEP** |
+| **apps/web** | dev | `@vitejs/plugin-react` | `apps/web/vite.config.ts:2` (React Fast Refresh and JSX compiler plugin) | **KEEP** |
+| **apps/web** | dev | `oxlint` | `apps/web/package.json:8` (`"lint": "oxlint ..."`), `.oxlintrc.json` | **KEEP** |
+| **apps/web** | dev | `typescript` | `apps/web/package.json:7` (`"typecheck": "tsc --noEmit"`) | **KEEP** |
+| **apps/web** | dev | `vite` | `apps/web/package.json:5` (`"dev": "vite"`, `"build": "vite build"`) | **KEEP** |
+| **packages/game-core** | dev | `typescript` | `packages/game-core/package.json:7` (`"build": "tsc"`) | **KEEP** |
+| **packages/game-core** | dev | `vitest` | `packages/game-core/package.json:8` (`"test": "vitest run"`) | **KEEP** |
+
+### 2. Deno Imports & pnpm Workspace Overrides Audit
+- **`backend/supabase/functions/api/deno.json`:** Contains no external `npm:` imports or URL import maps. The Edge function relies exclusively on Web Standards (`fetch`, `Response.json`, `crypto.subtle`, `crypto.randomUUID`) and workspace relative imports.
+- **Root `package.json` pnpm config:** 0 `pnpm.overrides`, 0 `onlyBuiltDependencies`, 0 `peerDependencyRules`, 0 `patchedDependencies`. Lockfile is clean and minimal.
+
+### 3. Reconciliation of Pass 1's "17 Audited" Discrepancy
+- Pass 1 reported auditing 17 packages out of 24 in `apps/web`.
+- Investigation reveals Pass 1 tallied the 14 production dependencies plus 3 selected devDependencies (`@vitejs/plugin-react`, `oxlint`, `vite`), completely omitting `typescript` and the 6 `@types/*` type definitions packages ($14 + 3 = 17$).
+- All 24 dependencies in `apps/web` are verified active with concrete code references and build roles.
+
+### 4. Classification & Verification
+- **SAFE to remove:** 0 dependencies.
+- **KEEP:** All 29 dependencies across root, web, and game-core.
+- `corepack pnpm install --frozen-lockfile` completed in 18ms with 0 peer warnings.
+- `corepack pnpm typecheck`, `lint`, `test:unit`, `test:audit`, `build` all pass cleanly with no regressions.
 
 ## Pass 2 Deletions Manifest Table
 
