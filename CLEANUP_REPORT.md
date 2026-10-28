@@ -98,3 +98,80 @@ The following items were identified during repository analysis. In accordance wi
 | **Dependencies** | 17 (web) + 3 (root) | 0 | 20 | 0 KB |
 | **Documentation & Tests** | 49 tests + docs | 0 | 49 | 0 KB |
 | **Total** | **116+** | **0** | **116+** | **Zero Regressions** |
+
+---
+
+# Pass 2: Evidence-Based Audit & Remediation (Branch `chore/cleanup-pass2-20261029`)
+
+Cleanup Pass 2 resolved all evidence gaps identified in Pass 1 (G1–G10), tested hypotheses with automated tools, and executed reversible, zero-behavior-change pruning of provably dead code and styling.
+
+## 1. Updated Candidates Status Table
+
+| ID | Category | Path / Symbol | Pass 1 Status | Pass 2 Status | Evidence & Resolution |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **C-001** | Dependencies | `apps/web/package.json`: `@fontsource-variable/jetbrains-mono` | KEEP | **KEPT** | Re-verified: directly imported in `apps/web/src/theme/fonts.css:4`. Active in production typography. |
+| **C-002** | Dependencies | `apps/web/package.json`: `@fontsource/inter` | KEEP | **KEPT** | Re-verified: Latin weights imported in `apps/web/src/theme/fonts.css:1-3`. Active in production UI. |
+| **C-003** | Dependencies | `package.json` (root): `supabase` | KEEP | **KEPT** | Re-verified: executed via `pnpm exec supabase` in `.github/workflows/ci.yml:83,99` and `test-audit-db.sh`. |
+| **C-004** | Dead Code (Web) | `GpsReadinessBadge.tsx`: `GPS_READY_THRESHOLD_METERS` | KEEP | **KEPT** | Re-verified: imported in `tests/audit/client_logic_audit.test.ts:3` and used internally in badge logic. |
+| **C-005** | Dead Code (Web) | `GpsReadinessBadge.tsx`: `GPS_STALE_AGE_MS` | KEEP | **KEPT** | Re-verified: imported in `tests/audit/client_logic_audit.test.ts:3` and used internally in badge state. |
+| **C-006** | Dead Code (Web) | `device-lifecycle.ts`: `watchDeviceLocation` | KEEP | **KEPT** | Re-verified: imported in `tests/audit/client_logic_audit.test.ts:4` and called by `maintainDeviceLocation`. |
+| **C-007** | Dead Code (Web) | `fallback-sync.ts`: `fallbackSyncDelay` | KEEP | **KEPT** | Re-verified: imported in `tests/audit/client_logic_audit.test.ts:5` and called internally in fallback jitter sync. |
+| **C-008** | Dead Code (Web) | `supabase-api.ts`: `parseApiError` | KEEP | **KEPT** | Re-verified: imported in `tests/audit/client_logic_audit.test.ts:6` and called in API response handlers. |
+| **C-009** | Types (Web) | `Button.tsx`: `ButtonVariant`, `ButtonSize` | KEEP | **KEPT** | Re-verified: explicit decision to preserve component prop type exports (zero bundle impact). |
+| **C-010** | Types (Web) | `Chip.tsx`: `ChipVariant`, `ChipSize` | KEEP | **KEPT** | Re-verified: explicit decision to preserve component prop type exports. |
+| **C-011** | Types (Web) | `Tabs.tsx`: `TabItem` | KEEP | **KEPT** | Re-verified: explicit decision to preserve prop type exports. |
+| **C-012** | Types (Web) | `Toast.tsx`: `ToastType` | KEEP | **KEPT** | Re-verified: explicit decision to preserve notification typing. |
+| **C-013** | Types (Web) | `device-lifecycle.ts`: `DevicePositionOptions` | KEEP | **KEPT** | Re-verified: explicit decision to preserve internal cross-platform Web API typing. |
+| **C-014** | Types (Web) | `game-api.ts`: `MatchState`, `RunnerMatchView` | KEEP | **KEPT** | Re-verified: core domain contracts for client and mock implementations. |
+| **C-015** | Types (Web) | `location-store.ts`: `CurrentFix` | KEEP | **KEPT** | Re-verified: store state contract. |
+| **C-016** | Dead Code (Web) | `apps/web/src/pages/RouteShell.tsx`: unreachable `screenCopy` | UNCERTAIN | **DELETED @ `a822ec0`** | 11 dead prototype keys and unreachable navigation blocks pruned. `Screen` narrowed to `'not-found'`. 404 route pixel-identical. |
+| **C-017** | Assets / History | `docs/design/XZONES_Dusk_Contour_Game_UI_Board.png` | KEEP | **KEPT** | Reference board embedded in `README.md` and `xzones.md`. Git history rewrite forbidden. |
+| **C-018** | Packages | `packages/game-core/src/index.ts`: package domain exports | KEEP | **KEPT** | Public package entry point declared in `package.json` exports map; cross-runtime consumers verified. |
+| **C-019** | CSS | `apps/web/src/App.css`: `.route-shell__nav`, `.segmented-control__item` | (New) | **DELETED @ `6b21d66`** | Zero coverage; zero consumers; pruned alias & dead prototype class. |
+| **C-020** | CSS | `apps/web/src/pages/CreatePage.css`: `.create-title-wrap`, `.collapsible-card__subtitle`, etc. | (New) | **DELETED @ `6b21d66`** | Zero coverage; zero consumers; superseded Phase A layout classes. |
+| **C-021** | CSS | `apps/web/src/pages/MatchPage.css`: `.hud-actions-drawer` | (New) | **DELETED @ `6b21d66`** | Zero coverage; unused duplicate selector block. |
+| **C-022** | CSS | `apps/web/src/pages/SettingsPage.css`: `.settings-haptics-row` | (New) | **DELETED @ `6b21d66`** | Zero coverage; unused prototype row rule. |
+
+---
+
+## 2. UNCERTAIN Candidates & Maintainer Questions
+
+Per the **Evidence Quality Rules**, symbols encoding game-rule logic that currently have no direct client consumers are classified as **UNCERTAIN** (game-rule exception) rather than deleted, as they represent validated domain algorithms or forthcoming rules:
+
+1. **`packages/game-core/src/rules.ts` Domain Helpers:**
+   - **Symbols:** `zoneAt`, `classifyZoneSample`, `advanceZoneConfirmation`, `balanceTeams`, `didTagMeetDeadline`, `resolveActiveOutcome`, `latestDuePingIndex`.
+   - **Current Usage:** Fully covered and tested in `packages/game-core/src/rules.test.ts` and `golden_master.test.ts`. Client application currently delegates these evaluations to server-side Edge API/PLpgSQL functions (`xzones_sync_match`, `xzones_resolve_match`, `xzones_track_zone_sample`).
+   - **Maintainer Question:** Are these pure TypeScript implementations intended for offline client-side prediction / zero-latency HUD simulation in a future release, or should client-side rule evaluation be formally deprecated in favor of server-only evaluation?
+   - **Action Taken:** Retained (Zero Behavior Change).
+
+---
+
+## 3. Out of Scope Findings (Pass 2)
+
+The following items were identified and thoroughly audited during Pass 2. They represent architectural or administrative improvements that require feature work or repo admin permissions:
+
+1. **Unwired Test Files in CI:**
+   - `tests/review/stale-event-reproduction_test.ts`: Standalone Deno reproduction script for historical bug.
+   - `tests/review/device_lifecycle_test.ts` & `privacy-leak-check_test.ts`: Legacy Deno test scripts in `tests/review/` that test early prototype behavior.
+   - *Recommendation:* Wire these into a secondary integration CI job or consolidate under a `tests/legacy/` directory.
+2. **Top 10 Largest Blobs in Git History:**
+   - 1. `docs/design/XZONES_Dusk_Contour_Game_UI_Board.png` (2.24 MB)
+   - 2. `docs/verification/screens/G1.1/home-mobile.traffic.json` (385 kB)
+   - 3–10. Historical revisions of `docs/screenshots/*.png` (145 kB – 184 kB each)
+   - *Recommendation:* Avoid committing large binary screenshot diffs in future PRs. Git history rewrite is strictly prohibited.
+3. **Stale Merged Branches:**
+   - 17 local branches and 14 remote branches have already been fully merged into `origin/main`.
+   - *Recommendation:* Repository administrators should run `git push origin --delete <branch>` and `git branch -d <branch>` to declutter branch listings.
+4. **React Compiler Static Analysis Warnings (11 items):**
+   - 10 instances of `react(set-state-in-effect)` in `LobbyPage.tsx`, `MatchPage.tsx`, `HeadStartPage.tsx`, `SettingsPage.tsx`, `JoinPage.tsx`, `TagPage.tsx`, `GpsReadinessBadge.tsx`, `LocationSharing.tsx`.
+   - 1 instance of `eslint(no-extra-boolean-cast)` in `Button.tsx:35`.
+   - *Recommendation:* Address in a dedicated React 19 performance refactoring pass to enable automatic memoization by the React Compiler.
+5. **Backend Dead Surface (Report-Only):**
+   - All 25 Edge API route actions and all 45 database stored procedures/triggers are actively wired and tested.
+   - *Maintenance Questions:*
+     - formalize hourly pg_cron execution for `xzones_cleanup`.
+     - add Supabase webhook alerting for `bug_reports`.
+     - clarify host dashboard visibility for `suspicious_events`.
+6. **Repository Root Process Documents Consolidation:**
+   - 9 process logs and specifications currently reside at the repository root (`CLEANUP_LOG.md`, `CLEANUP_REPORT.md`, `CLEANUP_PASS2_LOG.md`, etc.).
+   - *Recommendation:* In a future maintenance PR, move these into a structured `docs/audit-history/` directory.

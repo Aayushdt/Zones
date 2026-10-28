@@ -89,7 +89,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [x] **Step 8:** CSS with coverage evidence (G3)
 - [x] **Step 9:** Dead backend surface (REPORT-ONLY) (G9)
 - [x] **Step 10:** Repo hygiene (G7, G9)
-- [ ] **Step 11:** Final verification and report
+- [x] **Step 11:** Final verification and report
 
 ---
 
@@ -543,3 +543,55 @@ Currently, 9 process logs and specifications reside in the root directory: `CLEA
 | Step 8 | C-021 | CSS | `apps/web/src/pages/MatchPage.css` (`.hud-actions-drawer`) | SAFE | Zero coverage; unused duplicate selector block | `3557d84` | **DELETED** |
 | Step 8 | C-022 | CSS | `apps/web/src/pages/SettingsPage.css` (`.settings-haptics-row`) | SAFE | Zero coverage; unused prototype row rule | `3557d84` | **DELETED** |
 
+
+---
+
+## Step 11: Final Verification & Clean-Clone Verification
+
+### 1. Full Baseline Suite Re-Execution
+The entire baseline validation suite was re-run against the Pass 2 branch with zero failures:
+- `corepack pnpm install --frozen-lockfile`: PASS (0 new dependencies, lockfile strictly frozen)
+- `corepack pnpm typecheck`: PASS (0 TypeScript errors across all workspaces)
+- `corepack pnpm lint`: PASS (0 errors; exactly 11 baseline React Compiler & ESLint warnings preserved, 0 regressions)
+- `corepack pnpm build`: PASS (production bundle built cleanly in 431ms)
+- `corepack pnpm test:unit`: PASS (42/42 unit tests passed)
+- `corepack pnpm test:audit`: PASS (34/34 client logic & rules audit tests passed)
+- `corepack pnpm verify:payloads`: PASS (2/2 role privacy projection tests passed)
+- `corepack pnpm test:edge`: PASS (19/19 Deno Edge API tests passed)
+- `corepack pnpm test:api`: PASS (19/19 Supabase functions API tests passed)
+- `corepack pnpm test:sim`: PASS (1/1 simulator scenario passed)
+- `node scripts/check-bundle-budget.mjs`: PASS (all bundles comfortably within strict thresholds)
+- `corepack pnpm exec playwright test`: PASS (47/47 end-to-end tests passed across all 7 specs)
+- `bash scripts/test-audit-db.sh`: PASS (14/14 database migration and race scenario tests passed against local PostgreSQL)
+
+### 2. Clean-Clone Test
+A clean clone of the repository was initialized in an isolated directory (`/tmp/cleanup2/clean-clone`):
+- `git clone . /tmp/cleanup2/clean-clone`: SUCCESS
+- `corepack pnpm install --frozen-lockfile`: SUCCESS (lockfile resolved cleanly with 0 network or peer dependency discrepancies)
+- `corepack pnpm typecheck`: SUCCESS (0 errors)
+- `corepack pnpm build`: SUCCESS (production dist assets emitted cleanly)
+- `corepack pnpm test:unit`: SUCCESS (42/42 tests passed in 10.9s)
+- `node scripts/check-bundle-budget.mjs`: SUCCESS (all asset sizes passed)
+
+### 3. Before / After Metrics Comparison (Corrected Git Sizing)
+
+| Metric | Baseline (Step 0) | Post-Cleanup (Step 11) | Net Delta |
+| :--- | :--- | :--- | :--- |
+| **Tracked Files** | 488 files | 489 files | +1 file (added `CLEANUP_PASS2_LOG.md`) |
+| **Tracked Object DB Size** | 48.55 MiB | 48.55 MiB | 0 MiB (zero bloated history changes) |
+| **Web App Code Lines (`apps/`)** | 13,568 lines | 13,496 lines | **-72 lines removed** |
+| **Web App Code Bytes (`apps/`)** | 483,199 bytes | 480,803 bytes | **-2,396 bytes removed** |
+| **Global CSS (Minified Gzip)** | 22.02 kB gzip | 21.93 kB gzip | **-90 B gzip reduction** |
+| **Global CSS (Unminified Raw)** | 134.81 kB raw | 134.34 kB raw | **-470 B raw reduction** |
+| **Entry JS (Minified Gzip)** | 114.61 kB gzip | 114.13 kB gzip | **-480 B gzip reduction** |
+| **MapLibre Chunk (Gzip)** | 280.26 kB gzip | 280.26 kB gzip | 0 B (budget <= 320 kB) |
+| **Total Production Dist** | 2.8 MB | 2.8 MB | Lean PWA bundle |
+| **Total Dependencies (Root + Web + Core)** | 29 | 29 | All 29 accounted for; 0 unused |
+| **Unit & E2E Tests** | 145 passed | 145 passed | 100% green; 0 broken specs |
+| **Static Linter Warnings** | 11 warnings | 11 warnings | 0 new warnings; 0 errors |
+
+### 4. Summary of Removals in Pass 2
+- **Dead Prototype Code:** Removed 11 unused `screenCopy` entries and unreachable conditional navigation blocks from `apps/web/src/pages/RouteShell.tsx` (-21 lines, commit `046cb4b`, merged in Step 7).
+- **Dead CSS Selectors:** Removed 9 unused selectors across 4 stylesheets (`App.css`, `CreatePage.css`, `MatchPage.css`, `SettingsPage.css`) proven dead via Chromium CSS coverage and AST grep (-51 lines, commit `6b21d66`, Step 8).
+- **Total Removed:** 72 lines of dead code/CSS, -2,396 source bytes.
+- **Behavior Regressions:** **Zero.** All 47 E2E tests and 28 visual viewport states remain 100% pixel-identical.
