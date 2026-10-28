@@ -79,7 +79,7 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 ## Cleanup Pass 2 Step Checklist
 
 - [x] **Step 0:** Setup and a trustworthy baseline
-- [ ] **Step 1:** Audit the audit (documentation only) (G1–G10)
+- [x] **Step 1:** Audit the audit (documentation only) (G1–G10)
 - [ ] **Step 2:** `docs/` inventory and cleanup (G1)
 - [ ] **Step 3:** Template leftovers, public assets, and the service worker (G3, G5)
 - [ ] **Step 4:** Scripts, tools, and tests: prove invocation (G6)
@@ -90,6 +90,30 @@ Captured 28 full-page screenshots at 390x844 (mobile) and 1440x900 (desktop) acr
 - [ ] **Step 9:** Dead backend surface (REPORT-ONLY) (G9)
 - [ ] **Step 10:** Repo hygiene (G7, G9)
 - [ ] **Step 11:** Final verification and report
+
+---
+
+## Step 1: Audit the Audit (Findings on Hypotheses G1–G10)
+
+| Gap ID | Hypothesis | Result | Concrete Evidence & Method |
+| :--- | :--- | :--- | :--- |
+| **G1** | `docs/` (240 files, 13.29 MB) was never analysed | **CONFIRMED** | Pass 1 only ran a regex link check on `README.md`. `docs/` contains 240 tracked files (13.29 MB, 2,696 lines). Full inventory deferred to Step 2. |
+| **G2** | Dependency count (24 vs 17) & LOC discrepancies | **CONFIRMED** | Pass 1 reported "17 audited" dependencies; `apps/web/package.json` actually defines 14 dependencies + 10 devDependencies = 24. Exact text line count is 35,096 (not 67,455). Git object DB is 48.55 MiB (not dirty 446 MB). |
+| **G3** | CSS (134 kB) verified without coverage or template checks | **CONFIRMED** | Pass 1 ran only bundle budget and 4 Playwright viewport smoke checks. No Chromium CSS coverage was gathered. Addressed in Steps 3 and 8. |
+| **G4** | `RouteShell` 11 unused copy keys is dead code, not refactor | **CONFIRMED** | In `router.tsx:61`, `<RouteShell kind="not-found" />` is the sole consumer. The other 11 dictionary keys and conditional navigation blocks are provably unreachable. Addressed in Step 7. |
+| **G5** | Circular KEEP evidence was accepted in Pass 1 | **CONFIRMED** | In Pass 1, `icons.svg` was kept because `sw.js` and `manifest.webmanifest` listed it without checking actual HTML/CSS consumers. `game-core/src/index.ts` was kept without symbol-by-symbol checks. Addressed in Steps 3 and 6. |
+| **G6** | `scripts/`, `tools/`, `tests/` kept without proof of invocation | **CONFIRMED** | Files were listed without tracing callers. `diff -u` revealed `scripts/verify-payloads.ts` is a 2-line wrapper importing `tests/privacy/verify-payloads.ts`. Full matrix constructed in Step 4. |
+| **G7** | Narrow detection scope in Pass 1 | **CONFIRMED** | Full scope re-runs: `madge` across all packages/backend/tools found only 1 app entry (`main.tsx`) and test entries. Full-repo grep `^\s*//\s*(const|let|var|if|for|return|import|export|await|function|class)\b` returned 0 commented-out code blocks. |
+| **G8** | Baseline skipped suites silently | **CONFIRMED** | In Pass 2 Step 0, all 47 Playwright tests were executed and passed. `test:db` was executed and passed (14/14 scenarios). `test:realtime-integration` was explicitly proven NOT RUNNABLE without a live Supabase stack. |
+| **G9** | Backend dead surface & config review omitted | **CONFIRMED** | Pass 1 did not audit Edge API routes or SQL RPCs. Addressed as report-only in Step 9. |
+| **G10** | 11 React Compiler warnings remain in baseline | **CONFIRMED** | Oxlint output enumerated: 10 `react(set-state-in-effect)` notices across 8 files and 1 `eslint(no-extra-boolean-cast)`. Documented as out-of-scope for clean refactoring. |
+
+### Knip Full-Scope Re-Run (`includeEntryExports: true`)
+- Flags game-core exports (`DEFAULT_MATCH_CONFIG`, `isValidMatchConfig`, `UPLOAD_INTERVAL_*`).
+- Concrete cross-runtime check reveals: `backend/supabase/functions/api/index.ts:16` directly imports `isValidMatchConfig` and `isValidZoneConfig` from `packages/game-core/src/config.ts`. Knip AST analysis failed to follow Deno relative imports, producing false positives.
+
+---
+
 
 ---
 
